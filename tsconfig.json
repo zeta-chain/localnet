@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "outDir": "dist",
+    "paths": {
+      "@typechain-types": ["typechain-types"]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": true,
+    "target": "es2020",
+    "typeRoots": ["@types", "./node_modules/@types"]
+  },
+  "exclude": [
+    "hardhat.config.ts",
+    "src",
+    "test",
+    "lib/deterministic-deploy.helpers.ts",
+    "lib/contracts.constants.ts",
+    "lib/contracts.helpers.ts",
+    "lib/ImmutableCreate2Factory/ImmutableCreate2Factory.helpers.ts"
+  ]
+}

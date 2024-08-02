@@ -1,0 +1,39 @@
+# Yarn
+node_modules
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Hardhat
+artifacts
+cache
+
+# Typescript
+dist
+tsconfig.tsbuildinfo
+
+# Misc
+.env
+.DS_Store
+.secrets
+.wallet.json
+
+# Coverage
+coverage
+coverage.json
+lcov.info
+
+# Slither
+scripts/slither-results/*
+!scripts/slither-results/.gitkeep
+
+abi
+
+crytic-export
+
+out
+cache_forge

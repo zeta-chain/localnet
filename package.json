@@ -1,0 +1,63 @@
+{
+  "name": "@zetachain/localnet",
+  "author": "zetachain",
+  "devDependencies": {
+    "@ethersproject/abi": "^5.4.7",
+    "@ethersproject/providers": "^5.4.7",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "@nomiclabs/hardhat-ethers": "^2.0.0",
+    "@nomiclabs/hardhat-etherscan": "^3.0.0",
+    "@openzeppelin/contracts": "^4.8.3",
+    "@openzeppelin/contracts-upgradeable": "^4.8.3",
+    "@openzeppelin/hardhat-upgrades": "1.28.0",
+    "@typechain/ethers-v6": "^0.5.0",
+    "@typechain/hardhat": "^9.0.0",
+    "@types/chai": "^4.2.0",
+    "@types/mocha": ">=9.1.0",
+    "@types/wait-on": "^5.3.4",
+    "chai": "^4.2.0",
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.0.0",
+    "ethers": "5.6.8",
+    "hardhat": "^2.17.2",
+    "hardhat-gas-reporter": "^1.0.8",
+    "solidity-coverage": "^0.8.1",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.0",
+    "typescript": "^5.5.4",
+    "wait-on": "^7.2.0"
+  },
+  "files": [
+    "contracts",
+    "abi",
+    "dist"
+  ],
+  "license": "MIT",
+  "packageManager": "yarn@1.22.21",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "yarn compile && npx del-cli dist abi && npx tsc || true && npx del-cli './dist/typechain-types/**/*.js' && npx cpx './data/**/*' dist/data && npx cpx './artifacts/contracts/**/*' ./abi && npx del-cli './abi/**/*.dbg.json'",
+    "compile": "npx hardhat compile --force",
+    "generate": "yarn compile && ./scripts/generate_go.sh || true && ./scripts/generate_addresses.sh && yarn lint:fix",
+    "lint": "npx eslint . --ext .js,.ts --ignore-pattern lib/",
+    "lint:fix": "npx eslint . --ext .js,.ts,.json --fix --ignore-pattern coverage/ --ignore-pattern coverage.json --ignore-pattern lib/ --ignore-pattern out --ignore-pattern cache_forge/",
+    "lint:sol": "solhint 'contracts/**/*.sol'",
+    "localnet": "npx hardhat localnet",
+    "prepublishOnly": "yarn build",
+    "test": "npx hardhat test",
+    "test:prototypes": "yarn compile && npx hardhat test test/prototypes/*",
+    "tsc:watch": "npx tsc --watch"
+  },
+  "types": "./dist/lib/index.d.ts",
+  "version": "0.0.8",
+  "dependencies": {
+    "@nomicfoundation/hardhat-ignition": "^0.15.5",
+    "@nomicfoundation/ignition-core": "^0.15.5",
+    "@zetachain/protocol-contracts": "^9.0.0"
+  }
+}

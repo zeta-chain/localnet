@@ -1,0 +1,7 @@
+# provide solc remappings to crytic-compile
+cryticArgs: ['--solc-remaps', '@=node_modules/@']
+testMode: "assertion"
+testLimit: 50000  
+seqLen: 10000 
+allContracts: false
+balanceAddr: 0x1043561a8829300000 
