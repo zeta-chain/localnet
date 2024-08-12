@@ -17,8 +17,6 @@ const deployOpts = {
   gasPrice: 10000000000,
   gasLimit: 6721975,
 };
-const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-provider.pollingInterval = 100;
 
 const deployProtocolContracts = async (
   deployer: Signer,
@@ -177,7 +175,9 @@ const deployProtocolContracts = async (
   };
 };
 
-export const initLocalnet = async () => {
+export const initLocalnet = async (port: number) => {
+  const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
+  provider.pollingInterval = 100;
   // anvil test mnemonic
   const mnemonic =
     "test test test test test test test test test test test junk";
