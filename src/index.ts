@@ -444,12 +444,3 @@ export const startLocalnet = async () => {
 
   process.stdin.resume();
 };
-
-startLocalnet()
-  .then(() => {
-    console.log("Setup complete, monitoring events. Press CTRL+C to exit.");
-  })
-  .catch((error) => {
-    console.error("Failed to deploy contracts or set up listeners:", error);
-    process.exit(1);
-  });
