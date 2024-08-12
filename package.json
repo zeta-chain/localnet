@@ -7,6 +7,14 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
   "keywords": [],
   "author": "ZetaChain",
   "license": "MIT",
