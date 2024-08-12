@@ -1,16 +1,16 @@
-// import { ethers, NonceManager, Signer } from "ethers";
-// import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
-// import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
-// import * as ReceiverEVM from "@zetachain/protocol-contracts/abi/ReceiverEVM.sol/ReceiverEVM.json";
-// import * as SenderZEVM from "@zetachain/protocol-contracts/abi/SenderZEVM.sol/SenderZEVM.json";
-// import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
-// import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
-// import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
-// import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
-// import * as TestUniversalContract from "@zetachain/protocol-contracts/abi/TestZContract.sol/TestZContract.json";
-// import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-// import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
-// import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
+import { ethers, NonceManager, Signer } from "ethers";
+import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
+import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
+import * as ReceiverEVM from "@zetachain/protocol-contracts/abi/ReceiverEVM.sol/ReceiverEVM.json";
+import * as SenderZEVM from "@zetachain/protocol-contracts/abi/SenderZEVM.sol/SenderZEVM.json";
+import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
+import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
+import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
+import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
+import * as TestUniversalContract from "@zetachain/protocol-contracts/abi/TestZContract.sol/TestZContract.json";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
+import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
