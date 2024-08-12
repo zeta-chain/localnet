@@ -12,11 +12,11 @@
     "dist"
   ],
   "exports": {
-    "./tasks": "./dist/packages/tasks/src/index.js",
+    "./tasks": "./dist/tasks/src/index.js",
     "./localnet": {
-      "import": "./dist/packages/client/src/index.js",
-      "require": "./dist/packages/client/src/index.js",
-      "types": "./dist/packages/client/src/index.d.ts"
+      "import": "./dist/localnet/src/index.js",
+      "require": "./dist/localnet/src/index.js",
+      "types": "./dist/localnet/src/index.d.ts"
     }
   },
   "keywords": [],
