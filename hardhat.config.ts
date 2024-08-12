@@ -1,4 +1,4 @@
-import "./tasks/localnet";
+import "./packages/tasks/src/localnet";
 
 import { HardhatUserConfig } from "hardhat/config";
 

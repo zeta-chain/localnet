@@ -200,8 +200,12 @@ export const initLocalnet = async () => {
     fungibleModuleSigner
   );
 
+  await provider.send("evm_mine", []);
+
   process.stdin.resume();
 
-  console.log("EVM Gateway:", protocolContracts.gatewayEVM.target);
-  console.log("ZetaChain Gateway:", protocolContracts.gatewayZEVM.target);
+  return {
+    gatewayEVM: protocolContracts.gatewayEVM.target,
+    gatewayZetaChain: protocolContracts.gatewayZEVM.target,
+  };
 };

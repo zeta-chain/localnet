@@ -17,5 +17,6 @@
     "strict": true,
     "target": "es2020",
     "typeRoots": ["@types", "./node_modules/@types"]
-  }
+  },
+  "include": ["./packages/localnet", "./packages/tasks"]
 }

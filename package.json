@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "tsc",
+    "build": "del-cli dist && tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -12,8 +12,11 @@
     "dist"
   ],
   "exports": {
-    ".": {
-      "import": "./dist/index.js"
+    "./tasks": "./dist/packages/tasks/src/index.js",
+    "./localnet": {
+      "import": "./dist/packages/client/src/index.js",
+      "require": "./dist/packages/client/src/index.js",
+      "types": "./dist/packages/client/src/index.d.ts"
     }
   },
   "keywords": [],
