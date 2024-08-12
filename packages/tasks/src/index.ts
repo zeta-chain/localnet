@@ -1,0 +1,1 @@
+export { localnetTask } from "./localnet";
