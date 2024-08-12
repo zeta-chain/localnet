@@ -1,16 +1,15 @@
 {
   "name": "@zetachain/localnet",
-  "version": "1.0.0",
+  "version": "0.0.0-set-on-publish",
   "description": "",
-  "main": ".eslintrc.js",
   "scripts": {
     "build": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "ZetaChain",
+  "license": "MIT",
   "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.1",
