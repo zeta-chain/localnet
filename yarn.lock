@@ -492,6 +492,16 @@
     "@nomicfoundation/solidity-analyzer-linux-x64-musl" "0.1.2"
     "@nomicfoundation/solidity-analyzer-win32-x64-msvc" "0.1.2"
 
+"@openzeppelin/contracts-upgradeable@^5.0.2":
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts-upgradeable/-/contracts-upgradeable-5.0.2.tgz#3e5321a2ecdd0b206064356798c21225b6ec7105"
+  integrity sha512-0MmkHSHiW2NRFiT9/r5Lu4eJq5UJ4/tzlOgYXNAIj/ONkQTVnz22pLxDvp4C4uZ9he7ZFvGn3Driptn1/iU7tQ==
+
+"@openzeppelin/contracts@^5.0.2":
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-5.0.2.tgz#b1d03075e49290d06570b2fd42154d76c2a5d210"
+  integrity sha512-ytPc6eLGcHHnapAZ9S+5qsdomhjo6QBHTDRRBFfTxXIpsicMhVPouPgmUPebZZZGX7vt9USA+Z+0M0dSVtSUEA==
+
 "@scure/base@~1.1.0":
   version "1.1.7"
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.7.tgz#fe973311a5c6267846aa131bc72e96c5d40d2b30"
@@ -762,11 +772,13 @@
     "@typescript-eslint/types" "8.0.1"
     eslint-visitor-keys "^3.4.3"
 
-"@zetachain/protocol-contracts@10.0.0-rc5":
-  version "10.0.0-rc5"
-  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-10.0.0-rc5.tgz#130fca5a67256289edbc7ab36ee3bf5af5bbc6b8"
-  integrity sha512-YUZR7DuKbBi8tEaeoH+133psxxunn0EsIeQvuj1KxaIl4Fp5kRCHFQDalzp0Yw0VtGMG8uWr30My6rRTdtAccQ==
+"@zetachain/protocol-contracts@10.0.0-rc8":
+  version "10.0.0-rc8"
+  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-10.0.0-rc8.tgz#3ca4385c87daf7978cff01366f64beecba5bb3b6"
+  integrity sha512-RWFxwmLDMJfSh8IOxrCoJTVrlJcfCBiEMULVrBRQJk7cg7J/X10YEqdoglYZCrmkSrWoHEd0s6zbckXKjUA1FQ==
   dependencies:
+    "@openzeppelin/contracts" "^5.0.2"
+    "@openzeppelin/contracts-upgradeable" "^5.0.2"
     ethers "^6.13.1"
 
 acorn-jsx@^5.3.2:
