@@ -200,7 +200,113 @@ export const initLocalnet = async (port: number) => {
     fungibleModuleSigner
   );
 
-  await provider.send("evm_mine", []);
+  // Listen to contracts events
+  // event Called(address indexed sender, uint256 indexed chainId, bytes receiver, bytes message);
+  protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
+    console.log("Worker: Called event on GatewayZEVM.");
+    console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
+    try {
+      (deployer as NonceManager).reset();
+
+      const receiver = args[2];
+      const message = args[3];
+
+      const executeTx = await protocolContracts.gatewayEVM
+        .connect(deployer)
+        .execute(receiver, message, deployOpts);
+      await executeTx.wait();
+    } catch (e) {
+      console.error("failed:", e);
+    }
+  });
+
+  // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message);
+  protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
+    console.log("Worker: Withdrawn event on GatewayZEVM.");
+    console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
+    try {
+      const receiver = args[2];
+      const message = args[7];
+      (deployer as NonceManager).reset();
+
+      if (message != "0x") {
+        const executeTx = await protocolContracts.gatewayEVM
+          .connect(deployer)
+          .execute(receiver, message, deployOpts);
+        await executeTx.wait();
+      }
+    } catch (e) {
+      console.error("failed:", e);
+    }
+  });
+
+  // testContracts.receiverEVM.on("ReceivedPayable", () => {
+  //   console.log("ReceiverEVM: receivePayable called!");
+  // });
+
+  // event Called(address indexed sender, address indexed receiver, bytes payload);
+  protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
+    console.log("Worker: Called event on GatewayEVM.");
+    console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
+    try {
+      const universalContract = args[1];
+      const payload = args[2];
+      (deployer as NonceManager).reset();
+      // Encode the parameters
+      const origin = protocolContracts.gatewayZEVM.target;
+      const sender = await fungibleModuleSigner.getAddress();
+      const chainID = 1;
+
+      // Call the execute function
+      const executeTx = await protocolContracts.gatewayZEVM
+        .connect(fungibleModuleSigner)
+        .execute(
+          {
+            origin,
+            sender,
+            chainID,
+          },
+          testContracts.zrc20.target,
+          1,
+          universalContract,
+          payload,
+          deployOpts
+        );
+      await executeTx.wait();
+    } catch (e) {
+      console.error("failed:", e);
+    }
+  });
+
+  // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload);
+  protocolContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+    console.log("Worker: Deposited event on GatewayEVM.");
+    console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
+    try {
+      const receiver = args[1];
+      const asset = args[3];
+      const payload = args[4];
+      if (payload != "0x") {
+        const executeTx = await (protocolContracts.gatewayZEVM as any)
+          .connect(fungibleModuleSigner)
+          .execute(
+            [
+              protocolContracts.gatewayZEVM.target,
+              await fungibleModuleSigner.getAddress(),
+              1,
+            ],
+            asset,
+            1,
+            receiver,
+            payload,
+            deployOpts
+          );
+        await executeTx.wait();
+      }
+    } catch (e) {
+      console.error("failed:", e);
+    }
+  });
 
   process.stdin.resume();
 
