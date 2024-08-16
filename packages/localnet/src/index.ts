@@ -4,6 +4,7 @@ import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
@@ -11,7 +12,6 @@ import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 let protocolContracts: any;
-let testContracts: any;
 let deployer: Signer;
 const deployOpts = {
   gasPrice: 10000000000,
@@ -151,6 +151,21 @@ const deployProtocolContracts = async (
     deployer
   );
 
+  const zrc20Factory = new ethers.ContractFactory(ZRC20.abi, ZRC20.bytecode, deployer);
+  const testZRC20 = await zrc20Factory
+    .connect(fungibleModuleSigner)
+    .deploy(
+      "TOKEN",
+      "TKN",
+      18,
+      1,
+      1,
+      0,
+      systemContract.target,
+      gatewayZEVM.target,
+      deployOpts
+    );
+
   await (wzeta as any)
     .connect(fungibleModuleSigner)
     .deposit({ ...deployOpts, value: ethers.parseEther("10") });
@@ -172,6 +187,7 @@ const deployProtocolContracts = async (
     systemContract,
     testEVMZeta,
     wzeta,
+    testZRC20,
   };
 };
 
@@ -244,13 +260,16 @@ export const initLocalnet = async (port: number) => {
   //   console.log("ReceiverEVM: receivePayable called!");
   // });
 
-  // event Called(address indexed sender, address indexed receiver, bytes payload);
+  // event Called(address indexed sender, address indexed receiver, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     console.log("Worker: Called event on GatewayEVM.");
-    console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
+    console.log("Worker: Calling UniversalContract through GatewayZEVM...");
+    let revertOptions;
     try {
       const universalContract = args[1];
       const payload = args[2];
+      revertOptions = args[3];
+
       (deployer as NonceManager).reset();
       // Encode the parameters
       const origin = protocolContracts.gatewayZEVM.target;
@@ -266,7 +285,7 @@ export const initLocalnet = async (port: number) => {
             sender,
             chainID,
           },
-          testContracts.zrc20.target,
+          protocolContracts.testZRC20.target,
           1,
           universalContract,
           payload,
@@ -274,7 +293,23 @@ export const initLocalnet = async (port: number) => {
         );
       await executeTx.wait();
     } catch (e) {
-      console.error("failed:", e);
+      const callOnRevert = revertOptions[1];
+      const revertAddress = revertOptions[0];
+      const revertMessage = revertOptions[3];
+      const revertContext = {
+        asset: ethers.ZeroAddress,
+        amount: 0,
+        revertMessage,
+      };
+      if (callOnRevert) {
+        console.log("Tx reverted, calling executeRevert on GatewayEVM...");
+        try {
+          await protocolContracts.gatewayEVM.connect(deployer).executeRevert(revertAddress, "0x", revertContext, deployOpts);
+          console.log("Call onRevert success");
+        } catch (e) {
+          console.log("Call onRevert failed:", e);
+        }
+      }
     }
   });
 
