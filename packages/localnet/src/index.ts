@@ -308,7 +308,7 @@ export const initLocalnet = async (port: number) => {
     console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
     try {
       const receiver = args[1];
-      const asset = args[3];
+      const amount = args[2];
       const payload = args[4];
       if (payload != "0x") {
         const executeTx = await (protocolContracts.gatewayZEVM as any)
@@ -319,8 +319,8 @@ export const initLocalnet = async (port: number) => {
               await fungibleModuleSigner.getAddress(),
               1,
             ],
-            asset,
-            1,
+            protocolContracts.zrc20Eth.target,
+            amount,
             receiver,
             payload,
             deployOpts
