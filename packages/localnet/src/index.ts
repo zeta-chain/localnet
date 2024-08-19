@@ -264,11 +264,9 @@ export const initLocalnet = async (port: number) => {
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     console.log("Worker: Called event on GatewayEVM.");
     console.log("Worker: Calling UniversalContract through GatewayZEVM...");
-    let revertOptions;
     try {
       const universalContract = args[1];
       const payload = args[2];
-      revertOptions = args[3];
 
       (deployer as NonceManager).reset();
       // Encode the parameters
@@ -293,6 +291,7 @@ export const initLocalnet = async (port: number) => {
         );
       await executeTx.wait();
     } catch (e) {
+      const revertOptions = args[3];
       const callOnRevert = revertOptions[1];
       const revertAddress = revertOptions[0];
       const revertMessage = revertOptions[3];
@@ -309,11 +308,13 @@ export const initLocalnet = async (port: number) => {
         } catch (e) {
           console.log("Call onRevert failed:", e);
         }
+      } else {
+        console.log("Tx reverted without callOnRevert: ", e)
       }
     }
   });
 
-  // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload);
+  // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     console.log("Worker: Deposited event on GatewayEVM.");
     console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
@@ -339,7 +340,26 @@ export const initLocalnet = async (port: number) => {
         await executeTx.wait();
       }
     } catch (e) {
-      console.error("failed:", e);
+      const revertOptions = args[5];
+      const callOnRevert = revertOptions[1];
+      const revertAddress = revertOptions[0];
+      const revertMessage = revertOptions[3];
+      const revertContext = {
+        asset: ethers.ZeroAddress,
+        amount: 0,
+        revertMessage,
+      };
+      if (callOnRevert) {
+        console.log("Tx reverted, calling executeRevert on GatewayEVM...");
+        try {
+          await protocolContracts.gatewayEVM.connect(deployer).executeRevert(revertAddress, "0x", revertContext, deployOpts);
+          console.log("Call onRevert success");
+        } catch (e) {
+          console.log("Call onRevert failed:", e);
+        }
+      } else {
+        console.log("Tx reverted without callOnRevert: ", e)
+      }
     }
   });
 
