@@ -233,25 +233,7 @@ export const initLocalnet = async (port: number) => {
       await executeTx.wait();
     } catch (e) {
       const revertOptions = args[5];
-      const callOnRevert = revertOptions[1];
-      const revertAddress = revertOptions[0];
-      const revertMessage = revertOptions[3];
-      const revertContext = {
-        asset: ethers.ZeroAddress,
-        amount: 0,
-        revertMessage,
-      };
-      if (callOnRevert) {
-        console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
-        try {
-          await protocolContracts.gatewayZEVM.connect(deployer).executeRevert(revertAddress, revertContext, deployOpts);
-          console.log("Call onRevert success");
-        } catch (e) {
-          console.log("Call onRevert failed:", e);
-        }
-      } else {
-        console.log("Tx reverted without callOnRevert: ", e)
-      }
+      await handleOnRevertZEVM(revertOptions, e);
     }
   });
 
@@ -272,25 +254,7 @@ export const initLocalnet = async (port: number) => {
       }
     } catch (e) {
       const revertOptions = args[9];
-      const callOnRevert = revertOptions[1];
-      const revertAddress = revertOptions[0];
-      const revertMessage = revertOptions[3];
-      const revertContext = {
-        asset: ethers.ZeroAddress,
-        amount: 0,
-        revertMessage,
-      };
-      if (callOnRevert) {
-        console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
-        try {
-          await protocolContracts.gatewayZEVM.connect(deployer).executeRevert(revertAddress, revertContext, deployOpts);
-          console.log("Call onRevert success");
-        } catch (e) {
-          console.log("Call onRevert failed:", e);
-        }
-      } else {
-        console.log("Tx reverted without callOnRevert: ", e)
-      }
+      await handleOnRevertZEVM(revertOptions, e);
     }
   });
 
@@ -330,25 +294,7 @@ export const initLocalnet = async (port: number) => {
       await executeTx.wait();
     } catch (e) {
       const revertOptions = args[3];
-      const callOnRevert = revertOptions[1];
-      const revertAddress = revertOptions[0];
-      const revertMessage = revertOptions[3];
-      const revertContext = {
-        asset: ethers.ZeroAddress,
-        amount: 0,
-        revertMessage,
-      };
-      if (callOnRevert) {
-        console.log("Tx reverted, calling executeRevert on GatewayEVM...");
-        try {
-          await protocolContracts.gatewayEVM.connect(deployer).executeRevert(revertAddress, "0x", revertContext, deployOpts);
-          console.log("Call onRevert success");
-        } catch (e) {
-          console.log("Call onRevert failed:", e);
-        }
-      } else {
-        console.log("Tx reverted without callOnRevert: ", e)
-      }
+      await handleOnRevertEVM(revertOptions, e);
     }
   });
 
@@ -379,27 +325,53 @@ export const initLocalnet = async (port: number) => {
       }
     } catch (e) {
       const revertOptions = args[5];
-      const callOnRevert = revertOptions[1];
-      const revertAddress = revertOptions[0];
-      const revertMessage = revertOptions[3];
-      const revertContext = {
-        asset: ethers.ZeroAddress,
-        amount: 0,
-        revertMessage,
-      };
-      if (callOnRevert) {
-        console.log("Tx reverted, calling executeRevert on GatewayEVM...");
-        try {
-          await protocolContracts.gatewayEVM.connect(deployer).executeRevert(revertAddress, "0x", revertContext, deployOpts);
-          console.log("Call onRevert success");
-        } catch (e) {
-          console.log("Call onRevert failed:", e);
-        }
-      } else {
-        console.log("Tx reverted without callOnRevert: ", e)
-      }
+      await handleOnRevertEVM(revertOptions, e);
     }
   });
+
+  const handleOnRevertEVM = async (revertOptions: any, err: any) => {
+    const callOnRevert = revertOptions[1];
+    const revertAddress = revertOptions[0];
+    const revertMessage = revertOptions[3];
+    const revertContext = {
+      asset: ethers.ZeroAddress,
+      amount: 0,
+      revertMessage,
+    };
+    if (callOnRevert) {
+      console.log("Tx reverted, calling executeRevert on GatewayEVM...");
+      try {
+        await protocolContracts.gatewayEVM.connect(deployer).executeRevert(revertAddress, "0x", revertContext, deployOpts);
+        console.log("Call onRevert success");
+      } catch (e) {
+        console.log("Call onRevert failed:", e);
+      }
+    } else {
+      console.log("Tx reverted without callOnRevert: ", err)
+    }
+  }
+
+  const handleOnRevertZEVM = async (revertOptions: any, err: any) => {
+    const callOnRevert = revertOptions[1];
+    const revertAddress = revertOptions[0];
+    const revertMessage = revertOptions[3];
+    const revertContext = {
+      asset: ethers.ZeroAddress,
+      amount: 0,
+      revertMessage,
+    };
+    if (callOnRevert) {
+      console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
+      try {
+        await protocolContracts.gatewayZEVM.connect(deployer).executeRevert(revertAddress, revertContext, deployOpts);
+        console.log("Call onRevert success");
+      } catch (e) {
+        console.log("Call onRevert failed:", e);
+      }
+    } else {
+      console.log("Tx reverted without callOnRevert: ", err)
+    }
+  }
 
   process.stdin.resume();
 
