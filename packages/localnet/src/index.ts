@@ -152,11 +152,11 @@ const deployProtocolContracts = async (
   );
 
   const zrc20Factory = new ethers.ContractFactory(ZRC20.abi, ZRC20.bytecode, deployer);
-  const testZRC20 = await zrc20Factory
+  const zrc20Eth = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
-      "TOKEN",
-      "TKN",
+      "ZRC-20 ETH",
+      "ZRC20ETH",
       18,
       1,
       1,
@@ -187,7 +187,7 @@ const deployProtocolContracts = async (
     systemContract,
     testEVMZeta,
     wzeta,
-    testZRC20,
+    zrc20Eth,
   };
 };
 
@@ -285,7 +285,7 @@ export const initLocalnet = async (port: number) => {
             sender,
             chainID,
           },
-          protocolContracts.testZRC20.target,
+          protocolContracts.zrc20Eth.target,
           1,
           universalContract,
           payload,
