@@ -217,7 +217,7 @@ export const initLocalnet = async (port: number) => {
   );
 
   // Listen to contracts events
-  // event Called(address indexed sender, uint256 indexed chainId, bytes receiver, bytes message);
+  // event Called(address indexed sender, address indexed zrc20, bytes receiver, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
     console.log("Worker: Called event on GatewayZEVM.");
     console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
@@ -232,11 +232,30 @@ export const initLocalnet = async (port: number) => {
         .execute(receiver, message, deployOpts);
       await executeTx.wait();
     } catch (e) {
-      console.error("failed:", e);
+      const revertOptions = args[5];
+      const callOnRevert = revertOptions[1];
+      const revertAddress = revertOptions[0];
+      const revertMessage = revertOptions[3];
+      const revertContext = {
+        asset: ethers.ZeroAddress,
+        amount: 0,
+        revertMessage,
+      };
+      if (callOnRevert) {
+        console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
+        try {
+          await protocolContracts.gatewayZEVM.connect(deployer).executeRevert(revertAddress, revertContext, deployOpts);
+          console.log("Call onRevert success");
+        } catch (e) {
+          console.log("Call onRevert failed:", e);
+        }
+      } else {
+        console.log("Tx reverted without callOnRevert: ", e)
+      }
     }
   });
 
-  // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message);
+  // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
     console.log("Worker: Withdrawn event on GatewayZEVM.");
     console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
@@ -252,7 +271,26 @@ export const initLocalnet = async (port: number) => {
         await executeTx.wait();
       }
     } catch (e) {
-      console.error("failed:", e);
+      const revertOptions = args[9];
+      const callOnRevert = revertOptions[1];
+      const revertAddress = revertOptions[0];
+      const revertMessage = revertOptions[3];
+      const revertContext = {
+        asset: ethers.ZeroAddress,
+        amount: 0,
+        revertMessage,
+      };
+      if (callOnRevert) {
+        console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
+        try {
+          await protocolContracts.gatewayZEVM.connect(deployer).executeRevert(revertAddress, revertContext, deployOpts);
+          console.log("Call onRevert success");
+        } catch (e) {
+          console.log("Call onRevert failed:", e);
+        }
+      } else {
+        console.log("Tx reverted without callOnRevert: ", e)
+      }
     }
   });
 
