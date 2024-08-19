@@ -345,6 +345,7 @@ export const initLocalnet = async (port: number) => {
     if (callOnRevert) {
       console.log("Tx reverted, calling executeRevert on GatewayEVM...");
       try {
+        (deployer as NonceManager).reset();
         await protocolContracts.gatewayEVM
           .connect(deployer)
           .executeRevert(revertAddress, "0x", revertContext, deployOpts);
@@ -369,6 +370,7 @@ export const initLocalnet = async (port: number) => {
     if (callOnRevert) {
       console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
       try {
+        (deployer as NonceManager).reset();
         await protocolContracts.gatewayZEVM
           .connect(deployer)
           .executeRevert(revertAddress, revertContext, deployOpts);
