@@ -151,7 +151,11 @@ const deployProtocolContracts = async (
     deployer
   );
 
-  const zrc20Factory = new ethers.ContractFactory(ZRC20.abi, ZRC20.bytecode, deployer);
+  const zrc20Factory = new ethers.ContractFactory(
+    ZRC20.abi,
+    ZRC20.bytecode,
+    deployer
+  );
   const zrc20Eth = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
@@ -304,7 +308,7 @@ export const initLocalnet = async (port: number) => {
     console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
     try {
       const receiver = args[1];
-      const asset = args[3];
+      const amount = args[2];
       const payload = args[4];
       if (payload != "0x") {
         const executeTx = await (protocolContracts.gatewayZEVM as any)
@@ -315,8 +319,8 @@ export const initLocalnet = async (port: number) => {
               await fungibleModuleSigner.getAddress(),
               1,
             ],
-            asset,
-            1,
+            protocolContracts.zrc20Eth.target,
+            amount,
             receiver,
             payload,
             deployOpts
@@ -341,15 +345,17 @@ export const initLocalnet = async (port: number) => {
     if (callOnRevert) {
       console.log("Tx reverted, calling executeRevert on GatewayEVM...");
       try {
-        await protocolContracts.gatewayEVM.connect(deployer).executeRevert(revertAddress, "0x", revertContext, deployOpts);
+        await protocolContracts.gatewayEVM
+          .connect(deployer)
+          .executeRevert(revertAddress, "0x", revertContext, deployOpts);
         console.log("Call onRevert success");
       } catch (e) {
         console.log("Call onRevert failed:", e);
       }
     } else {
-      console.log("Tx reverted without callOnRevert: ", err)
+      console.log("Tx reverted without callOnRevert: ", err);
     }
-  }
+  };
 
   const handleOnRevertZEVM = async (revertOptions: any, err: any) => {
     const callOnRevert = revertOptions[1];
@@ -363,15 +369,17 @@ export const initLocalnet = async (port: number) => {
     if (callOnRevert) {
       console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
       try {
-        await protocolContracts.gatewayZEVM.connect(deployer).executeRevert(revertAddress, revertContext, deployOpts);
+        await protocolContracts.gatewayZEVM
+          .connect(deployer)
+          .executeRevert(revertAddress, revertContext, deployOpts);
         console.log("Call onRevert success");
       } catch (e) {
         console.log("Call onRevert failed:", e);
       }
     } else {
-      console.log("Tx reverted without callOnRevert: ", err)
+      console.log("Tx reverted without callOnRevert: ", err);
     }
-  }
+  };
 
   process.stdin.resume();
 
