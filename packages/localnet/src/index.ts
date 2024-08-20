@@ -8,8 +8,15 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
+import ansis from "ansis";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
+
+const log = (chain: "EVM" | "ZetaChain", ...messages: any[]) => {
+  const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
+  const combinedMessage = messages.join(" ");
+  console.log(color(`[${ansis.bold(chain)}]: ${combinedMessage}`));
+};
 
 let protocolContracts: any;
 let deployer: Signer;
@@ -54,6 +61,7 @@ const deployProtocolContracts = async (
     ERC1967Proxy.bytecode,
     deployer
   );
+
   const proxyEVM = (await proxyEVMFactory.deploy(
     gatewayEVMImpl.target,
     gatewayEVMInitdata,
@@ -223,14 +231,14 @@ export const initLocalnet = async (port: number) => {
   // Listen to contracts events
   // event Called(address indexed sender, address indexed zrc20, bytes receiver, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    console.log("Worker: Called event on GatewayZEVM.");
-    console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
+    log("ZetaChain", "Gateway: 'Called' event emitted");
     try {
       (deployer as NonceManager).reset();
 
       const receiver = args[2];
       const message = args[3];
 
+      log("EVM", "Gateway: 'gatewayEVM.execute' method is called");
       const executeTx = await protocolContracts.gatewayEVM
         .connect(deployer)
         .execute(receiver, message, deployOpts);
@@ -262,14 +270,9 @@ export const initLocalnet = async (port: number) => {
     }
   });
 
-  // testContracts.receiverEVM.on("ReceivedPayable", () => {
-  //   console.log("ReceiverEVM: receivePayable called!");
-  // });
-
   // event Called(address indexed sender, address indexed receiver, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    console.log("Worker: Called event on GatewayEVM.");
-    console.log("Worker: Calling UniversalContract through GatewayZEVM...");
+    log("EVM", "Gateway: 'Called' event emitted");
     try {
       const universalContract = args[1];
       const payload = args[2];
@@ -280,7 +283,6 @@ export const initLocalnet = async (port: number) => {
       const sender = await fungibleModuleSigner.getAddress();
       const chainID = 1;
 
-      // Call the execute function
       const executeTx = await protocolContracts.gatewayZEVM
         .connect(fungibleModuleSigner)
         .execute(
@@ -295,6 +297,7 @@ export const initLocalnet = async (port: number) => {
           payload,
           deployOpts
         );
+      log("ZetaChain", "Gateway: calling execute");
       await executeTx.wait();
     } catch (e) {
       const revertOptions = args[3];
@@ -304,27 +307,35 @@ export const initLocalnet = async (port: number) => {
 
   // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    console.log("Worker: Deposited event on GatewayEVM.");
-    console.log("Worker: Calling TestUniversalContract through GatewayZEVM...");
+    log("EVM", "Gateway: 'Deposited' event emitted");
     try {
       const receiver = args[1];
       const amount = args[2];
-      const payload = args[4];
-      if (payload != "0x") {
+      const message = args[4];
+      if (message != "0x") {
+        const context = {
+          origin: protocolContracts.gatewayZEVM.target,
+          sender: await fungibleModuleSigner.getAddress(),
+          chainID: 1,
+        };
+        const zrc20 = protocolContracts.zrc20Eth.target;
         const executeTx = await (protocolContracts.gatewayZEVM as any)
           .connect(fungibleModuleSigner)
-          .execute(
-            [
-              protocolContracts.gatewayZEVM.target,
-              await fungibleModuleSigner.getAddress(),
-              1,
-            ],
-            protocolContracts.zrc20Eth.target,
-            amount,
-            receiver,
-            payload,
-            deployOpts
-          );
+          .execute(context, zrc20, amount, receiver, message, deployOpts);
+        log(
+          "ZetaChain",
+          `Universal contract ${receiver} onCrossChainCall is executed (context: ${JSON.stringify(
+            context
+          )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
+        );
+        const logs = await provider.getLogs({
+          address: receiver,
+          fromBlock: "latest",
+        });
+
+        logs.forEach((data) => {
+          log("ZetaChain", `Universal contract event: ${JSON.stringify(data)}`);
+        });
         await executeTx.wait();
       }
     } catch (e) {
@@ -343,18 +354,18 @@ export const initLocalnet = async (port: number) => {
       revertMessage,
     };
     if (callOnRevert) {
-      console.log("Tx reverted, calling executeRevert on GatewayEVM...");
+      log("EVM", "Gateway: calling executeRevert");
       try {
         (deployer as NonceManager).reset();
         await protocolContracts.gatewayEVM
           .connect(deployer)
           .executeRevert(revertAddress, "0x", revertContext, deployOpts);
-        console.log("Call onRevert success");
+        log("EVM", "Gateway: Call onRevert success");
       } catch (e) {
-        console.log("Call onRevert failed:", e);
+        log("EVM", "Gateway: Call onRevert failed", e);
       }
     } else {
-      console.log("Tx reverted without callOnRevert: ", err);
+      log("EVM", "Tx reverted without callOnRevert: ", err);
     }
   };
 
@@ -368,18 +379,18 @@ export const initLocalnet = async (port: number) => {
       revertMessage,
     };
     if (callOnRevert) {
-      console.log("Tx reverted, calling executeRevert on GatewayZEVM...");
+      log("ZetaChain", "Gateway: calling executeRevert");
       try {
         (deployer as NonceManager).reset();
         await protocolContracts.gatewayZEVM
           .connect(deployer)
           .executeRevert(revertAddress, revertContext, deployOpts);
-        console.log("Call onRevert success");
+        log("ZetaChain", "Gateway: Call onRevert success");
       } catch (e) {
-        console.log("Call onRevert failed:", e);
+        log("ZetaChain", "Gateway: Call onRevert failed", e);
       }
     } else {
-      console.log("Tx reverted without callOnRevert: ", err);
+      log("ZetaChain", "Tx reverted without callOnRevert: ", err);
     }
   };
 
@@ -388,5 +399,8 @@ export const initLocalnet = async (port: number) => {
   return {
     gatewayEVM: protocolContracts.gatewayEVM.target,
     gatewayZetaChain: protocolContracts.gatewayZEVM.target,
+    zetaEVM: protocolContracts.testEVMZeta.target,
+    zetaZetaChain: protocolContracts.wzeta.target,
+    zrc20ETHZetaChain: protocolContracts.zrc20Eth.target,
   };
 };
