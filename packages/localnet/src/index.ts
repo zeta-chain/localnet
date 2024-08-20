@@ -20,6 +20,7 @@ const log = (chain: "EVM" | "ZetaChain", ...messages: any[]) => {
 
 let protocolContracts: any;
 let deployer: Signer;
+let tss: Signer;
 const deployOpts = {
   gasPrice: 10000000000,
   gasLimit: 6721975,
@@ -27,6 +28,7 @@ const deployOpts = {
 
 const deployProtocolContracts = async (
   deployer: Signer,
+  tss: Signer,
   fungibleModuleSigner: Signer
 ) => {
   // Prepare EVM
@@ -49,11 +51,7 @@ const deployProtocolContracts = async (
   const gatewayEVMInitFragment = gatewayEVMInterface.getFunction("initialize");
   const gatewayEVMInitdata = gatewayEVMInterface.encodeFunctionData(
     gatewayEVMInitFragment as ethers.FunctionFragment,
-    [
-      await deployer.getAddress(),
-      testEVMZeta.target,
-      await deployer.getAddress(),
-    ]
+    [await tss.getAddress(), testEVMZeta.target, await deployer.getAddress()]
   );
 
   const proxyEVMFactory = new ethers.ContractFactory(
@@ -82,7 +80,7 @@ const deployProtocolContracts = async (
   const zetaConnector = await zetaConnectorFactory.deploy(
     gatewayEVM.target,
     testEVMZeta.target,
-    await deployer.getAddress(),
+    await tss.getAddress(),
     await deployer.getAddress(),
     deployOpts
   );
@@ -210,8 +208,7 @@ export const initLocalnet = async (port: number) => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
-  const mnemonic =
-    "test test test test test test test test test test test junk";
+  const phrase = "test test test test test test test test test test test junk";
 
   // impersonate and fund fungible module account
   await provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]);
@@ -223,11 +220,20 @@ export const initLocalnet = async (port: number) => {
     FUNGIBLE_MODULE_ADDRESS
   );
 
-  deployer = new NonceManager(ethers.Wallet.fromPhrase(mnemonic, provider));
-  deployer.connect(provider);
+  // use 1st anvil account for deployer and admin
+  deployer = new NonceManager(ethers.Wallet.fromPhrase(phrase, provider));
+  deployer = deployer.connect(provider);
+
+  // use 2nd anvil account for tss
+  const mnemonic = ethers.Mnemonic.fromPhrase(phrase);
+  tss = new NonceManager(
+    ethers.HDNodeWallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${1}`)
+  );
+  tss = tss.connect(provider);
 
   protocolContracts = await deployProtocolContracts(
     deployer,
+    tss,
     fungibleModuleSigner
   );
 
@@ -236,14 +242,14 @@ export const initLocalnet = async (port: number) => {
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
     log("ZetaChain", "Gateway: 'Called' event emitted");
     try {
-      (deployer as NonceManager).reset();
+      (tss as NonceManager).reset();
 
       const receiver = args[2];
       const message = args[3];
 
       log("EVM", "Gateway: 'gatewayEVM.execute' method is called");
       const executeTx = await protocolContracts.gatewayEVM
-        .connect(deployer)
+        .connect(tss)
         .execute(receiver, message, deployOpts);
       await executeTx.wait();
     } catch (e) {
@@ -259,11 +265,11 @@ export const initLocalnet = async (port: number) => {
     try {
       const receiver = args[2];
       const message = args[7];
-      (deployer as NonceManager).reset();
+      (tss as NonceManager).reset();
 
       if (message != "0x") {
         const executeTx = await protocolContracts.gatewayEVM
-          .connect(deployer)
+          .connect(tss)
           .execute(receiver, message, deployOpts);
         await executeTx.wait();
       }
@@ -371,7 +377,6 @@ export const initLocalnet = async (port: number) => {
     };
     if (callOnRevert) {
       try {
-        log("EVM", "Gateway: calling executeRevert");
         log(
           "EVM",
           `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
