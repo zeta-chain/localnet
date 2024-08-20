@@ -13,6 +13,7 @@ const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 let protocolContracts: any;
 let deployer: Signer;
+let tss: Signer;
 const deployOpts = {
   gasPrice: 10000000000,
   gasLimit: 6721975,
@@ -20,6 +21,7 @@ const deployOpts = {
 
 const deployProtocolContracts = async (
   deployer: Signer,
+  tss: Signer,
   fungibleModuleSigner: Signer
 ) => {
   // Prepare EVM
@@ -43,7 +45,7 @@ const deployProtocolContracts = async (
   const gatewayEVMInitdata = gatewayEVMInterface.encodeFunctionData(
     gatewayEVMInitFragment as ethers.FunctionFragment,
     [
-      await deployer.getAddress(),
+      await tss.getAddress(),
       testEVMZeta.target,
       await deployer.getAddress(),
     ]
@@ -74,7 +76,7 @@ const deployProtocolContracts = async (
   const zetaConnector = await zetaConnectorFactory.deploy(
     gatewayEVM.target,
     testEVMZeta.target,
-    await deployer.getAddress(),
+    await tss.getAddress(),
     await deployer.getAddress(),
     deployOpts
   );
@@ -199,7 +201,7 @@ export const initLocalnet = async (port: number) => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
-  const mnemonic =
+  const phrase =
     "test test test test test test test test test test test junk";
 
   // impersonate and fund fungible module account
@@ -212,12 +214,19 @@ export const initLocalnet = async (port: number) => {
     FUNGIBLE_MODULE_ADDRESS
   );
 
-  deployer = new NonceManager(ethers.Wallet.fromPhrase(mnemonic, provider));
-  deployer.connect(provider);
+  // use 1st anvil account for deployer and admin
+  deployer = new NonceManager(ethers.Wallet.fromPhrase(phrase, provider));
+  deployer = deployer.connect(provider);
+
+  // use 2nd anvil account for tss
+  const mnemonic = ethers.Mnemonic.fromPhrase(phrase);
+  tss = new NonceManager(ethers.HDNodeWallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${1}`));
+  tss = tss.connect(provider);
 
   protocolContracts = await deployProtocolContracts(
     deployer,
-    fungibleModuleSigner
+    tss,
+    fungibleModuleSigner,
   );
 
   // Listen to contracts events
@@ -226,13 +235,13 @@ export const initLocalnet = async (port: number) => {
     console.log("Worker: Called event on GatewayZEVM.");
     console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
     try {
-      (deployer as NonceManager).reset();
+      (tss as NonceManager).reset();
 
       const receiver = args[2];
       const message = args[3];
 
       const executeTx = await protocolContracts.gatewayEVM
-        .connect(deployer)
+        .connect(tss)
         .execute(receiver, message, deployOpts);
       await executeTx.wait();
     } catch (e) {
@@ -248,11 +257,11 @@ export const initLocalnet = async (port: number) => {
     try {
       const receiver = args[2];
       const message = args[7];
-      (deployer as NonceManager).reset();
+      (tss as NonceManager).reset();
 
       if (message != "0x") {
         const executeTx = await protocolContracts.gatewayEVM
-          .connect(deployer)
+          .connect(tss)
           .execute(receiver, message, deployOpts);
         await executeTx.wait();
       }
@@ -345,9 +354,9 @@ export const initLocalnet = async (port: number) => {
     if (callOnRevert) {
       console.log("Tx reverted, calling executeRevert on GatewayEVM...");
       try {
-        (deployer as NonceManager).reset();
+        (tss as NonceManager).reset();
         await protocolContracts.gatewayEVM
-          .connect(deployer)
+          .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, deployOpts);
         console.log("Call onRevert success");
       } catch (e) {
