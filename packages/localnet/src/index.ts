@@ -274,32 +274,39 @@ export const initLocalnet = async (port: number) => {
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     log("EVM", "Gateway: 'Called' event emitted");
     try {
-      const universalContract = args[1];
-      const payload = args[2];
+      const receiver = args[1];
+      const message = args[2];
 
       (deployer as NonceManager).reset();
-      // Encode the parameters
-      const origin = protocolContracts.gatewayZEVM.target;
-      const sender = await fungibleModuleSigner.getAddress();
-      const chainID = 1;
-
+      const context = {
+        origin: protocolContracts.gatewayZEVM.target,
+        sender: await fungibleModuleSigner.getAddress(),
+        chainID: 1,
+      };
+      const zrc20 = protocolContracts.zrc20Eth.target;
+      log(
+        "ZetaChain",
+        `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
+          context
+        )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
+      );
       const executeTx = await protocolContracts.gatewayZEVM
         .connect(fungibleModuleSigner)
-        .execute(
-          {
-            origin,
-            sender,
-            chainID,
-          },
-          protocolContracts.zrc20Eth.target,
-          1,
-          universalContract,
-          payload,
-          deployOpts
-        );
-      log("ZetaChain", "Gateway: calling execute");
+        .execute(context, zrc20, 0, receiver, message, deployOpts);
       await executeTx.wait();
-    } catch (e) {
+      const logs = await provider.getLogs({
+        address: receiver,
+        fromBlock: "latest",
+      });
+
+      logs.forEach((data) => {
+        log(
+          "ZetaChain",
+          `Event from onCrossChainCall: ${JSON.stringify(data)}`
+        );
+      });
+    } catch (e: any) {
+      log("ZetaChain", ansis.red`Error executing onCrossChainCall: ${e}`);
       const revertOptions = args[3];
       await handleOnRevertEVM(revertOptions, e);
     }
@@ -319,26 +326,32 @@ export const initLocalnet = async (port: number) => {
           chainID: 1,
         };
         const zrc20 = protocolContracts.zrc20Eth.target;
-        const executeTx = await (protocolContracts.gatewayZEVM as any)
-          .connect(fungibleModuleSigner)
-          .execute(context, zrc20, amount, receiver, message, deployOpts);
         log(
           "ZetaChain",
-          `Universal contract ${receiver} onCrossChainCall is executed (context: ${JSON.stringify(
+          `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
             context
           )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
         );
+        const executeTx = await (protocolContracts.gatewayZEVM as any)
+          .connect(fungibleModuleSigner)
+          .execute(context, zrc20, amount, receiver, message, deployOpts);
+
+        await executeTx.wait();
         const logs = await provider.getLogs({
           address: receiver,
           fromBlock: "latest",
         });
 
         logs.forEach((data) => {
-          log("ZetaChain", `Universal contract event: ${JSON.stringify(data)}`);
+          log(
+            "ZetaChain",
+            `Event from onCrossChainCall: ${JSON.stringify(data)}`
+          );
         });
         await executeTx.wait();
       }
-    } catch (e) {
+    } catch (e: any) {
+      log("ZetaChain", ansis.red`Error executing onCrossChainCall: ${e}`);
       const revertOptions = args[5];
       await handleOnRevertEVM(revertOptions, e);
     }
@@ -354,18 +367,33 @@ export const initLocalnet = async (port: number) => {
       revertMessage,
     };
     if (callOnRevert) {
-      log("EVM", "Gateway: calling executeRevert");
       try {
+        log("EVM", "Gateway: calling executeRevert");
+        log(
+          "EVM",
+          `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
+            revertContext
+          )})`
+        );
         (deployer as NonceManager).reset();
-        await protocolContracts.gatewayEVM
+        const tx = await protocolContracts.gatewayEVM
           .connect(deployer)
           .executeRevert(revertAddress, "0x", revertContext, deployOpts);
-        log("EVM", "Gateway: Call onRevert success");
-      } catch (e) {
-        log("EVM", "Gateway: Call onRevert failed", e);
+        await tx.wait();
+        log("EVM", "Gateway: successfully called onRevert");
+        const logs = await provider.getLogs({
+          address: revertAddress,
+          fromBlock: "latest",
+        });
+
+        logs.forEach((data) => {
+          log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
+        });
+      } catch (e: any) {
+        log("EVM", ansis.red`Gateway: Call onRevert failed: ${e}`);
       }
     } else {
-      log("EVM", "Tx reverted without callOnRevert: ", err);
+      log("EVM", ansis.red`Tx reverted without callOnRevert: ${err}`);
     }
   };
 
