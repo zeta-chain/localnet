@@ -172,6 +172,11 @@ const deployProtocolContracts = async (
       deployOpts
     );
 
+  (zrc20Eth as any).deposit(await deployer.getAddress(), 1_000_000_000);
+
+  (systemContract as any).connect(fungibleModuleSigner).setGasCoinZRC20(1, zrc20Eth.target);
+  (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
+
   await (wzeta as any)
     .connect(fungibleModuleSigner)
     .deposit({ ...deployOpts, value: ethers.parseEther("10") });
