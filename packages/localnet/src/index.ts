@@ -250,11 +250,19 @@ export const initLocalnet = async (port: number) => {
 
       const receiver = args[2];
       const message = args[3];
-
-      log("EVM", "Gateway: 'gatewayEVM.execute' method is called");
+      log("EVM", `Calling ${receiver} with message ${message}`);
       const executeTx = await protocolContracts.gatewayEVM
         .connect(tss)
         .execute(receiver, message, deployOpts);
+
+      const logs = await provider.getLogs({
+        address: receiver,
+        fromBlock: "latest",
+      });
+
+      logs.forEach((data) => {
+        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
+      });
       await executeTx.wait();
     } catch (e) {
       const revertOptions = args[5];
