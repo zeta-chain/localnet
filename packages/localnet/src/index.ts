@@ -18,6 +18,11 @@ const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
   console.log(color(`[${ansis.bold(chain)}]: ${combinedMessage}`));
 };
 
+const logErr = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
+  const combinedMessage = messages.join(" ");
+  log(chain, ansis.red(combinedMessage));
+};
+
 let protocolContracts: any;
 let deployer: Signer;
 let tss: Signer;
@@ -327,7 +332,7 @@ export const initLocalnet = async (port: number) => {
         );
       });
     } catch (e: any) {
-      log("ZetaChain", ansis.red`Error executing onCrossChainCall: ${e}`);
+      logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
       const revertOptions = args[3];
       await handleOnRevertEVM(revertOptions, e);
     }
@@ -372,7 +377,7 @@ export const initLocalnet = async (port: number) => {
         await executeTx.wait();
       }
     } catch (e: any) {
-      log("ZetaChain", ansis.red`Error executing onCrossChainCall: ${e}`);
+      logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
       const revertOptions = args[5];
       await handleOnRevertEVM(revertOptions, e);
     }
@@ -410,10 +415,10 @@ export const initLocalnet = async (port: number) => {
           log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
         });
       } catch (e: any) {
-        log("EVM", ansis.red`Gateway: Call onRevert failed: ${e}`);
+        logErr("EVM", `Gateway: Call onRevert failed: ${e}`);
       }
     } else {
-      log("EVM", ansis.red`Tx reverted without callOnRevert: ${err}`);
+      logErr("EVM", `Tx reverted without callOnRevert: ${err}`);
     }
   };
 
