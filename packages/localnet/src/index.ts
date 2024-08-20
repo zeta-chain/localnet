@@ -120,7 +120,7 @@ const deployProtocolContracts = async (
     SystemContract.bytecode,
     deployer
   );
-  const systemContract = await systemContractFactory.deploy(
+  const systemContract: any = await systemContractFactory.deploy(
     ethers.ZeroAddress,
     ethers.ZeroAddress,
     ethers.ZeroAddress,
@@ -177,6 +177,9 @@ const deployProtocolContracts = async (
       gatewayZEVM.target,
       deployOpts
     );
+
+  systemContract.setGasCoinZRC20(1, zrc20Eth.target);
+  systemContract.setGasPrice(1, 1);
 
   await (wzeta as any)
     .connect(fungibleModuleSigner)
