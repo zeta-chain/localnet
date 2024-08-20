@@ -358,11 +358,11 @@ export const initLocalnet = async (port: number) => {
             context
           )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
         );
-        const executeTx = await (protocolContracts.gatewayZEVM as any)
+        const depositAndCallTx = await (protocolContracts.gatewayZEVM as any)
           .connect(fungibleModuleSigner)
-          .execute(context, zrc20, amount, receiver, message, deployOpts);
+          .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
 
-        await executeTx.wait();
+        await depositAndCallTx.wait();
         const logs = await provider.getLogs({
           address: receiver,
           fromBlock: "latest",
@@ -374,7 +374,6 @@ export const initLocalnet = async (port: number) => {
             `Event from onCrossChainCall: ${JSON.stringify(data)}`
           );
         });
-        await executeTx.wait();
       }
     } catch (e: any) {
       logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
