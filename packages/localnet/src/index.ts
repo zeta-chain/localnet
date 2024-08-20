@@ -12,7 +12,7 @@ import ansis from "ansis";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
-const log = (chain: "EVM" | "ZetaChain", ...messages: any[]) => {
+const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
   const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
   const combinedMessage = messages.join(" ");
   console.log(color(`[${ansis.bold(chain)}]: ${combinedMessage}`));
@@ -435,7 +435,7 @@ export const initLocalnet = async (port: number) => {
           .executeRevert(revertAddress, revertContext, deployOpts);
         log("ZetaChain", "Gateway: Call onRevert success");
       } catch (e) {
-        log("ZetaChain", "Gateway: Call onRevert failed", e);
+        log("ZetaChain", `Gateway: Call onRevert failed: ${e}`);
       }
     } else {
       log("ZetaChain", "Tx reverted without callOnRevert: ", err);
