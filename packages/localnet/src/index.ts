@@ -325,9 +325,9 @@ export const initLocalnet = async (port: number) => {
       const amount = args[2];
       const payload = args[4];
       if (payload != "0x") {
-        const executeTx = await (protocolContracts.gatewayZEVM as any)
+        const depositAndCallTx = await (protocolContracts.gatewayZEVM as any)
           .connect(fungibleModuleSigner)
-          .execute(
+          .depositAndCall(
             [
               protocolContracts.gatewayZEVM.target,
               await fungibleModuleSigner.getAddress(),
@@ -339,7 +339,7 @@ export const initLocalnet = async (port: number) => {
             payload,
             deployOpts
           );
-        await executeTx.wait();
+        await depositAndCallTx.wait();
       }
     } catch (e) {
       const revertOptions = args[5];
