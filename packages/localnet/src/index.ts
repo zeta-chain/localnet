@@ -360,7 +360,14 @@ export const initLocalnet = async (port: number) => {
         );
         const depositAndCallTx = await (protocolContracts.gatewayZEVM as any)
           .connect(fungibleModuleSigner)
-          .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
+          .depositAndCall(
+            context,
+            zrc20,
+            amount,
+            receiver,
+            message,
+            deployOpts
+          );
 
         await depositAndCallTx.wait();
         const logs = await provider.getLogs({
@@ -399,9 +406,9 @@ export const initLocalnet = async (port: number) => {
             revertContext
           )})`
         );
-        (deployer as NonceManager).reset();
+        (tss as NonceManager).reset();
         const tx = await protocolContracts.gatewayEVM
-          .connect(deployer)
+          .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, deployOpts);
         await tx.wait();
         log("EVM", "Gateway: successfully called onRevert");
@@ -433,9 +440,9 @@ export const initLocalnet = async (port: number) => {
     if (callOnRevert) {
       log("ZetaChain", "Gateway: calling executeRevert");
       try {
-        (deployer as NonceManager).reset();
+        (tss as NonceManager).reset();
         await protocolContracts.gatewayZEVM
-          .connect(deployer)
+          .connect(tss)
           .executeRevert(revertAddress, revertContext, deployOpts);
         log("ZetaChain", "Gateway: Call onRevert success");
       } catch (e) {
