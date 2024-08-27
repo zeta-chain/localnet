@@ -11,7 +11,7 @@ Localnet:
   the local testnet node. Both EVM gateway and ZetaChain gateway are deployed
   and running on the same local blockchain
 - Simulates the real-world testnet environment of ZetaChain by observing events
-  and and relaying the contract calls between EVM gateway and ZetaChain gateway
+  and relaying the contract calls between EVM gateway and ZetaChain gateway
 
 Install dependencies:
 
