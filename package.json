@@ -33,7 +33,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@zetachain/protocol-contracts": "10.0.0-rc8",
+    "@zetachain/protocol-contracts": "10.0.0-rc9",
     "ansis": "^3.3.2",
     "concurrently": "^8.2.2",
     "ethers": "^6.13.2",
