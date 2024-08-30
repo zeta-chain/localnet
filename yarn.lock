@@ -772,10 +772,10 @@
     "@typescript-eslint/types" "8.0.1"
     eslint-visitor-keys "^3.4.3"
 
-"@zetachain/protocol-contracts@10.0.0-rc8":
-  version "10.0.0-rc8"
-  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-10.0.0-rc8.tgz#3ca4385c87daf7978cff01366f64beecba5bb3b6"
-  integrity sha512-RWFxwmLDMJfSh8IOxrCoJTVrlJcfCBiEMULVrBRQJk7cg7J/X10YEqdoglYZCrmkSrWoHEd0s6zbckXKjUA1FQ==
+"@zetachain/protocol-contracts@10.0.0-rc9":
+  version "10.0.0-rc9"
+  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-10.0.0-rc9.tgz#edee08ded7ac1d200ba20f595fe916e9c3a66203"
+  integrity sha512-oAmsbpjCglGEL8oQVk+UKYBIdo9ZVP2kIUGnIw0O1FakbBH4+eWjCJjD/bZ8q0HxzEWjpu91tFRsdc3w2q5aqg==
   dependencies:
     "@openzeppelin/contracts" "^5.0.2"
     "@openzeppelin/contracts-upgradeable" "^5.0.2"
