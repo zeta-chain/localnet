@@ -277,8 +277,6 @@ export const initLocalnet = async (port: number) => {
 
   // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    console.log("Worker: Withdrawn event on GatewayZEVM.");
-    console.log("Worker: Calling ReceiverEVM through GatewayEVM...");
     try {
       const receiver = args[2];
       const message = args[7];
@@ -345,13 +343,13 @@ export const initLocalnet = async (port: number) => {
       const receiver = args[1];
       const amount = args[2];
       const message = args[4];
-      if (message != "0x") {
-        const context = {
-          origin: protocolContracts.gatewayZEVM.target,
-          sender: await fungibleModuleSigner.getAddress(),
-          chainID: 1,
-        };
-        const zrc20 = protocolContracts.zrc20Eth.target;
+      const context = {
+        origin: protocolContracts.gatewayZEVM.target,
+        sender: await fungibleModuleSigner.getAddress(),
+        chainID: 1,
+      };
+      const zrc20 = protocolContracts.zrc20Eth.target;
+      if (message !== "0x") {
         log(
           "ZetaChain",
           `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
@@ -381,9 +379,15 @@ export const initLocalnet = async (port: number) => {
             `Event from onCrossChainCall: ${JSON.stringify(data)}`
           );
         });
+      } else {
+        const depositTx = await protocolContracts.gatewayZEVM
+          .connect(fungibleModuleSigner)
+          .deposit(zrc20, amount, receiver, deployOpts);
+
+        await depositTx.wait();
       }
     } catch (e: any) {
-      logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
+      logErr("ZetaChain", `Error depositing: ${e}`);
       const revertOptions = args[5];
       await handleOnRevertEVM(revertOptions, e);
     }
