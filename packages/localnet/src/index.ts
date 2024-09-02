@@ -45,6 +45,12 @@ const deployProtocolContracts = async (
   );
   const testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
 
+  const testERC20USDC = await testERC20Factory.deploy(
+    "usdc",
+    "USDC",
+    deployOpts
+  );
+
   const gatewayEVMFactory = new ethers.ContractFactory(
     GatewayEVM.abi,
     GatewayEVM.bytecode,
@@ -167,6 +173,13 @@ const deployProtocolContracts = async (
     ZRC20.bytecode,
     deployer
   );
+
+  const erc20Factory = new ethers.ContractFactory(
+    TestERC20.abi,
+    TestERC20.bytecode,
+    deployer
+  );
+
   const zrc20Eth = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
@@ -181,7 +194,22 @@ const deployProtocolContracts = async (
       deployOpts
     );
 
+  const zrc20Usdc = await zrc20Factory
+    .connect(fungibleModuleSigner)
+    .deploy(
+      "ZRC-20 USDC",
+      "ZRC20USDC",
+      6,
+      1,
+      1,
+      0,
+      systemContract.target,
+      gatewayZEVM.target,
+      deployOpts
+    );
+
   (zrc20Eth as any).deposit(await deployer.getAddress(), 1_000_000_000);
+  (zrc20Usdc as any).deposit(await deployer.getAddress(), 1_000_000_000);
 
   (systemContract as any)
     .connect(fungibleModuleSigner)
@@ -210,6 +238,8 @@ const deployProtocolContracts = async (
     testEVMZeta,
     wzeta,
     zrc20Eth,
+    zrc20Usdc,
+    testERC20USDC,
   };
 };
 
@@ -467,5 +497,8 @@ export const initLocalnet = async (port: number) => {
     zetaEVM: protocolContracts.testEVMZeta.target,
     zetaZetaChain: protocolContracts.wzeta.target,
     zrc20ETHZetaChain: protocolContracts.zrc20Eth.target,
+    zrc20USDCZetaChain: protocolContracts.zrc20Usdc.target,
+    erc20UsdcEVM: protocolContracts.testERC20USDC.target,
+    FUNGIBLE_MODULE_ADDRESS: FUNGIBLE_MODULE_ADDRESS,
   };
 };

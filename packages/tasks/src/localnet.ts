@@ -27,6 +27,9 @@ const main = async (args: any) => {
     zetaEVM,
     zetaZetaChain,
     zrc20ETHZetaChain,
+    zrc20USDCZetaChain,
+    erc20UsdcEVM,
+    FUNGIBLE_MODULE_ADDRESS,
   } = await initLocalnet(port);
 
   console.log(ansis.cyan`
@@ -35,6 +38,7 @@ EVM Contract Addresses
 
 Gateway EVM: ${gatewayEVM}
 ZETA:        ${zetaEVM}
+ERC-20 USDC: ${erc20UsdcEVM}
 `);
 
   console.log(ansis.green`
@@ -44,6 +48,8 @@ ZetaChain Contract Addresses
 Gateway ZetaChain: ${gatewayZetaChain}
 ZETA:              ${zetaZetaChain}
 ZRC-20 ETH:        ${zrc20ETHZetaChain} 
+ZRC-20 USDC:       ${zrc20USDCZetaChain},
+Fungible module:   ${FUNGIBLE_MODULE_ADDRESS}
 `);
 
   process.on("SIGINT", () => {
