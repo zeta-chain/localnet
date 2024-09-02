@@ -229,8 +229,76 @@ const deployProtocolContracts = async (
       deployOpts
     );
 
-  (zrc20Eth as any).deposit(await deployer.getAddress(), 1_000_000_000);
-  (zrc20Usdc as any).deposit(await deployer.getAddress(), 1_000_000_000);
+  (zrc20Eth as any).deposit(
+    await deployer.getAddress(),
+    1_000_000_000,
+    deployOpts
+  );
+  (zrc20Usdc as any).deposit(
+    await deployer.getAddress(),
+    1_000_000_000,
+    deployOpts
+  );
+
+  const pairETH_ZETA = await (uniswapFactoryInstance as any).createPair(
+    zrc20Eth.target,
+    testEVMZeta.target,
+    deployOpts
+  );
+  const pairUSDC_ZETA = await (uniswapFactoryInstance as any).createPair(
+    zrc20Usdc.target,
+    testEVMZeta.target,
+    deployOpts
+  );
+
+  // Approve Router to spend tokens
+  await (zrc20Eth as any)
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+  await (testEVMZeta as any)
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+  await (zrc20Usdc as any)
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+
+  // Add Liquidity to ETH/ZETA pool
+  await (uniswapRouterInstance as any).addLiquidity(
+    zrc20Eth.target,
+    testEVMZeta.target,
+    ethers.parseEther("100"), // Amount of ZRC-20 ETH
+    ethers.parseEther("100"), // Amount of ZETA
+    ethers.parseEther("90"), // Min amount of ZRC-20 ETH to add (slippage tolerance)
+    ethers.parseEther("90"), // Min amount of ZETA to add (slippage tolerance)
+    await deployer.getAddress(),
+    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
+    deployOpts
+  );
+
+  // Add Liquidity to USDC/ZETA pool
+  await (uniswapRouterInstance as any).addLiquidity(
+    zrc20Usdc.target,
+    testEVMZeta.target,
+    ethers.parseEther("100"), // Amount of ZRC-20 USDC
+    ethers.parseEther("100"), // Amount of ZETA
+    ethers.parseEther("90"), // Min amount of ZRC-20 USDC to add (slippage tolerance)
+    ethers.parseEther("90"), // Min amount of ZETA to add (slippage tolerance)
+    await deployer.getAddress(),
+    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
+    deployOpts
+  );
 
   (systemContract as any)
     .connect(fungibleModuleSigner)
