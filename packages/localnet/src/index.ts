@@ -282,7 +282,7 @@ export const initLocalnet = async (port: number) => {
       const message = args[7];
       (tss as NonceManager).reset();
 
-      if (message != "0x") {
+      if (message !== "0x") {
         const executeTx = await protocolContracts.gatewayEVM
           .connect(tss)
           .execute(receiver, message, deployOpts);
@@ -349,6 +349,7 @@ export const initLocalnet = async (port: number) => {
         chainID: 1,
       };
       const zrc20 = protocolContracts.zrc20Eth.target;
+      // If message is not empty, execute depositAndCall
       if (message !== "0x") {
         log(
           "ZetaChain",
@@ -379,6 +380,7 @@ export const initLocalnet = async (port: number) => {
             `Event from onCrossChainCall: ${JSON.stringify(data)}`
           );
         });
+        // If message is empty, execute deposit
       } else {
         const depositTx = await protocolContracts.gatewayZEVM
           .connect(fungibleModuleSigner)
