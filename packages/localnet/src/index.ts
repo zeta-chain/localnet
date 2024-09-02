@@ -8,6 +8,8 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
+import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
+import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import ansis from "ansis";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
@@ -115,6 +117,31 @@ const deployProtocolContracts = async (
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
 
+  const uniswapFactory = new ethers.ContractFactory(
+    UniswapV2Factory.abi,
+    UniswapV2Factory.bytecode,
+    deployer
+  );
+  const uniswapRouterFactory = new ethers.ContractFactory(
+    UniswapV2Router02.abi,
+    UniswapV2Router02.bytecode,
+    deployer
+  );
+
+  const uniswapFactoryInstance = await uniswapFactory.deploy(
+    await deployer.getAddress(),
+    deployOpts
+  );
+
+  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
+    await uniswapFactoryInstance.getAddress(), // Use getAddress() to retrieve the contract address
+    await testEVMZeta.getAddress(), // Use getAddress() for the token address
+    deployOpts
+  );
+
+  const uniswapFactoryAddress = await uniswapFactoryInstance.getAddress();
+  const uniswapRouterAddress = await uniswapFactoryInstance.getAddress();
+
   // Prepare ZEVM
   // Deploy protocol contracts (gateway and system)
   const weth9Factory = new ethers.ContractFactory(
@@ -171,12 +198,6 @@ const deployProtocolContracts = async (
   const zrc20Factory = new ethers.ContractFactory(
     ZRC20.abi,
     ZRC20.bytecode,
-    deployer
-  );
-
-  const erc20Factory = new ethers.ContractFactory(
-    TestERC20.abi,
-    TestERC20.bytecode,
     deployer
   );
 
@@ -240,6 +261,10 @@ const deployProtocolContracts = async (
     zrc20Eth,
     zrc20Usdc,
     testERC20USDC,
+    uniswapFactoryInstance,
+    uniswapRouterInstance,
+    uniswapFactoryAddressZetaChain: uniswapFactoryAddress,
+    uniswapRouterAddressZetaChain: uniswapRouterAddress,
   };
 };
 
@@ -499,6 +524,8 @@ export const initLocalnet = async (port: number) => {
     zrc20ETHZetaChain: protocolContracts.zrc20Eth.target,
     zrc20USDCZetaChain: protocolContracts.zrc20Usdc.target,
     erc20UsdcEVM: protocolContracts.testERC20USDC.target,
+    uniswapFactory: protocolContracts.uniswapFactoryInstance.target,
+    uniswapRouter: protocolContracts.uniswapRouterInstance.target,
     FUNGIBLE_MODULE_ADDRESS: FUNGIBLE_MODULE_ADDRESS,
   };
 };
