@@ -261,6 +261,10 @@ const deployProtocolContracts = async (
 
   await (testERC20USDC as any)
     .connect(deployer)
+    .approve(custody.target, ethers.MaxUint256, deployOpts);
+
+  await (testERC20USDC as any)
+    .connect(deployer)
     .mint(custody.target, ethers.parseUnits("1000000", 6), deployOpts);
 
   zrc20Assets[zrc20Usdc.target as any] = testERC20USDC.target;
