@@ -231,14 +231,17 @@ const deployProtocolContracts = async (
 
   (zrc20Eth as any).deposit(
     await deployer.getAddress(),
-    1_000_000_000,
+    ethers.parseEther("1000"),
     deployOpts
   );
   (zrc20Usdc as any).deposit(
     await deployer.getAddress(),
-    1_000_000_000,
+    ethers.parseEther("1000"),
     deployOpts
   );
+  await (wzeta as any)
+    .connect(deployer)
+    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
 
   await (uniswapFactoryInstance as any).createPair(
     zrc20Eth.target,
@@ -287,6 +290,8 @@ const deployProtocolContracts = async (
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
     deployOpts
   );
+
+  console.log("adding liquidity");
 
   // Add Liquidity to USDC/ZETA pool
   await (uniswapRouterInstance as any).addLiquidity(
