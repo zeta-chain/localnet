@@ -33,13 +33,7 @@ const deployOpts = {
   gasLimit: 6721975,
 };
 
-const deployProtocolContracts = async (
-  deployer: Signer,
-  tss: Signer,
-  fungibleModuleSigner: Signer
-) => {
-  // Prepare EVM
-  // Deploy protocol contracts (gateway and custody)
+const prepareEVM = async (deployer: Signer, TSS: Signer) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -110,7 +104,18 @@ const deployProtocolContracts = async (
   await (gatewayEVM as any)
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
+  return { zetaConnector, gatewayEVM, custody, testEVMZeta };
+};
 
+const deployProtocolContracts = async (
+  deployer: Signer,
+  tss: Signer,
+  fungibleModuleSigner: Signer
+) => {
+  const { zetaConnector, gatewayEVM, custody, testEVMZeta } = await prepareEVM(
+    deployer,
+    tss
+  );
   // Prepare ZEVM
   // Deploy protocol contracts (gateway and system)
   const weth9Factory = new ethers.ContractFactory(
@@ -167,7 +172,7 @@ const deployProtocolContracts = async (
   const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
   const gatewayZEVMInitFragment =
     gatewayZEVMInterface.getFunction("initialize");
-  const gatewayZEVMInitData = gatewayEVMInterface.encodeFunctionData(
+  const gatewayZEVMInitData = gatewayZEVMInterface.encodeFunctionData(
     gatewayZEVMInitFragment as ethers.FunctionFragment,
     [wzeta.target, await deployer.getAddress()]
   );
@@ -222,7 +227,11 @@ const deployProtocolContracts = async (
       gatewayZEVM.target,
       deployOpts
     );
-
+  const testERC20Factory = new ethers.ContractFactory(
+    TestERC20.abi,
+    TestERC20.bytecode,
+    deployer
+  );
   const testERC20USDC = await testERC20Factory.deploy(
     "usdc",
     "USDC",
