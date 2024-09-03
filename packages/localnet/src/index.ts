@@ -47,12 +47,6 @@ const deployProtocolContracts = async (
   );
   const testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
 
-  const testERC20USDC = await testERC20Factory.deploy(
-    "usdc",
-    "USDC",
-    deployOpts
-  );
-
   const gatewayEVMFactory = new ethers.ContractFactory(
     GatewayEVM.abi,
     GatewayEVM.bytecode,
@@ -117,6 +111,15 @@ const deployProtocolContracts = async (
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
 
+  // Prepare ZEVM
+  // Deploy protocol contracts (gateway and system)
+  const weth9Factory = new ethers.ContractFactory(
+    WETH9.abi,
+    WETH9.bytecode,
+    deployer
+  );
+  const wzeta = await weth9Factory.deploy(deployOpts);
+
   const uniswapFactory = new ethers.ContractFactory(
     UniswapV2Factory.abi,
     UniswapV2Factory.bytecode,
@@ -134,22 +137,13 @@ const deployProtocolContracts = async (
   );
 
   const uniswapRouterInstance = await uniswapRouterFactory.deploy(
-    await uniswapFactoryInstance.getAddress(), // Use getAddress() to retrieve the contract address
-    await testEVMZeta.getAddress(), // Use getAddress() for the token address
+    await uniswapFactoryInstance.getAddress(),
+    await testEVMZeta.getAddress(),
     deployOpts
   );
 
   const uniswapFactoryAddress = await uniswapFactoryInstance.getAddress();
-  const uniswapRouterAddress = await uniswapFactoryInstance.getAddress();
-
-  // Prepare ZEVM
-  // Deploy protocol contracts (gateway and system)
-  const weth9Factory = new ethers.ContractFactory(
-    WETH9.abi,
-    WETH9.bytecode,
-    deployer
-  );
-  const wzeta = await weth9Factory.deploy(deployOpts);
+  const uniswapRouterAddress = await uniswapRouterInstance.getAddress();
 
   const systemContractFactory = new ethers.ContractFactory(
     SystemContract.abi,
@@ -157,9 +151,9 @@ const deployProtocolContracts = async (
     deployer
   );
   const systemContract: any = await systemContractFactory.deploy(
-    ethers.ZeroAddress,
-    ethers.ZeroAddress,
-    ethers.ZeroAddress,
+    wzeta.target,
+    uniswapFactoryAddress,
+    uniswapRouterAddress,
     deployOpts
   );
 
@@ -209,7 +203,7 @@ const deployProtocolContracts = async (
       18,
       1,
       1,
-      0,
+      1,
       systemContract.target,
       gatewayZEVM.target,
       deployOpts
@@ -223,11 +217,17 @@ const deployProtocolContracts = async (
       6,
       1,
       1,
-      0,
+      1,
       systemContract.target,
       gatewayZEVM.target,
       deployOpts
     );
+
+  const testERC20USDC = await testERC20Factory.deploy(
+    "usdc",
+    "USDC",
+    deployOpts
+  );
 
   (zrc20Eth as any).deposit(
     await deployer.getAddress(),
@@ -240,14 +240,15 @@ const deployProtocolContracts = async (
     deployOpts
   );
 
-  const pairETH_ZETA = await (uniswapFactoryInstance as any).createPair(
+  await (uniswapFactoryInstance as any).createPair(
     zrc20Eth.target,
-    testEVMZeta.target,
+    wzeta.target,
     deployOpts
   );
-  const pairUSDC_ZETA = await (uniswapFactoryInstance as any).createPair(
+
+  await (uniswapFactoryInstance as any).createPair(
     zrc20Usdc.target,
-    testEVMZeta.target,
+    wzeta.target,
     deployOpts
   );
 
@@ -259,7 +260,7 @@ const deployProtocolContracts = async (
       ethers.parseEther("1000"),
       deployOpts
     );
-  await (testEVMZeta as any)
+  await (wzeta as any)
     .connect(deployer)
     .approve(
       uniswapRouterInstance.getAddress(),
@@ -277,7 +278,7 @@ const deployProtocolContracts = async (
   // Add Liquidity to ETH/ZETA pool
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20Eth.target,
-    testEVMZeta.target,
+    wzeta.target,
     ethers.parseEther("100"), // Amount of ZRC-20 ETH
     ethers.parseEther("100"), // Amount of ZETA
     ethers.parseEther("90"), // Min amount of ZRC-20 ETH to add (slippage tolerance)
@@ -290,7 +291,7 @@ const deployProtocolContracts = async (
   // Add Liquidity to USDC/ZETA pool
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20Usdc.target,
-    testEVMZeta.target,
+    wzeta.target,
     ethers.parseEther("100"), // Amount of ZRC-20 USDC
     ethers.parseEther("100"), // Amount of ZETA
     ethers.parseEther("90"), // Min amount of ZRC-20 USDC to add (slippage tolerance)
@@ -594,6 +595,7 @@ export const initLocalnet = async (port: number) => {
     erc20UsdcEVM: protocolContracts.testERC20USDC.target,
     uniswapFactory: protocolContracts.uniswapFactoryInstance.target,
     uniswapRouter: protocolContracts.uniswapRouterInstance.target,
-    FUNGIBLE_MODULE_ADDRESS: FUNGIBLE_MODULE_ADDRESS,
+    fungibleModuleZetaChain: FUNGIBLE_MODULE_ADDRESS,
+    sytemContractZetaChain: protocolContracts.systemContract.target,
   };
 };

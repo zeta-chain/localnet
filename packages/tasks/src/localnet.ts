@@ -29,7 +29,8 @@ const main = async (args: any) => {
     zrc20ETHZetaChain,
     zrc20USDCZetaChain,
     erc20UsdcEVM,
-    FUNGIBLE_MODULE_ADDRESS,
+    fungibleModuleZetaChain,
+    sytemContractZetaChain,
   } = await initLocalnet(port);
 
   console.log(ansis.cyan`
@@ -48,8 +49,9 @@ ZetaChain Contract Addresses
 Gateway ZetaChain: ${gatewayZetaChain}
 ZETA:              ${zetaZetaChain}
 ZRC-20 ETH:        ${zrc20ETHZetaChain} 
-ZRC-20 USDC:       ${zrc20USDCZetaChain},
-Fungible module:   ${FUNGIBLE_MODULE_ADDRESS}
+ZRC-20 USDC:       ${zrc20USDCZetaChain}
+Fungible module:   ${fungibleModuleZetaChain}
+System contract:   ${sytemContractZetaChain}
 `);
 
   process.on("SIGINT", () => {
