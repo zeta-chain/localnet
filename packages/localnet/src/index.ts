@@ -477,8 +477,6 @@ export const initLocalnet = async (port: number) => {
           );
         } else if (coinType === 2n) {
           const erc20 = zrc20Assets[zrc20];
-          console.log("!!!", receiver, erc20, amount);
-          // Approve custody to spend ERC-20 tokens
           const tx = await protocolContracts.custody
             .connect(tss)
             .withdraw(receiver, erc20, amount, deployOpts);
