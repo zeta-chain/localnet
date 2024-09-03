@@ -14,6 +14,8 @@ import ansis from "ansis";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
+const zrc20Assets: any = {};
+
 const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
   const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
   const combinedMessage = messages.join(" ");
@@ -171,7 +173,7 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
   );
   const custody = await custodyFactory.deploy(
     gatewayEVM.target,
-    await deployer.getAddress(),
+    await tss.getAddress(),
     await deployer.getAddress(),
     deployOpts
   );
@@ -239,12 +241,13 @@ const deployProtocolContracts = async (
       "ZRC20USDC",
       6,
       1,
-      1,
+      2,
       1,
       systemContract.target,
       gatewayZEVM.target,
       deployOpts
     );
+
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -255,6 +258,15 @@ const deployProtocolContracts = async (
     "USDC",
     deployOpts
   );
+
+  await (testERC20USDC as any)
+    .connect(deployer)
+    .mint(custody.target, ethers.parseUnits("1000000", 6), deployOpts);
+
+  zrc20Assets[zrc20Usdc.target as any] = testERC20USDC.target;
+  await (custody as any)
+    .connect(tss)
+    .whitelist(testERC20USDC.target, deployOpts);
 
   (zrc20Eth as any).deposit(
     await deployer.getAddress(),
@@ -359,6 +371,7 @@ const deployProtocolContracts = async (
     systemContract,
     testEVMZeta,
     wzeta,
+    tss,
     zrc20Eth,
     zrc20Usdc,
     testERC20USDC,
@@ -366,6 +379,7 @@ const deployProtocolContracts = async (
     uniswapRouterInstance,
     uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
     uniswapRouterAddressZetaChain: await uniswapRouterInstance.getAddress(),
+    custodyEVM: custody,
   };
 };
 
@@ -435,6 +449,8 @@ export const initLocalnet = async (port: number) => {
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
     try {
       const receiver = args[2];
+      const zrc20 = args[3];
+      const amount = args[4];
       const message = args[7];
       (tss as NonceManager).reset();
 
@@ -443,6 +459,35 @@ export const initLocalnet = async (port: number) => {
           .connect(tss)
           .execute(receiver, message, deployOpts);
         await executeTx.wait();
+      } else {
+        const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+        const coinType = await zrc20Contract.COIN_TYPE();
+        if (coinType === 1n) {
+          const tx = await tss.sendTransaction({
+            to: receiver,
+            value: amount,
+            ...deployOpts,
+          });
+          await tx.wait();
+          log(
+            "EVM",
+            `Transferred ${ethers.formatEther(
+              amount
+            )} native gas tokens from TSS to ${receiver}`
+          );
+        } else if (coinType === 2n) {
+          const erc20 = zrc20Assets[zrc20];
+          console.log("!!!", receiver, erc20, amount);
+          // Approve custody to spend ERC-20 tokens
+          const tx = await protocolContracts.custody
+            .connect(tss)
+            .withdraw(receiver, erc20, amount, deployOpts);
+          await tx.wait();
+          log(
+            "EVM",
+            `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+          );
+        }
       }
     } catch (e) {
       const revertOptions = args[9];
@@ -629,5 +674,7 @@ export const initLocalnet = async (port: number) => {
     uniswapRouter: protocolContracts.uniswapRouterInstance.target,
     fungibleModuleZetaChain: FUNGIBLE_MODULE_ADDRESS,
     sytemContractZetaChain: protocolContracts.systemContract.target,
+    custodyEVM: protocolContracts.custodyEVM.target,
+    tssEVM: await tss.getAddress(),
   };
 };
