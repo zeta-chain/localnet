@@ -33,6 +33,84 @@ const deployOpts = {
   gasLimit: 6721975,
 };
 
+const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
+  const uniswapFactory = new ethers.ContractFactory(
+    UniswapV2Factory.abi,
+    UniswapV2Factory.bytecode,
+    deployer
+  );
+  const uniswapRouterFactory = new ethers.ContractFactory(
+    UniswapV2Router02.abi,
+    UniswapV2Router02.bytecode,
+    deployer
+  );
+
+  const uniswapFactoryInstance = await uniswapFactory.deploy(
+    await deployer.getAddress(),
+    deployOpts
+  );
+
+  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
+    await uniswapFactoryInstance.getAddress(),
+    await wzeta.getAddress(),
+    deployOpts
+  );
+
+  return { uniswapFactoryInstance, uniswapRouterInstance };
+};
+
+const prepareZetaChain = async (
+  deployer: Signer,
+  wzetaAddress: any,
+  uniswapFactoryAddress: string,
+  uniswapRouterAddress: string
+) => {
+  const systemContractFactory = new ethers.ContractFactory(
+    SystemContract.abi,
+    SystemContract.bytecode,
+    deployer
+  );
+  const systemContract: any = await systemContractFactory.deploy(
+    wzetaAddress,
+    uniswapFactoryAddress,
+    uniswapRouterAddress,
+    deployOpts
+  );
+
+  const gatewayZEVMFactory = new ethers.ContractFactory(
+    GatewayZEVM.abi,
+    GatewayZEVM.bytecode,
+    deployer
+  );
+  const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
+
+  const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
+  const gatewayZEVMInitFragment =
+    gatewayZEVMInterface.getFunction("initialize");
+  const gatewayZEVMInitData = gatewayZEVMInterface.encodeFunctionData(
+    gatewayZEVMInitFragment as ethers.FunctionFragment,
+    [wzetaAddress, await deployer.getAddress()]
+  );
+
+  const proxyZEVMFactory = new ethers.ContractFactory(
+    ERC1967Proxy.abi,
+    ERC1967Proxy.bytecode,
+    deployer
+  );
+  const proxyZEVM = (await proxyZEVMFactory.deploy(
+    gatewayZEVMImpl.target,
+    gatewayZEVMInitData,
+    deployOpts
+  )) as any;
+
+  const gatewayZEVM = new ethers.Contract(
+    proxyZEVM.target,
+    GatewayZEVM.abi,
+    deployer
+  );
+  return { systemContract, gatewayZEVM };
+};
+
 const prepareEVM = async (deployer: Signer, TSS: Signer) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
@@ -116,8 +194,7 @@ const deployProtocolContracts = async (
     deployer,
     tss
   );
-  // Prepare ZEVM
-  // Deploy protocol contracts (gateway and system)
+
   const weth9Factory = new ethers.ContractFactory(
     WETH9.abi,
     WETH9.bytecode,
@@ -125,73 +202,14 @@ const deployProtocolContracts = async (
   );
   const wzeta = await weth9Factory.deploy(deployOpts);
 
-  const uniswapFactory = new ethers.ContractFactory(
-    UniswapV2Factory.abi,
-    UniswapV2Factory.bytecode,
-    deployer
-  );
-  const uniswapRouterFactory = new ethers.ContractFactory(
-    UniswapV2Router02.abi,
-    UniswapV2Router02.bytecode,
-    deployer
-  );
+  const { uniswapFactoryInstance, uniswapRouterInstance } =
+    await prepareUniswap(deployer, tss, wzeta);
 
-  const uniswapFactoryInstance = await uniswapFactory.deploy(
-    await deployer.getAddress(),
-    deployOpts
-  );
-
-  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
-    await uniswapFactoryInstance.getAddress(),
-    await testEVMZeta.getAddress(),
-    deployOpts
-  );
-
-  const uniswapFactoryAddress = await uniswapFactoryInstance.getAddress();
-  const uniswapRouterAddress = await uniswapRouterInstance.getAddress();
-
-  const systemContractFactory = new ethers.ContractFactory(
-    SystemContract.abi,
-    SystemContract.bytecode,
-    deployer
-  );
-  const systemContract: any = await systemContractFactory.deploy(
+  const { systemContract, gatewayZEVM } = await prepareZetaChain(
+    deployer,
     wzeta.target,
-    uniswapFactoryAddress,
-    uniswapRouterAddress,
-    deployOpts
-  );
-
-  const gatewayZEVMFactory = new ethers.ContractFactory(
-    GatewayZEVM.abi,
-    GatewayZEVM.bytecode,
-    deployer
-  );
-  const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
-
-  const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
-  const gatewayZEVMInitFragment =
-    gatewayZEVMInterface.getFunction("initialize");
-  const gatewayZEVMInitData = gatewayZEVMInterface.encodeFunctionData(
-    gatewayZEVMInitFragment as ethers.FunctionFragment,
-    [wzeta.target, await deployer.getAddress()]
-  );
-
-  const proxyZEVMFactory = new ethers.ContractFactory(
-    ERC1967Proxy.abi,
-    ERC1967Proxy.bytecode,
-    deployer
-  );
-  const proxyZEVM = (await proxyZEVMFactory.deploy(
-    gatewayZEVMImpl.target,
-    gatewayZEVMInitData,
-    deployOpts
-  )) as any;
-
-  const gatewayZEVM = new ethers.Contract(
-    proxyZEVM.target,
-    GatewayZEVM.abi,
-    deployer
+    await uniswapFactoryInstance.getAddress(),
+    await uniswapRouterInstance.getAddress()
   );
 
   const zrc20Factory = new ethers.ContractFactory(
@@ -346,8 +364,8 @@ const deployProtocolContracts = async (
     testERC20USDC,
     uniswapFactoryInstance,
     uniswapRouterInstance,
-    uniswapFactoryAddressZetaChain: uniswapFactoryAddress,
-    uniswapRouterAddressZetaChain: uniswapRouterAddress,
+    uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
+    uniswapRouterAddressZetaChain: await uniswapRouterInstance.getAddress(),
   };
 };
 
