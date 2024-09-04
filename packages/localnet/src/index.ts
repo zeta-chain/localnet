@@ -325,25 +325,23 @@ const deployProtocolContracts = async (
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20Eth.target,
     wzeta.target,
-    ethers.parseEther("100"), // Amount of ZRC-20 ETH
-    ethers.parseEther("100"), // Amount of ZETA
-    ethers.parseEther("90"), // Min amount of ZRC-20 ETH to add (slippage tolerance)
-    ethers.parseEther("90"), // Min amount of ZETA to add (slippage tolerance)
+    ethers.parseUnits("100", await (zrc20Eth as any).decimals()), // Amount of ZRC-20 ETH
+    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
+    ethers.parseUnits("90", await (zrc20Eth as any).decimals()), // Min amount of ZRC-20 ETH to add (slippage tolerance)
+    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
     await deployer.getAddress(),
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
     deployOpts
   );
 
-  console.log("adding liquidity");
-
   // Add Liquidity to USDC/ZETA pool
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20Usdc.target,
     wzeta.target,
-    ethers.parseEther("100"), // Amount of ZRC-20 USDC
-    ethers.parseEther("100"), // Amount of ZETA
-    ethers.parseEther("90"), // Min amount of ZRC-20 USDC to add (slippage tolerance)
-    ethers.parseEther("90"), // Min amount of ZETA to add (slippage tolerance)
+    ethers.parseUnits("100", await (zrc20Usdc as any).decimals()), // Amount of ZRC-20 USDC
+    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
+    ethers.parseUnits("90", await (zrc20Usdc as any).decimals()), // Min amount of ZRC-20 USDC to add (slippage tolerance)
+    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
     await deployer.getAddress(),
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
     deployOpts
