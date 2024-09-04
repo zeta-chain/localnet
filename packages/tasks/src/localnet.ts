@@ -21,29 +21,29 @@ const main = async (args: any) => {
 
   await waitOn({ resources: [`tcp:127.0.0.1:${port}`] });
 
-  const {
-    gatewayEVM,
-    gatewayZetaChain,
-    zetaEVM,
-    zetaZetaChain,
-    zrc20ETHZetaChain,
-  } = await initLocalnet(port);
+  const addr = await initLocalnet(port);
 
   console.log(ansis.cyan`
 EVM Contract Addresses
 ======================
 
-Gateway EVM: ${gatewayEVM}
-ZETA:        ${zetaEVM}
+Gateway EVM:    ${addr.gatewayEVM}
+ERC-20 custody: ${addr.custodyEVM}
+TSS:            ${addr.tssEVM}
+ZETA:           ${addr.zetaEVM}
+ERC-20 USDC:    ${addr.erc20UsdcEVM}
 `);
 
   console.log(ansis.green`
 ZetaChain Contract Addresses
 ============================
 
-Gateway ZetaChain: ${gatewayZetaChain}
-ZETA:              ${zetaZetaChain}
-ZRC-20 ETH:        ${zrc20ETHZetaChain} 
+Gateway ZetaChain: ${addr.gatewayZetaChain}
+ZETA:              ${addr.zetaZetaChain}
+ZRC-20 ETH:        ${addr.zrc20ETHZetaChain} 
+ZRC-20 USDC:       ${addr.zrc20USDCZetaChain}
+Fungible module:   ${addr.fungibleModuleZetaChain}
+System contract:   ${addr.sytemContractZetaChain}
 `);
 
   process.on("SIGINT", () => {

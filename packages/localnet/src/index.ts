@@ -8,9 +8,13 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
+import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
+import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import ansis from "ansis";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
+
+const zrc20Assets: any = {};
 
 const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
   const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
@@ -31,13 +35,85 @@ const deployOpts = {
   gasLimit: 6721975,
 };
 
-const deployProtocolContracts = async (
+const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
+  const uniswapFactory = new ethers.ContractFactory(
+    UniswapV2Factory.abi,
+    UniswapV2Factory.bytecode,
+    deployer
+  );
+  const uniswapRouterFactory = new ethers.ContractFactory(
+    UniswapV2Router02.abi,
+    UniswapV2Router02.bytecode,
+    deployer
+  );
+
+  const uniswapFactoryInstance = await uniswapFactory.deploy(
+    await deployer.getAddress(),
+    deployOpts
+  );
+
+  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
+    await uniswapFactoryInstance.getAddress(),
+    await wzeta.getAddress(),
+    deployOpts
+  );
+
+  return { uniswapFactoryInstance, uniswapRouterInstance };
+};
+
+const prepareZetaChain = async (
   deployer: Signer,
-  tss: Signer,
-  fungibleModuleSigner: Signer
+  wzetaAddress: any,
+  uniswapFactoryAddress: string,
+  uniswapRouterAddress: string
 ) => {
-  // Prepare EVM
-  // Deploy protocol contracts (gateway and custody)
+  const systemContractFactory = new ethers.ContractFactory(
+    SystemContract.abi,
+    SystemContract.bytecode,
+    deployer
+  );
+  const systemContract: any = await systemContractFactory.deploy(
+    wzetaAddress,
+    uniswapFactoryAddress,
+    uniswapRouterAddress,
+    deployOpts
+  );
+
+  const gatewayZEVMFactory = new ethers.ContractFactory(
+    GatewayZEVM.abi,
+    GatewayZEVM.bytecode,
+    deployer
+  );
+  const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
+
+  const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
+  const gatewayZEVMInitFragment =
+    gatewayZEVMInterface.getFunction("initialize");
+  const gatewayZEVMInitData = gatewayZEVMInterface.encodeFunctionData(
+    gatewayZEVMInitFragment as ethers.FunctionFragment,
+    [wzetaAddress, await deployer.getAddress()]
+  );
+
+  const proxyZEVMFactory = new ethers.ContractFactory(
+    ERC1967Proxy.abi,
+    ERC1967Proxy.bytecode,
+    deployer
+  );
+  const proxyZEVM = (await proxyZEVMFactory.deploy(
+    gatewayZEVMImpl.target,
+    gatewayZEVMInitData,
+    deployOpts
+  )) as any;
+
+  const gatewayZEVM = new ethers.Contract(
+    proxyZEVM.target,
+    GatewayZEVM.abi,
+    deployer
+  );
+  return { systemContract, gatewayZEVM };
+};
+
+const prepareEVM = async (deployer: Signer, TSS: Signer) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -97,7 +173,7 @@ const deployProtocolContracts = async (
   );
   const custody = await custodyFactory.deploy(
     gatewayEVM.target,
-    await deployer.getAddress(),
+    await tss.getAddress(),
     await deployer.getAddress(),
     deployOpts
   );
@@ -108,9 +184,19 @@ const deployProtocolContracts = async (
   await (gatewayEVM as any)
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
+  return { zetaConnector, gatewayEVM, custody, testEVMZeta };
+};
 
-  // Prepare ZEVM
-  // Deploy protocol contracts (gateway and system)
+const deployProtocolContracts = async (
+  deployer: Signer,
+  tss: Signer,
+  fungibleModuleSigner: Signer
+) => {
+  const { zetaConnector, gatewayEVM, custody, testEVMZeta } = await prepareEVM(
+    deployer,
+    tss
+  );
+
   const weth9Factory = new ethers.ContractFactory(
     WETH9.abi,
     WETH9.bytecode,
@@ -118,48 +204,14 @@ const deployProtocolContracts = async (
   );
   const wzeta = await weth9Factory.deploy(deployOpts);
 
-  const systemContractFactory = new ethers.ContractFactory(
-    SystemContract.abi,
-    SystemContract.bytecode,
-    deployer
-  );
-  const systemContract: any = await systemContractFactory.deploy(
-    ethers.ZeroAddress,
-    ethers.ZeroAddress,
-    ethers.ZeroAddress,
-    deployOpts
-  );
+  const { uniswapFactoryInstance, uniswapRouterInstance } =
+    await prepareUniswap(deployer, tss, wzeta);
 
-  const gatewayZEVMFactory = new ethers.ContractFactory(
-    GatewayZEVM.abi,
-    GatewayZEVM.bytecode,
-    deployer
-  );
-  const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
-
-  const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
-  const gatewayZEVMInitFragment =
-    gatewayZEVMInterface.getFunction("initialize");
-  const gatewayZEVMInitData = gatewayEVMInterface.encodeFunctionData(
-    gatewayZEVMInitFragment as ethers.FunctionFragment,
-    [wzeta.target, await deployer.getAddress()]
-  );
-
-  const proxyZEVMFactory = new ethers.ContractFactory(
-    ERC1967Proxy.abi,
-    ERC1967Proxy.bytecode,
-    deployer
-  );
-  const proxyZEVM = (await proxyZEVMFactory.deploy(
-    gatewayZEVMImpl.target,
-    gatewayZEVMInitData,
-    deployOpts
-  )) as any;
-
-  const gatewayZEVM = new ethers.Contract(
-    proxyZEVM.target,
-    GatewayZEVM.abi,
-    deployer
+  const { systemContract, gatewayZEVM } = await prepareZetaChain(
+    deployer,
+    wzeta.target,
+    await uniswapFactoryInstance.getAddress(),
+    await uniswapRouterInstance.getAddress()
   );
 
   const zrc20Factory = new ethers.ContractFactory(
@@ -167,6 +219,7 @@ const deployProtocolContracts = async (
     ZRC20.bytecode,
     deployer
   );
+
   const zrc20Eth = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
@@ -175,13 +228,124 @@ const deployProtocolContracts = async (
       18,
       1,
       1,
-      0,
+      1,
       systemContract.target,
       gatewayZEVM.target,
       deployOpts
     );
 
-  (zrc20Eth as any).deposit(await deployer.getAddress(), 1_000_000_000);
+  const zrc20Usdc = await zrc20Factory
+    .connect(fungibleModuleSigner)
+    .deploy(
+      "ZRC-20 USDC",
+      "ZRC20USDC",
+      6,
+      1,
+      2,
+      1,
+      systemContract.target,
+      gatewayZEVM.target,
+      deployOpts
+    );
+
+  const testERC20Factory = new ethers.ContractFactory(
+    TestERC20.abi,
+    TestERC20.bytecode,
+    deployer
+  );
+  const testERC20USDC = await testERC20Factory.deploy(
+    "usdc",
+    "USDC",
+    deployOpts
+  );
+
+  await (testERC20USDC as any)
+    .connect(deployer)
+    .approve(custody.target, ethers.MaxUint256, deployOpts);
+
+  await (testERC20USDC as any)
+    .connect(deployer)
+    .mint(custody.target, ethers.parseUnits("1000000", 6), deployOpts);
+
+  zrc20Assets[zrc20Usdc.target as any] = testERC20USDC.target;
+  await (custody as any)
+    .connect(tss)
+    .whitelist(testERC20USDC.target, deployOpts);
+
+  (zrc20Eth as any).deposit(
+    await deployer.getAddress(),
+    ethers.parseEther("1000"),
+    deployOpts
+  );
+  (zrc20Usdc as any).deposit(
+    await deployer.getAddress(),
+    ethers.parseEther("1000"),
+    deployOpts
+  );
+  await (wzeta as any)
+    .connect(deployer)
+    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
+
+  await (uniswapFactoryInstance as any).createPair(
+    zrc20Eth.target,
+    wzeta.target,
+    deployOpts
+  );
+
+  await (uniswapFactoryInstance as any).createPair(
+    zrc20Usdc.target,
+    wzeta.target,
+    deployOpts
+  );
+
+  // Approve Router to spend tokens
+  await (zrc20Eth as any)
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+  await (wzeta as any)
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+  await (zrc20Usdc as any)
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+
+  // Add Liquidity to ETH/ZETA pool
+  await (uniswapRouterInstance as any).addLiquidity(
+    zrc20Eth.target,
+    wzeta.target,
+    ethers.parseUnits("100", await (zrc20Eth as any).decimals()), // Amount of ZRC-20 ETH
+    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
+    ethers.parseUnits("90", await (zrc20Eth as any).decimals()), // Min amount of ZRC-20 ETH to add (slippage tolerance)
+    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
+    await deployer.getAddress(),
+    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
+    deployOpts
+  );
+
+  // Add Liquidity to USDC/ZETA pool
+  await (uniswapRouterInstance as any).addLiquidity(
+    zrc20Usdc.target,
+    wzeta.target,
+    ethers.parseUnits("100", await (zrc20Usdc as any).decimals()), // Amount of ZRC-20 USDC
+    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
+    ethers.parseUnits("90", await (zrc20Usdc as any).decimals()), // Min amount of ZRC-20 USDC to add (slippage tolerance)
+    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
+    await deployer.getAddress(),
+    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
+    deployOpts
+  );
 
   (systemContract as any)
     .connect(fungibleModuleSigner)
@@ -209,7 +373,15 @@ const deployProtocolContracts = async (
     systemContract,
     testEVMZeta,
     wzeta,
+    tss,
     zrc20Eth,
+    zrc20Usdc,
+    testERC20USDC,
+    uniswapFactoryInstance,
+    uniswapRouterInstance,
+    uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
+    uniswapRouterAddressZetaChain: await uniswapRouterInstance.getAddress(),
+    custodyEVM: custody,
   };
 };
 
@@ -279,6 +451,8 @@ export const initLocalnet = async (port: number) => {
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
     try {
       const receiver = args[2];
+      const zrc20 = args[3];
+      const amount = args[4];
       const message = args[7];
       (tss as NonceManager).reset();
 
@@ -287,6 +461,33 @@ export const initLocalnet = async (port: number) => {
           .connect(tss)
           .execute(receiver, message, deployOpts);
         await executeTx.wait();
+      } else {
+        const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+        const coinType = await zrc20Contract.COIN_TYPE();
+        if (coinType === 1n) {
+          const tx = await tss.sendTransaction({
+            to: receiver,
+            value: amount,
+            ...deployOpts,
+          });
+          await tx.wait();
+          log(
+            "EVM",
+            `Transferred ${ethers.formatEther(
+              amount
+            )} native gas tokens from TSS to ${receiver}`
+          );
+        } else if (coinType === 2n) {
+          const erc20 = zrc20Assets[zrc20];
+          const tx = await protocolContracts.custody
+            .connect(tss)
+            .withdraw(receiver, erc20, amount, deployOpts);
+          await tx.wait();
+          log(
+            "EVM",
+            `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+          );
+        }
       }
     } catch (e) {
       const revertOptions = args[9];
@@ -467,5 +668,13 @@ export const initLocalnet = async (port: number) => {
     zetaEVM: protocolContracts.testEVMZeta.target,
     zetaZetaChain: protocolContracts.wzeta.target,
     zrc20ETHZetaChain: protocolContracts.zrc20Eth.target,
+    zrc20USDCZetaChain: protocolContracts.zrc20Usdc.target,
+    erc20UsdcEVM: protocolContracts.testERC20USDC.target,
+    uniswapFactory: protocolContracts.uniswapFactoryInstance.target,
+    uniswapRouter: protocolContracts.uniswapRouterInstance.target,
+    fungibleModuleZetaChain: FUNGIBLE_MODULE_ADDRESS,
+    sytemContractZetaChain: protocolContracts.systemContract.target,
+    custodyEVM: protocolContracts.custodyEVM.target,
+    tssEVM: await tss.getAddress(),
   };
 };
