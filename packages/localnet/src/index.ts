@@ -239,7 +239,7 @@ const deployProtocolContracts = async (
     .deploy(
       "ZRC-20 USDC",
       "ZRC20USDC",
-      6,
+      18,
       1,
       2,
       1,
@@ -259,15 +259,34 @@ const deployProtocolContracts = async (
     deployOpts
   );
 
+  const testERC20USDCdecimals = await (testERC20USDC as any)
+    .connect(deployer)
+    .decimals();
+
   await (testERC20USDC as any)
     .connect(deployer)
     .approve(custody.target, ethers.MaxUint256, deployOpts);
 
   await (testERC20USDC as any)
     .connect(deployer)
-    .mint(custody.target, ethers.parseUnits("1000000", 6), deployOpts);
+    .mint(
+      custody.target,
+      ethers.parseUnits("1000000", testERC20USDCdecimals),
+      deployOpts
+    );
+
+  await (testERC20USDC as any)
+    .connect(deployer)
+    .mint(
+      await deployer.getAddress(),
+      ethers.parseUnits("1000000", testERC20USDCdecimals),
+      deployOpts
+    );
 
   zrc20Assets[zrc20Usdc.target as any] = testERC20USDC.target;
+  zrc20Assets[zrc20Eth.target as any] =
+    "0x0000000000000000000000000000000000000000";
+
   await (custody as any)
     .connect(tss)
     .whitelist(testERC20USDC.target, deployOpts);
@@ -543,13 +562,17 @@ export const initLocalnet = async (port: number) => {
     try {
       const receiver = args[1];
       const amount = args[2];
+      const asset = args[3];
       const message = args[4];
+      const zrc20 = Object.keys(zrc20Assets).find(
+        (key) => zrc20Assets[key] === asset
+      );
+      console.log("zrc20", zrc20);
       const context = {
         origin: protocolContracts.gatewayZEVM.target,
         sender: await fungibleModuleSigner.getAddress(),
         chainID: 1,
       };
-      const zrc20 = protocolContracts.zrc20Eth.target;
       // If message is not empty, execute depositAndCall
       if (message !== "0x") {
         log(
@@ -558,7 +581,7 @@ export const initLocalnet = async (port: number) => {
             context
           )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
         );
-        const depositAndCallTx = await (protocolContracts.gatewayZEVM as any)
+        const tx = await (protocolContracts.gatewayZEVM as any)
           .connect(fungibleModuleSigner)
           .depositAndCall(
             context,
@@ -569,7 +592,7 @@ export const initLocalnet = async (port: number) => {
             deployOpts
           );
 
-        await depositAndCallTx.wait();
+        await tx.wait();
         const logs = await provider.getLogs({
           address: receiver,
           fromBlock: "latest",
@@ -583,11 +606,11 @@ export const initLocalnet = async (port: number) => {
         });
         // If message is empty, execute deposit
       } else {
-        const depositTx = await protocolContracts.gatewayZEVM
+        const tx = await protocolContracts.gatewayZEVM
           .connect(fungibleModuleSigner)
           .deposit(zrc20, amount, receiver, deployOpts);
 
-        await depositTx.wait();
+        await tx.wait();
       }
     } catch (e: any) {
       logErr("ZetaChain", `Error depositing: ${e}`);
