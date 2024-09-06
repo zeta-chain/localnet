@@ -468,6 +468,7 @@ export const initLocalnet = async (port: number) => {
 
   // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
+    log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
     try {
       const receiver = args[2];
       const zrc20 = args[3];
@@ -476,10 +477,20 @@ export const initLocalnet = async (port: number) => {
       (tss as NonceManager).reset();
 
       if (message !== "0x") {
+        log("EVM", `Calling ${receiver} with message ${message}`);
         const executeTx = await protocolContracts.gatewayEVM
           .connect(tss)
           .execute(receiver, message, deployOpts);
         await executeTx.wait();
+
+        const logs = await provider.getLogs({
+          address: receiver,
+          fromBlock: "latest",
+        });
+
+        logs.forEach((data) => {
+          log("EVM", `Event from contract: ${JSON.stringify(data)}`);
+        });
       } else {
         const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
         const coinType = await zrc20Contract.COIN_TYPE();
