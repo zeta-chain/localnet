@@ -609,8 +609,11 @@ export const initLocalnet = async (port: number) => {
         const tx = await protocolContracts.gatewayZEVM
           .connect(fungibleModuleSigner)
           .deposit(zrc20, amount, receiver, deployOpts);
-
         await tx.wait();
+        log(
+          "ZetaChain",
+          `Deposited ${amount} of ${zrc20} tokens to ${receiver} address`
+        );
       }
     } catch (e: any) {
       logErr("ZetaChain", `Error depositing: ${e}`);
