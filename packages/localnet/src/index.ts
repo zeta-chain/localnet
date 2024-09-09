@@ -10,30 +10,20 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import ansis from "ansis";
+import { log, logErr } from "./log";
+import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
+import { handleOnEVMCalled } from "./handleOnEVMCalled";
+import { deployOpts } from "./deployOpts";
+import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
+import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 const foreignCoins: any[] = [];
 
-const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
-  const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
-  const combinedMessage = messages.join(" ");
-  console.log(color(`[${ansis.bold(chain)}]: ${combinedMessage}`));
-};
-
-const logErr = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
-  const combinedMessage = messages.join(" ");
-  log(chain, ansis.red(combinedMessage));
-};
-
 let protocolContracts: any;
 let deployer: Signer;
 let tss: Signer;
-const deployOpts = {
-  gasPrice: 10000000000,
-  gasLimit: 6721975,
-};
 
 const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
   const uniswapFactory = new ethers.ContractFactory(
@@ -461,284 +451,43 @@ export const initLocalnet = async (port: number) => {
   );
 
   // Listen to contracts events
-  // event Called(address indexed sender, address indexed zrc20, bytes receiver, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    log("ZetaChain", "Gateway: 'Called' event emitted");
-    try {
-      (tss as NonceManager).reset();
-
-      const receiver = args[2];
-      const message = args[3];
-      log("EVM", `Calling ${receiver} with message ${message}`);
-      const executeTx = await protocolContracts.gatewayEVM
-        .connect(tss)
-        .execute(receiver, message, deployOpts);
-
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-
-      logs.forEach((data) => {
-        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
-      });
-      await executeTx.wait();
-    } catch (e) {
-      const revertOptions = args[5];
-      await handleOnRevertZEVM(revertOptions, e);
-    }
+    handleOnZEVMCalled({ tss, provider, protocolContracts, args });
   });
 
-  // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
-    try {
-      const receiver = args[2];
-      const zrc20 = args[3];
-      const amount = args[4];
-      const message = args[7];
-      (tss as NonceManager).reset();
-      if (message !== "0x") {
-        log("EVM", `Calling ${receiver} with message ${message}`);
-        const executeTx = await protocolContracts.gatewayEVM
-          .connect(tss)
-          .execute(receiver, message, deployOpts);
-        await executeTx.wait();
-
-        const logs = await provider.getLogs({
-          address: receiver,
-          fromBlock: "latest",
-        });
-
-        logs.forEach((data) => {
-          log("EVM", `Event from contract: ${JSON.stringify(data)}`);
-        });
-      } else {
-        const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
-        const coinType = await zrc20Contract.COIN_TYPE();
-        if (coinType === 1n) {
-          const tx = await tss.sendTransaction({
-            to: receiver,
-            value: amount,
-            ...deployOpts,
-          });
-          await tx.wait();
-          log(
-            "EVM",
-            `Transferred ${ethers.formatEther(
-              amount
-            )} native gas tokens from TSS to ${receiver}`
-          );
-        } else if (coinType === 2n) {
-          const foreignCoin = foreignCoins.find(
-            (coin) => coin.zrc20_contract_address === zrc20
-          );
-
-          if (!foreignCoin) {
-            logErr("EVM", `Foreign coin not found for ZRC20 address: ${zrc20}`);
-            return;
-          }
-
-          const erc20 = foreignCoin.asset;
-          const tx = await protocolContracts.custody
-            .connect(tss)
-            .withdraw(receiver, erc20, amount, deployOpts);
-          await tx.wait();
-          log(
-            "EVM",
-            `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-          );
-        }
-      }
-    } catch (e) {
-      const revertOptions = args[9];
-      await handleOnRevertZEVM(revertOptions, e);
-    }
+    handleOnZEVMWithdrawn({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      foreignCoins,
+    });
   });
 
-  // event Called(address indexed sender, address indexed receiver, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    log("EVM", "Gateway: 'Called' event emitted");
-    try {
-      const receiver = args[1];
-      const message = args[2];
-
-      (deployer as NonceManager).reset();
-      const context = {
-        origin: protocolContracts.gatewayZEVM.target,
-        sender: await fungibleModuleSigner.getAddress(),
-        chainID: 1,
-      };
-      const zrc20 = protocolContracts.zrc20Eth.target;
-      log(
-        "ZetaChain",
-        `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
-          context
-        )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
-      );
-      const executeTx = await protocolContracts.gatewayZEVM
-        .connect(fungibleModuleSigner)
-        .execute(context, zrc20, 0, receiver, message, deployOpts);
-      await executeTx.wait();
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-
-      logs.forEach((data) => {
-        log(
-          "ZetaChain",
-          `Event from onCrossChainCall: ${JSON.stringify(data)}`
-        );
-      });
-    } catch (e: any) {
-      logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
-      const revertOptions = args[3];
-      await handleOnRevertEVM(revertOptions, e);
-    }
+    handleOnEVMCalled({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      fungibleModuleSigner,
+    });
   });
 
-  // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    log("EVM", "Gateway: 'Deposited' event emitted");
-    try {
-      const receiver = args[1];
-      const amount = args[2];
-      const asset = args[3];
-      const message = args[4];
-
-      let foreignCoin;
-      if (asset === ethers.ZeroAddress) {
-        foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
-      } else {
-        foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
-      }
-
-      if (!foreignCoin) {
-        logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
-        return;
-      }
-
-      const zrc20 = foreignCoin.zrc20_contract_address;
-
-      const context = {
-        origin: protocolContracts.gatewayZEVM.target,
-        sender: await fungibleModuleSigner.getAddress(),
-        chainID: 1,
-      };
-
-      // If message is not empty, execute depositAndCall
-      if (message !== "0x") {
-        log(
-          "ZetaChain",
-          `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
-            context
-          )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
-        );
-
-        const tx = await protocolContracts.gatewayZEVM
-          .connect(fungibleModuleSigner)
-          .depositAndCall(
-            context,
-            zrc20,
-            amount,
-            receiver,
-            message,
-            deployOpts
-          );
-
-        await tx.wait();
-        const logs = await provider.getLogs({
-          address: receiver,
-          fromBlock: "latest",
-        });
-
-        logs.forEach((data) => {
-          log(
-            "ZetaChain",
-            `Event from onCrossChainCall: ${JSON.stringify(data)}`
-          );
-        });
-      } else {
-        const tx = await protocolContracts.gatewayZEVM
-          .connect(fungibleModuleSigner)
-          .deposit(zrc20, amount, receiver, deployOpts);
-        await tx.wait();
-        log(
-          "ZetaChain",
-          `Deposited ${amount} of ${zrc20} tokens to ${receiver}`
-        );
-      }
-    } catch (e: any) {
-      logErr("ZetaChain", `Error depositing: ${e}`);
-      const revertOptions = args[5];
-      await handleOnRevertEVM(revertOptions, e);
-    }
+    handleOnEVMDeposited({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      fungibleModuleSigner,
+      foreignCoins,
+    });
   });
-
-  const handleOnRevertEVM = async (revertOptions: any, err: any) => {
-    const callOnRevert = revertOptions[1];
-    const revertAddress = revertOptions[0];
-    const revertMessage = revertOptions[3];
-    const revertContext = {
-      asset: ethers.ZeroAddress,
-      amount: 0,
-      revertMessage,
-    };
-    if (callOnRevert) {
-      try {
-        log(
-          "EVM",
-          `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
-            revertContext
-          )})`
-        );
-        (tss as NonceManager).reset();
-        const tx = await protocolContracts.gatewayEVM
-          .connect(tss)
-          .executeRevert(revertAddress, "0x", revertContext, deployOpts);
-        await tx.wait();
-        log("EVM", "Gateway: successfully called onRevert");
-        const logs = await provider.getLogs({
-          address: revertAddress,
-          fromBlock: "latest",
-        });
-
-        logs.forEach((data) => {
-          log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
-        });
-      } catch (e: any) {
-        logErr("EVM", `Gateway: Call onRevert failed: ${e}`);
-      }
-    } else {
-      logErr("EVM", `Tx reverted without callOnRevert: ${err}`);
-    }
-  };
-
-  const handleOnRevertZEVM = async (revertOptions: any, err: any) => {
-    const callOnRevert = revertOptions[1];
-    const revertAddress = revertOptions[0];
-    const revertMessage = revertOptions[3];
-    const revertContext = {
-      asset: ethers.ZeroAddress,
-      amount: 0,
-      revertMessage,
-    };
-    if (callOnRevert) {
-      log("ZetaChain", "Gateway: calling executeRevert");
-      try {
-        (tss as NonceManager).reset();
-        await protocolContracts.gatewayZEVM
-          .connect(tss)
-          .executeRevert(revertAddress, revertContext, deployOpts);
-        log("ZetaChain", "Gateway: Call onRevert success");
-      } catch (e) {
-        log("ZetaChain", `Gateway: Call onRevert failed: ${e}`);
-      }
-    } else {
-      log("ZetaChain", "Tx reverted without callOnRevert: ", err);
-    }
-  };
 
   process.stdin.resume();
 
