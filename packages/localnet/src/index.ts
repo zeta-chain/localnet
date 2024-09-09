@@ -14,7 +14,7 @@ import ansis from "ansis";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
-const zrc20Assets: any = {};
+const foreignCoins: any[] = [];
 
 const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
   const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
@@ -234,6 +234,19 @@ const deployProtocolContracts = async (
       deployOpts
     );
 
+  foreignCoins.push({
+    zrc20_contract_address: zrc20Eth.target,
+    asset: "",
+    foreign_chain_id: "1",
+    decimals: 18,
+    name: "ZetaChain ZRC-20 ETH",
+    symbol: "ETH.ETH",
+    coin_type: "Gas",
+    gas_limit: null,
+    paused: null,
+    liquidity_cap: null,
+  });
+
   const zrc20Usdc = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
@@ -253,11 +266,25 @@ const deployProtocolContracts = async (
     TestERC20.bytecode,
     deployer
   );
+
   const testERC20USDC = await testERC20Factory.deploy(
     "usdc",
     "USDC",
     deployOpts
   );
+
+  foreignCoins.push({
+    zrc20_contract_address: zrc20Usdc.target,
+    asset: testERC20USDC.target,
+    foreign_chain_id: "1",
+    decimals: 18,
+    name: "ZetaChain ZRC-20 ETH",
+    symbol: "ETH.ETH",
+    coin_type: "Gas",
+    gas_limit: null,
+    paused: null,
+    liquidity_cap: null,
+  });
 
   const testERC20USDCdecimals = await (testERC20USDC as any)
     .connect(deployer)
@@ -282,10 +309,6 @@ const deployProtocolContracts = async (
       ethers.parseUnits("1000000", testERC20USDCdecimals),
       deployOpts
     );
-
-  zrc20Assets[zrc20Usdc.target as any] = testERC20USDC.target;
-  zrc20Assets[zrc20Eth.target as any] =
-    "0x0000000000000000000000000000000000000000";
 
   await (custody as any)
     .connect(tss)
@@ -508,7 +531,16 @@ export const initLocalnet = async (port: number) => {
             )} native gas tokens from TSS to ${receiver}`
           );
         } else if (coinType === 2n) {
-          const erc20 = zrc20Assets[zrc20];
+          const foreignCoin = foreignCoins.find(
+            (coin) => coin.zrc20_contract_address === zrc20
+          );
+
+          if (!foreignCoin) {
+            logErr("EVM", `Foreign coin not found for ZRC20 address: ${zrc20}`);
+            return;
+          }
+
+          const erc20 = foreignCoin.asset;
           const tx = await protocolContracts.custody
             .connect(tss)
             .withdraw(receiver, erc20, amount, deployOpts);
@@ -575,15 +607,28 @@ export const initLocalnet = async (port: number) => {
       const amount = args[2];
       const asset = args[3];
       const message = args[4];
-      const zrc20 = Object.keys(zrc20Assets).find(
-        (key) => zrc20Assets[key] === asset
-      );
+      console.log(args);
+      let foreignCoin;
+      if (asset === ethers.ZeroAddress) {
+        foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
+      } else {
+        foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
+      }
+
+      if (!foreignCoin) {
+        logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+        return;
+      }
+
+      const zrc20 = foreignCoin.zrc20_contract_address;
       console.log("zrc20", zrc20);
+
       const context = {
         origin: protocolContracts.gatewayZEVM.target,
         sender: await fungibleModuleSigner.getAddress(),
         chainID: 1,
       };
+
       // If message is not empty, execute depositAndCall
       if (message !== "0x") {
         log(
@@ -592,7 +637,8 @@ export const initLocalnet = async (port: number) => {
             context
           )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
         );
-        const tx = await (protocolContracts.gatewayZEVM as any)
+
+        const tx = await protocolContracts.gatewayZEVM
           .connect(fungibleModuleSigner)
           .depositAndCall(
             context,
@@ -615,7 +661,6 @@ export const initLocalnet = async (port: number) => {
             `Event from onCrossChainCall: ${JSON.stringify(data)}`
           );
         });
-        // If message is empty, execute deposit
       } else {
         const tx = await protocolContracts.gatewayZEVM
           .connect(fungibleModuleSigner)
@@ -623,7 +668,7 @@ export const initLocalnet = async (port: number) => {
         await tx.wait();
         log(
           "ZetaChain",
-          `Deposited ${amount} of ${zrc20} tokens to ${receiver} address`
+          `Deposited ${amount} of ${zrc20} tokens to ${receiver}`
         );
       }
     } catch (e: any) {
