@@ -204,39 +204,6 @@ const deployProtocolContracts = async (
     await uniswapRouterInstance.getAddress()
   );
 
-  const zrc20Factory = new ethers.ContractFactory(
-    ZRC20.abi,
-    ZRC20.bytecode,
-    deployer
-  );
-
-  const zrc20Eth = await zrc20Factory
-    .connect(fungibleModuleSigner)
-    .deploy(
-      "ZRC-20 ETH",
-      "ZRC20ETH",
-      18,
-      1,
-      1,
-      1,
-      systemContract.target,
-      gatewayZEVM.target,
-      deployOpts
-    );
-
-  foreignCoins.push({
-    zrc20_contract_address: zrc20Eth.target,
-    asset: "",
-    foreign_chain_id: "1",
-    decimals: 18,
-    name: "ZetaChain ZRC-20 ETH",
-    symbol: "ETH.ETH",
-    coin_type: "Gas",
-    gas_limit: null,
-    paused: null,
-    liquidity_cap: null,
-  });
-
   createToken({
     fungibleModuleSigner,
     deployer,
@@ -252,53 +219,20 @@ const deployProtocolContracts = async (
     isGasToken: false,
   });
 
-  (zrc20Eth as any).deposit(
-    await deployer.getAddress(),
-    ethers.parseEther("1000"),
-    deployOpts
-  );
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
-
-  await (uniswapFactoryInstance as any).createPair(
-    zrc20Eth.target,
-    wzeta.target,
-    deployOpts
-  );
-
-  await (zrc20Eth as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
-      deployOpts
-    );
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
-      deployOpts
-    );
-
-  // Add Liquidity to ETH/ZETA pool
-  await (uniswapRouterInstance as any).addLiquidity(
-    zrc20Eth.target,
-    wzeta.target,
-    ethers.parseUnits("100", await (zrc20Eth as any).decimals()), // Amount of ZRC-20 ETH
-    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-    ethers.parseUnits("90", await (zrc20Eth as any).decimals()), // Min amount of ZRC-20 ETH to add (slippage tolerance)
-    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
-    await deployer.getAddress(),
-    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
-    deployOpts
-  );
-
-  (systemContract as any)
-    .connect(fungibleModuleSigner)
-    .setGasCoinZRC20(1, zrc20Eth.target);
-  (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
+  createToken({
+    fungibleModuleSigner,
+    deployer,
+    systemContract,
+    gatewayZEVM,
+    foreignCoins,
+    custody,
+    tss,
+    uniswapFactoryInstance,
+    wzeta,
+    uniswapRouterInstance,
+    symbol: "ETH",
+    isGasToken: true,
+  });
 
   await (wzeta as any)
     .connect(fungibleModuleSigner)
@@ -322,7 +256,7 @@ const deployProtocolContracts = async (
     testEVMZeta,
     wzeta,
     tss,
-    zrc20Eth,
+    zrc20Eth: "",
     zrc20Usdc: "",
     testERC20USDC: "",
     uniswapFactoryInstance,

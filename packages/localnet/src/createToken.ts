@@ -31,30 +31,7 @@ export const createToken = async ({
   isGasToken: boolean;
 }) => {
   let erc20;
-  if (!isGasToken) {
-    const erc20Factory = new ethers.ContractFactory(
-      TestERC20.abi,
-      TestERC20.bytecode,
-      deployer
-    );
-    erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
-    const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
-    await (erc20 as any)
-      .connect(deployer)
-      .mint(
-        custody.target,
-        ethers.parseUnits("1000000", erc20Decimals),
-        deployOpts
-      );
-    await (erc20 as any)
-      .connect(deployer)
-      .mint(
-        await deployer.getAddress(),
-        ethers.parseUnits("1000000", erc20Decimals),
-        deployOpts
-      );
-    await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
-  }
+
   const zrc20Factory = new ethers.ContractFactory(
     ZRC20.abi,
     ZRC20.bytecode,
@@ -73,6 +50,43 @@ export const createToken = async ({
       gatewayZEVM.target,
       deployOpts
     );
+
+  if (!isGasToken) {
+    const erc20Factory = new ethers.ContractFactory(
+      TestERC20.abi,
+      TestERC20.bytecode,
+      deployer
+    );
+    erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
+    const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
+
+    await (erc20 as any)
+      .connect(deployer)
+      .approve(custody.target, ethers.MaxUint256, deployOpts);
+
+    await (erc20 as any)
+      .connect(deployer)
+      .mint(
+        custody.target,
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      );
+    await (erc20 as any)
+      .connect(deployer)
+      .mint(
+        await deployer.getAddress(),
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      );
+    await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
+
+    (systemContract as any)
+      .connect(fungibleModuleSigner)
+      .setGasCoinZRC20(1, zrc20.target);
+    (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
+
+    console.log("!!!", "erc20", symbol, erc20.target);
+  }
 
   foreignCoins.push({
     zrc20_contract_address: zrc20.target,
@@ -102,9 +116,6 @@ export const createToken = async ({
     wzeta.target,
     deployOpts
   );
-  await (erc20 as any)
-    .connect(deployer)
-    .approve(custody.target, ethers.MaxUint256, deployOpts);
   await (zrc20 as any)
     .connect(deployer)
     .approve(
@@ -130,4 +141,5 @@ export const createToken = async ({
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
     deployOpts
   );
+  console.log("!!!", "zrc20", symbol, zrc20.target);
 };
