@@ -10,7 +10,6 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import { log, logErr } from "./log";
 import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
 import { handleOnEVMCalled } from "./handleOnEVMCalled";
 import { deployOpts } from "./deployOpts";
@@ -250,7 +249,6 @@ const deployProtocolContracts = async (
     wzeta,
     uniswapRouterInstance,
     symbol: "USDC",
-    isGasToken: false,
   });
 
   (zrc20Eth as any).deposit(
