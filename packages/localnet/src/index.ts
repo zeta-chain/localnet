@@ -249,6 +249,7 @@ const deployProtocolContracts = async (
     wzeta,
     uniswapRouterInstance,
     symbol: "USDC",
+    isGasToken: false,
   });
 
   (zrc20Eth as any).deposit(

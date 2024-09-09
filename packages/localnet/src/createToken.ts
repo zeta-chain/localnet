@@ -15,6 +15,7 @@ export const createToken = async ({
   wzeta,
   uniswapRouterInstance,
   symbol,
+  isGasToken = false,
 }: {
   fungibleModuleSigner: any;
   deployer: ethers.Signer;
@@ -27,12 +28,33 @@ export const createToken = async ({
   wzeta: ethers.BaseContract;
   uniswapRouterInstance: ethers.BaseContract;
   symbol: string;
+  isGasToken: boolean;
 }) => {
-  const erc20Factory = new ethers.ContractFactory(
-    TestERC20.abi,
-    TestERC20.bytecode,
-    deployer
-  );
+  let erc20;
+  if (!isGasToken) {
+    const erc20Factory = new ethers.ContractFactory(
+      TestERC20.abi,
+      TestERC20.bytecode,
+      deployer
+    );
+    erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
+    const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
+    await (erc20 as any)
+      .connect(deployer)
+      .mint(
+        custody.target,
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      );
+    await (erc20 as any)
+      .connect(deployer)
+      .mint(
+        await deployer.getAddress(),
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      );
+    await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
+  }
   const zrc20Factory = new ethers.ContractFactory(
     ZRC20.abi,
     ZRC20.bytecode,
@@ -52,42 +74,24 @@ export const createToken = async ({
       deployOpts
     );
 
-  const erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
-
   foreignCoins.push({
     zrc20_contract_address: zrc20.target,
-    asset: erc20.target,
+    asset: isGasToken ? "" : (erc20 as any).target,
     foreign_chain_id: "1",
     decimals: 18,
     name: `ZetaChain ZRC-20 ${symbol}`,
     symbol: `${symbol}.ETH`,
-    coin_type: "ERC20",
+    coin_type: isGasToken ? "Gas" : "ERC20",
     gas_limit: null,
     paused: null,
     liquidity_cap: null,
   });
-  const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
 
   (zrc20 as any).deposit(
     await deployer.getAddress(),
     ethers.parseEther("1000"),
     deployOpts
   );
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      custody.target,
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      await deployer.getAddress(),
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
-  await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
 
   await (wzeta as any)
     .connect(deployer)
