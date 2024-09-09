@@ -16,6 +16,7 @@ import { handleOnEVMCalled } from "./handleOnEVMCalled";
 import { deployOpts } from "./deployOpts";
 import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
+import { createToken } from "./createToken";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -237,79 +238,22 @@ const deployProtocolContracts = async (
     liquidity_cap: null,
   });
 
-  const zrc20Usdc = await zrc20Factory
-    .connect(fungibleModuleSigner)
-    .deploy(
-      "ZRC-20 USDC",
-      "ZRC20USDC",
-      18,
-      1,
-      2,
-      1,
-      systemContract.target,
-      gatewayZEVM.target,
-      deployOpts
-    );
-
-  const testERC20Factory = new ethers.ContractFactory(
-    TestERC20.abi,
-    TestERC20.bytecode,
-    deployer
-  );
-
-  const testERC20USDC = await testERC20Factory.deploy(
-    "usdc",
-    "USDC",
-    deployOpts
-  );
-
-  foreignCoins.push({
-    zrc20_contract_address: zrc20Usdc.target,
-    asset: testERC20USDC.target,
-    foreign_chain_id: "1",
-    decimals: 18,
-    name: "ZetaChain ZRC-20 ETH",
-    symbol: "ETH.ETH",
-    coin_type: "Gas",
-    gas_limit: null,
-    paused: null,
-    liquidity_cap: null,
+  createToken({
+    fungibleModuleSigner,
+    deployer,
+    systemContract,
+    gatewayZEVM,
+    foreignCoins,
+    custody,
+    tss,
+    uniswapFactoryInstance,
+    wzeta,
+    uniswapRouterInstance,
+    symbol: "USDC",
+    isGasToken: false,
   });
 
-  const testERC20USDCdecimals = await (testERC20USDC as any)
-    .connect(deployer)
-    .decimals();
-
-  await (testERC20USDC as any)
-    .connect(deployer)
-    .approve(custody.target, ethers.MaxUint256, deployOpts);
-
-  await (testERC20USDC as any)
-    .connect(deployer)
-    .mint(
-      custody.target,
-      ethers.parseUnits("1000000", testERC20USDCdecimals),
-      deployOpts
-    );
-
-  await (testERC20USDC as any)
-    .connect(deployer)
-    .mint(
-      await deployer.getAddress(),
-      ethers.parseUnits("1000000", testERC20USDCdecimals),
-      deployOpts
-    );
-
-  await (custody as any)
-    .connect(tss)
-    .whitelist(testERC20USDC.target, deployOpts);
-
   (zrc20Eth as any).deposit(
-    await deployer.getAddress(),
-    ethers.parseEther("1000"),
-    deployOpts
-  );
-  (zrc20Usdc as any).deposit(
     await deployer.getAddress(),
     ethers.parseEther("1000"),
     deployOpts
@@ -324,13 +268,6 @@ const deployProtocolContracts = async (
     deployOpts
   );
 
-  await (uniswapFactoryInstance as any).createPair(
-    zrc20Usdc.target,
-    wzeta.target,
-    deployOpts
-  );
-
-  // Approve Router to spend tokens
   await (zrc20Eth as any)
     .connect(deployer)
     .approve(
@@ -345,13 +282,6 @@ const deployProtocolContracts = async (
       ethers.parseEther("1000"),
       deployOpts
     );
-  await (zrc20Usdc as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
-      deployOpts
-    );
 
   // Add Liquidity to ETH/ZETA pool
   await (uniswapRouterInstance as any).addLiquidity(
@@ -360,19 +290,6 @@ const deployProtocolContracts = async (
     ethers.parseUnits("100", await (zrc20Eth as any).decimals()), // Amount of ZRC-20 ETH
     ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
     ethers.parseUnits("90", await (zrc20Eth as any).decimals()), // Min amount of ZRC-20 ETH to add (slippage tolerance)
-    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
-    await deployer.getAddress(),
-    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
-    deployOpts
-  );
-
-  // Add Liquidity to USDC/ZETA pool
-  await (uniswapRouterInstance as any).addLiquidity(
-    zrc20Usdc.target,
-    wzeta.target,
-    ethers.parseUnits("100", await (zrc20Usdc as any).decimals()), // Amount of ZRC-20 USDC
-    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-    ethers.parseUnits("90", await (zrc20Usdc as any).decimals()), // Min amount of ZRC-20 USDC to add (slippage tolerance)
     ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
     await deployer.getAddress(),
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
@@ -407,8 +324,8 @@ const deployProtocolContracts = async (
     wzeta,
     tss,
     zrc20Eth,
-    zrc20Usdc,
-    testERC20USDC,
+    zrc20Usdc: "",
+    testERC20USDC: "",
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
