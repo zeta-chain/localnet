@@ -498,7 +498,6 @@ export const initLocalnet = async (port: number) => {
       const amount = args[4];
       const message = args[7];
       (tss as NonceManager).reset();
-
       if (message !== "0x") {
         log("EVM", `Calling ${receiver} with message ${message}`);
         const executeTx = await protocolContracts.gatewayEVM
@@ -607,7 +606,7 @@ export const initLocalnet = async (port: number) => {
       const amount = args[2];
       const asset = args[3];
       const message = args[4];
-      console.log(args);
+
       let foreignCoin;
       if (asset === ethers.ZeroAddress) {
         foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
@@ -621,7 +620,6 @@ export const initLocalnet = async (port: number) => {
       }
 
       const zrc20 = foreignCoin.zrc20_contract_address;
-      console.log("zrc20", zrc20);
 
       const context = {
         origin: protocolContracts.gatewayZEVM.target,
