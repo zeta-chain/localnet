@@ -84,8 +84,6 @@ export const createToken = async ({
       .connect(fungibleModuleSigner)
       .setGasCoinZRC20(1, zrc20.target);
     (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
-
-    console.log("!!!", "erc20", symbol, erc20.target);
   }
 
   foreignCoins.push({
@@ -141,5 +139,4 @@ export const createToken = async ({
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
     deployOpts
   );
-  console.log("!!!", "zrc20", symbol, zrc20.target);
 };

@@ -30,9 +30,13 @@ EVM Contract Addresses
 Gateway EVM:    ${addr.gatewayEVM}
 ERC-20 custody: ${addr.custodyEVM}
 TSS:            ${addr.tssEVM}
-ZETA:           ${addr.zetaEVM}
-ERC-20 USDC:    ${addr.erc20UsdcEVM}
-`);
+ZETA:           ${addr.zetaEVM}`);
+
+  addr.foreignCoins
+    .filter((coin: any) => coin.asset !== "")
+    .forEach((coin: any) => {
+      console.log(ansis.cyan`ERC-20 ${coin.symbol}: ${coin.asset}`);
+    });
 
   console.log(ansis.green`
 ZetaChain Contract Addresses
@@ -40,11 +44,14 @@ ZetaChain Contract Addresses
 
 Gateway ZetaChain: ${addr.gatewayZetaChain}
 ZETA:              ${addr.zetaZetaChain}
-ZRC-20 ETH:        ${addr.zrc20ETHZetaChain} 
-ZRC-20 USDC:       ${addr.zrc20USDCZetaChain}
 Fungible module:   ${addr.fungibleModuleZetaChain}
-System contract:   ${addr.sytemContractZetaChain}
-`);
+System contract:   ${addr.sytemContractZetaChain}`);
+
+  addr.foreignCoins.forEach((coin: any) => {
+    console.log(
+      ansis.green`ZRC-20 ${coin.symbol}: ${coin.zrc20_contract_address}`
+    );
+  });
 
   process.on("SIGINT", () => {
     console.log("\nReceived Ctrl-C, shutting down anvil...");

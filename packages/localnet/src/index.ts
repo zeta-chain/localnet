@@ -204,7 +204,7 @@ const deployProtocolContracts = async (
     await uniswapRouterInstance.getAddress()
   );
 
-  createToken({
+  await createToken({
     fungibleModuleSigner,
     deployer,
     systemContract,
@@ -219,7 +219,7 @@ const deployProtocolContracts = async (
     isGasToken: false,
   });
 
-  createToken({
+  await createToken({
     fungibleModuleSigner,
     deployer,
     systemContract,
@@ -256,9 +256,6 @@ const deployProtocolContracts = async (
     testEVMZeta,
     wzeta,
     tss,
-    zrc20Eth: "",
-    zrc20Usdc: "",
-    testERC20USDC: "",
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
@@ -346,12 +343,10 @@ export const initLocalnet = async (port: number) => {
     gatewayZetaChain: protocolContracts.gatewayZEVM.target,
     zetaEVM: protocolContracts.testEVMZeta.target,
     zetaZetaChain: protocolContracts.wzeta.target,
-    zrc20ETHZetaChain: protocolContracts.zrc20Eth.target,
-    zrc20USDCZetaChain: protocolContracts.zrc20Usdc.target,
-    erc20UsdcEVM: protocolContracts.testERC20USDC.target,
     uniswapFactory: protocolContracts.uniswapFactoryInstance.target,
     uniswapRouter: protocolContracts.uniswapRouterInstance.target,
     fungibleModuleZetaChain: FUNGIBLE_MODULE_ADDRESS,
+    foreignCoins,
     sytemContractZetaChain: protocolContracts.systemContract.target,
     custodyEVM: protocolContracts.custodyEVM.target,
     tssEVM: await tss.getAddress(),
