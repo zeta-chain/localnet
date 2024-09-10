@@ -10,30 +10,20 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import ansis from "ansis";
+import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
+import { handleOnEVMCalled } from "./handleOnEVMCalled";
+import { deployOpts } from "./deployOpts";
+import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
+import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
+import { createToken } from "./createToken";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
-const zrc20Assets: any = {};
-
-const log = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
-  const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
-  const combinedMessage = messages.join(" ");
-  console.log(color(`[${ansis.bold(chain)}]: ${combinedMessage}`));
-};
-
-const logErr = (chain: "EVM" | "ZetaChain", ...messages: string[]) => {
-  const combinedMessage = messages.join(" ");
-  log(chain, ansis.red(combinedMessage));
-};
+const foreignCoins: any[] = [];
 
 let protocolContracts: any;
 let deployer: Signer;
 let tss: Signer;
-const deployOpts = {
-  gasPrice: 10000000000,
-  gasLimit: 6721975,
-};
 
 const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
   const uniswapFactory = new ethers.ContractFactory(
@@ -214,143 +204,35 @@ const deployProtocolContracts = async (
     await uniswapRouterInstance.getAddress()
   );
 
-  const zrc20Factory = new ethers.ContractFactory(
-    ZRC20.abi,
-    ZRC20.bytecode,
-    deployer
-  );
+  await createToken({
+    fungibleModuleSigner,
+    deployer,
+    systemContract,
+    gatewayZEVM,
+    foreignCoins,
+    custody,
+    tss,
+    uniswapFactoryInstance,
+    wzeta,
+    uniswapRouterInstance,
+    symbol: "USDC",
+    isGasToken: false,
+  });
 
-  const zrc20Eth = await zrc20Factory
-    .connect(fungibleModuleSigner)
-    .deploy(
-      "ZRC-20 ETH",
-      "ZRC20ETH",
-      18,
-      1,
-      1,
-      1,
-      systemContract.target,
-      gatewayZEVM.target,
-      deployOpts
-    );
-
-  const zrc20Usdc = await zrc20Factory
-    .connect(fungibleModuleSigner)
-    .deploy(
-      "ZRC-20 USDC",
-      "ZRC20USDC",
-      6,
-      1,
-      2,
-      1,
-      systemContract.target,
-      gatewayZEVM.target,
-      deployOpts
-    );
-
-  const testERC20Factory = new ethers.ContractFactory(
-    TestERC20.abi,
-    TestERC20.bytecode,
-    deployer
-  );
-  const testERC20USDC = await testERC20Factory.deploy(
-    "usdc",
-    "USDC",
-    deployOpts
-  );
-
-  await (testERC20USDC as any)
-    .connect(deployer)
-    .approve(custody.target, ethers.MaxUint256, deployOpts);
-
-  await (testERC20USDC as any)
-    .connect(deployer)
-    .mint(custody.target, ethers.parseUnits("1000000", 6), deployOpts);
-
-  zrc20Assets[zrc20Usdc.target as any] = testERC20USDC.target;
-  await (custody as any)
-    .connect(tss)
-    .whitelist(testERC20USDC.target, deployOpts);
-
-  (zrc20Eth as any).deposit(
-    await deployer.getAddress(),
-    ethers.parseEther("1000"),
-    deployOpts
-  );
-  (zrc20Usdc as any).deposit(
-    await deployer.getAddress(),
-    ethers.parseEther("1000"),
-    deployOpts
-  );
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
-
-  await (uniswapFactoryInstance as any).createPair(
-    zrc20Eth.target,
-    wzeta.target,
-    deployOpts
-  );
-
-  await (uniswapFactoryInstance as any).createPair(
-    zrc20Usdc.target,
-    wzeta.target,
-    deployOpts
-  );
-
-  // Approve Router to spend tokens
-  await (zrc20Eth as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
-      deployOpts
-    );
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
-      deployOpts
-    );
-  await (zrc20Usdc as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
-      deployOpts
-    );
-
-  // Add Liquidity to ETH/ZETA pool
-  await (uniswapRouterInstance as any).addLiquidity(
-    zrc20Eth.target,
-    wzeta.target,
-    ethers.parseUnits("100", await (zrc20Eth as any).decimals()), // Amount of ZRC-20 ETH
-    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-    ethers.parseUnits("90", await (zrc20Eth as any).decimals()), // Min amount of ZRC-20 ETH to add (slippage tolerance)
-    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
-    await deployer.getAddress(),
-    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
-    deployOpts
-  );
-
-  // Add Liquidity to USDC/ZETA pool
-  await (uniswapRouterInstance as any).addLiquidity(
-    zrc20Usdc.target,
-    wzeta.target,
-    ethers.parseUnits("100", await (zrc20Usdc as any).decimals()), // Amount of ZRC-20 USDC
-    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-    ethers.parseUnits("90", await (zrc20Usdc as any).decimals()), // Min amount of ZRC-20 USDC to add (slippage tolerance)
-    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
-    await deployer.getAddress(),
-    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
-    deployOpts
-  );
-
-  (systemContract as any)
-    .connect(fungibleModuleSigner)
-    .setGasCoinZRC20(1, zrc20Eth.target);
-  (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
+  await createToken({
+    fungibleModuleSigner,
+    deployer,
+    systemContract,
+    gatewayZEVM,
+    foreignCoins,
+    custody,
+    tss,
+    uniswapFactoryInstance,
+    wzeta,
+    uniswapRouterInstance,
+    symbol: "ETH",
+    isGasToken: true,
+  });
 
   await (wzeta as any)
     .connect(fungibleModuleSigner)
@@ -374,9 +256,6 @@ const deployProtocolContracts = async (
     testEVMZeta,
     wzeta,
     tss,
-    zrc20Eth,
-    zrc20Usdc,
-    testERC20USDC,
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
@@ -419,246 +298,43 @@ export const initLocalnet = async (port: number) => {
   );
 
   // Listen to contracts events
-  // event Called(address indexed sender, address indexed zrc20, bytes receiver, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    log("ZetaChain", "Gateway: 'Called' event emitted");
-    try {
-      (tss as NonceManager).reset();
-
-      const receiver = args[2];
-      const message = args[3];
-      log("EVM", `Calling ${receiver} with message ${message}`);
-      const executeTx = await protocolContracts.gatewayEVM
-        .connect(tss)
-        .execute(receiver, message, deployOpts);
-
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-
-      logs.forEach((data) => {
-        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
-      });
-      await executeTx.wait();
-    } catch (e) {
-      const revertOptions = args[5];
-      await handleOnRevertZEVM(revertOptions, e);
-    }
+    handleOnZEVMCalled({ tss, provider, protocolContracts, args });
   });
 
-  // event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    try {
-      const receiver = args[2];
-      const zrc20 = args[3];
-      const amount = args[4];
-      const message = args[7];
-      (tss as NonceManager).reset();
-
-      if (message !== "0x") {
-        const executeTx = await protocolContracts.gatewayEVM
-          .connect(tss)
-          .execute(receiver, message, deployOpts);
-        await executeTx.wait();
-      } else {
-        const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
-        const coinType = await zrc20Contract.COIN_TYPE();
-        if (coinType === 1n) {
-          const tx = await tss.sendTransaction({
-            to: receiver,
-            value: amount,
-            ...deployOpts,
-          });
-          await tx.wait();
-          log(
-            "EVM",
-            `Transferred ${ethers.formatEther(
-              amount
-            )} native gas tokens from TSS to ${receiver}`
-          );
-        } else if (coinType === 2n) {
-          const erc20 = zrc20Assets[zrc20];
-          const tx = await protocolContracts.custody
-            .connect(tss)
-            .withdraw(receiver, erc20, amount, deployOpts);
-          await tx.wait();
-          log(
-            "EVM",
-            `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-          );
-        }
-      }
-    } catch (e) {
-      const revertOptions = args[9];
-      await handleOnRevertZEVM(revertOptions, e);
-    }
+    handleOnZEVMWithdrawn({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      foreignCoins,
+    });
   });
 
-  // event Called(address indexed sender, address indexed receiver, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    log("EVM", "Gateway: 'Called' event emitted");
-    try {
-      const receiver = args[1];
-      const message = args[2];
-
-      (deployer as NonceManager).reset();
-      const context = {
-        origin: protocolContracts.gatewayZEVM.target,
-        sender: await fungibleModuleSigner.getAddress(),
-        chainID: 1,
-      };
-      const zrc20 = protocolContracts.zrc20Eth.target;
-      log(
-        "ZetaChain",
-        `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
-          context
-        )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
-      );
-      const executeTx = await protocolContracts.gatewayZEVM
-        .connect(fungibleModuleSigner)
-        .execute(context, zrc20, 0, receiver, message, deployOpts);
-      await executeTx.wait();
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-
-      logs.forEach((data) => {
-        log(
-          "ZetaChain",
-          `Event from onCrossChainCall: ${JSON.stringify(data)}`
-        );
-      });
-    } catch (e: any) {
-      logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
-      const revertOptions = args[3];
-      await handleOnRevertEVM(revertOptions, e);
-    }
+    handleOnEVMCalled({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      fungibleModuleSigner,
+    });
   });
 
-  // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload, RevertOptions revertOptions);
   protocolContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    log("EVM", "Gateway: 'Deposited' event emitted");
-    try {
-      const receiver = args[1];
-      const amount = args[2];
-      const message = args[4];
-      const context = {
-        origin: protocolContracts.gatewayZEVM.target,
-        sender: await fungibleModuleSigner.getAddress(),
-        chainID: 1,
-      };
-      const zrc20 = protocolContracts.zrc20Eth.target;
-      // If message is not empty, execute depositAndCall
-      if (message !== "0x") {
-        log(
-          "ZetaChain",
-          `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
-            context
-          )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
-        );
-        const depositAndCallTx = await (protocolContracts.gatewayZEVM as any)
-          .connect(fungibleModuleSigner)
-          .depositAndCall(
-            context,
-            zrc20,
-            amount,
-            receiver,
-            message,
-            deployOpts
-          );
-
-        await depositAndCallTx.wait();
-        const logs = await provider.getLogs({
-          address: receiver,
-          fromBlock: "latest",
-        });
-
-        logs.forEach((data) => {
-          log(
-            "ZetaChain",
-            `Event from onCrossChainCall: ${JSON.stringify(data)}`
-          );
-        });
-        // If message is empty, execute deposit
-      } else {
-        const depositTx = await protocolContracts.gatewayZEVM
-          .connect(fungibleModuleSigner)
-          .deposit(zrc20, amount, receiver, deployOpts);
-
-        await depositTx.wait();
-      }
-    } catch (e: any) {
-      logErr("ZetaChain", `Error depositing: ${e}`);
-      const revertOptions = args[5];
-      await handleOnRevertEVM(revertOptions, e);
-    }
+    handleOnEVMDeposited({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      fungibleModuleSigner,
+      foreignCoins,
+    });
   });
-
-  const handleOnRevertEVM = async (revertOptions: any, err: any) => {
-    const callOnRevert = revertOptions[1];
-    const revertAddress = revertOptions[0];
-    const revertMessage = revertOptions[3];
-    const revertContext = {
-      asset: ethers.ZeroAddress,
-      amount: 0,
-      revertMessage,
-    };
-    if (callOnRevert) {
-      try {
-        log(
-          "EVM",
-          `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
-            revertContext
-          )})`
-        );
-        (tss as NonceManager).reset();
-        const tx = await protocolContracts.gatewayEVM
-          .connect(tss)
-          .executeRevert(revertAddress, "0x", revertContext, deployOpts);
-        await tx.wait();
-        log("EVM", "Gateway: successfully called onRevert");
-        const logs = await provider.getLogs({
-          address: revertAddress,
-          fromBlock: "latest",
-        });
-
-        logs.forEach((data) => {
-          log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
-        });
-      } catch (e: any) {
-        logErr("EVM", `Gateway: Call onRevert failed: ${e}`);
-      }
-    } else {
-      logErr("EVM", `Tx reverted without callOnRevert: ${err}`);
-    }
-  };
-
-  const handleOnRevertZEVM = async (revertOptions: any, err: any) => {
-    const callOnRevert = revertOptions[1];
-    const revertAddress = revertOptions[0];
-    const revertMessage = revertOptions[3];
-    const revertContext = {
-      asset: ethers.ZeroAddress,
-      amount: 0,
-      revertMessage,
-    };
-    if (callOnRevert) {
-      log("ZetaChain", "Gateway: calling executeRevert");
-      try {
-        (tss as NonceManager).reset();
-        await protocolContracts.gatewayZEVM
-          .connect(tss)
-          .executeRevert(revertAddress, revertContext, deployOpts);
-        log("ZetaChain", "Gateway: Call onRevert success");
-      } catch (e) {
-        log("ZetaChain", `Gateway: Call onRevert failed: ${e}`);
-      }
-    } else {
-      log("ZetaChain", "Tx reverted without callOnRevert: ", err);
-    }
-  };
 
   process.stdin.resume();
 
@@ -667,12 +343,10 @@ export const initLocalnet = async (port: number) => {
     gatewayZetaChain: protocolContracts.gatewayZEVM.target,
     zetaEVM: protocolContracts.testEVMZeta.target,
     zetaZetaChain: protocolContracts.wzeta.target,
-    zrc20ETHZetaChain: protocolContracts.zrc20Eth.target,
-    zrc20USDCZetaChain: protocolContracts.zrc20Usdc.target,
-    erc20UsdcEVM: protocolContracts.testERC20USDC.target,
     uniswapFactory: protocolContracts.uniswapFactoryInstance.target,
     uniswapRouter: protocolContracts.uniswapRouterInstance.target,
     fungibleModuleZetaChain: FUNGIBLE_MODULE_ADDRESS,
+    foreignCoins,
     sytemContractZetaChain: protocolContracts.systemContract.target,
     custodyEVM: protocolContracts.custodyEVM.target,
     tssEVM: await tss.getAddress(),
