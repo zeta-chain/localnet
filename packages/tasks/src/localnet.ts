@@ -17,13 +17,11 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
       );
 
       if (forceKill) {
-        // In CI or automated environments, force kill without prompting
         execSync(`kill -9 ${output}`);
         console.log(
           ansis.green(`Successfully killed process ${output} on port ${port}.`)
         );
       } else {
-        // Prompt the user for confirmation if not using forceKill
         const answer = await confirm({
           message: `Do you want to kill the process running on port ${port}?`,
           default: true,
@@ -68,40 +66,6 @@ const localnet = async (args: any) => {
 
   await waitOn({ resources: [`tcp:127.0.0.1:${port}`] });
 
-  const addr = await initLocalnet(port);
-
-  console.log(ansis.cyan`
-EVM Contract Addresses
-======================
-
-Gateway EVM:    ${addr.gatewayEVM}
-ERC-20 custody: ${addr.custodyEVM}
-TSS:            ${addr.tssEVM}
-ZETA:           ${addr.zetaEVM}`);
-
-  addr.foreignCoins
-    .filter((coin: any) => coin.asset !== "")
-    .forEach((coin: any) => {
-      console.log(ansis.cyan`ERC-20 ${coin.symbol}: ${coin.asset}`);
-    });
-
-  console.log(ansis.green`
-ZetaChain Contract Addresses
-============================
-
-Gateway ZetaChain: ${addr.gatewayZetaChain}
-ZETA:              ${addr.zetaZetaChain}
-Fungible module:   ${addr.fungibleModuleZetaChain}
-System contract:   ${addr.sytemContractZetaChain}`);
-
-  addr.foreignCoins.forEach((coin: any) => {
-    console.log(
-      ansis.green`ZRC-20 ${coin.symbol}: ${coin.zrc20_contract_address}`
-    );
-  });
-
-  fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
-
   const cleanup = () => {
     console.log("\nShutting down anvil and cleaning up...");
     if (anvilProcess) {
@@ -112,6 +76,48 @@ System contract:   ${addr.sytemContractZetaChain}`);
     }
   };
 
+  try {
+    const addr = await initLocalnet(port);
+
+    console.log(ansis.cyan`
+EVM Contract Addresses
+======================
+
+Gateway EVM:    ${addr.gatewayEVM}
+ERC-20 custody: ${addr.custodyEVM}
+TSS:            ${addr.tssEVM}
+ZETA:           ${addr.zetaEVM}`);
+
+    addr.foreignCoins
+      .filter((coin: any) => coin.asset !== "")
+      .forEach((coin: any) => {
+        console.log(ansis.cyan`ERC-20 ${coin.symbol}: ${coin.asset}`);
+      });
+
+    console.log(ansis.green`
+ZetaChain Contract Addresses
+============================
+
+Gateway ZetaChain: ${addr.gatewayZetaChain}
+ZETA:              ${addr.zetaZetaChain}
+Fungible module:   ${addr.fungibleModuleZetaChain}
+System contract:   ${addr.sytemContractZetaChain}`);
+
+    addr.foreignCoins.forEach((coin: any) => {
+      console.log(
+        ansis.green`ZRC-20 ${coin.symbol}: ${coin.zrc20_contract_address}`
+      );
+    });
+
+    fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
+  } catch (error: any) {
+    // If initLocalnet fails, cleanup and exit
+    console.error(ansis.red`Error initializing localnet: ${error}`);
+    cleanup();
+    process.exit(1);
+  }
+
+  // Set up cleanup on exit or signals
   const handleExit = (signal: string) => {
     console.log(`\nReceived ${signal}, shutting down...`);
     cleanup();
@@ -136,4 +142,4 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
     "",
     types.string
   )
-  .addFlag("forceKill", "Force kill any process on the port without prompting"); // Added forceKill flag
+  .addFlag("forceKill", "Force kill any process on the port without prompting");
