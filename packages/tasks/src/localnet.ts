@@ -78,35 +78,35 @@ const localnet = async (args: any) => {
   try {
     const addr = await initLocalnet(port);
 
-    console.log(ansis.cyan`
-EVM Contract Addresses
-======================
+    const evmAddresses = {
+      "Gateway EVM": addr.gatewayEVM,
+      "ERC-20 Custody": addr.custodyEVM,
+      TSS: addr.tssEVM,
+      ZETA: addr.zetaEVM,
+      ...addr.foreignCoins
+        .filter((coin: any) => coin.asset !== "")
+        .reduce((acc: any, coin: any) => {
+          acc[`ERC-20 ${coin.symbol}`] = coin.asset;
+          return acc;
+        }, {}),
+    };
 
-Gateway EVM:    ${addr.gatewayEVM}
-ERC-20 custody: ${addr.custodyEVM}
-TSS:            ${addr.tssEVM}
-ZETA:           ${addr.zetaEVM}`);
+    console.log(ansis.cyan("EVM Contract Addresses and Foreign ERC-20 Tokens"));
+    console.table(evmAddresses);
 
-    addr.foreignCoins
-      .filter((coin: any) => coin.asset !== "")
-      .forEach((coin: any) => {
-        console.log(ansis.cyan`ERC-20 ${coin.symbol}: ${coin.asset}`);
-      });
+    const zetaAddresses = {
+      "Gateway ZetaChain": addr.gatewayZetaChain,
+      ZETA: addr.zetaZetaChain,
+      "Fungible Module": addr.fungibleModuleZetaChain,
+      "System Contract": addr.sytemContractZetaChain,
+      ...addr.foreignCoins.reduce((acc: any, coin: any) => {
+        acc[`ZRC-20 ${coin.symbol}`] = coin.zrc20_contract_address;
+        return acc;
+      }, {}),
+    };
 
-    console.log(ansis.green`
-ZetaChain Contract Addresses
-============================
-
-Gateway ZetaChain: ${addr.gatewayZetaChain}
-ZETA:              ${addr.zetaZetaChain}
-Fungible module:   ${addr.fungibleModuleZetaChain}
-System contract:   ${addr.sytemContractZetaChain}`);
-
-    addr.foreignCoins.forEach((coin: any) => {
-      console.log(
-        ansis.green`ZRC-20 ${coin.symbol}: ${coin.zrc20_contract_address}`
-      );
-    });
+    console.log(ansis.green("ZetaChain Contract Addresses and ZRC-20 Tokens"));
+    console.table(zetaAddresses);
 
     fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
   } catch (error: any) {
