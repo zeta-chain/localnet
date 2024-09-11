@@ -46,6 +46,17 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
 };
 
 const localnet = async (args: any) => {
+  try {
+    execSync("which anvil");
+  } catch (error) {
+    console.error(
+      ansis.red(
+        "Error: 'anvil' not found. Please install Foundry: https://getfoundry.sh"
+      )
+    );
+    process.exit(1);
+  }
+
   await killProcessOnPort(args.port, args.forceKill);
 
   if (args.anvil !== "")
