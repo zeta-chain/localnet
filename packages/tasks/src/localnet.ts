@@ -3,6 +3,9 @@ import { initLocalnet } from "../../localnet/src";
 import { exec } from "child_process";
 import waitOn from "wait-on";
 import ansis from "ansis";
+import fs from "fs";
+
+const LOCALNET_PID_FILE = "./localnet.pid";
 
 const main = async (args: any) => {
   const port = args.port || 8545;
@@ -53,15 +56,41 @@ System contract:   ${addr.sytemContractZetaChain}`);
     );
   });
 
+  // Save the localnet script's process ID (PID)
+  fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
+
+  const cleanup = () => {
+    console.log("\nShutting down anvil and cleaning up...");
+    if (anvilProcess) {
+      anvilProcess.kill(); // Kill the Anvil process
+    }
+    if (fs.existsSync(LOCALNET_PID_FILE)) {
+      fs.unlinkSync(LOCALNET_PID_FILE); // Clean up the PID file
+    }
+  };
+
+  // Handle various termination signals
   process.on("SIGINT", () => {
-    console.log("\nReceived Ctrl-C, shutting down anvil...");
-    anvilProcess.kill();
+    console.log("\nReceived SIGINT (Ctrl-C), shutting down...");
+    cleanup();
     process.exit();
+  });
+
+  process.on("SIGTERM", () => {
+    console.log("\nReceived SIGTERM, shutting down...");
+    cleanup();
+    process.exit();
+  });
+
+  process.on("exit", () => {
+    console.log("\nProcess exiting, cleaning up...");
+    cleanup();
   });
 
   await new Promise(() => {});
 };
 
+// Task to start localnet and store PID
 export const localnetTask = task("localnet", "Start localnet", main)
   .addOptionalParam("port", "Port to run anvil on", 8545, types.int)
   .addOptionalParam(
