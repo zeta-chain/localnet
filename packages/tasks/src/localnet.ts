@@ -78,6 +78,10 @@ const localnet = async (args: any) => {
   try {
     const addr = await initLocalnet(port);
 
+    // EVM Contract Addresses
+    const evmHeader = "\nEVM Contract Addresses";
+    console.log(ansis.cyan(`${evmHeader}\n${"=".repeat(evmHeader.length)}`));
+
     const evmAddresses = {
       "Gateway EVM": addr.gatewayEVM,
       "ERC-20 Custody": addr.custodyEVM,
@@ -91,8 +95,11 @@ const localnet = async (args: any) => {
         }, {}),
     };
 
-    console.log(ansis.cyan("EVM Contract Addresses and Foreign ERC-20 Tokens"));
     console.table(evmAddresses);
+
+    // ZetaChain Contract Addresses
+    const zetaHeader = "\nZetaChain Contract Addresses";
+    console.log(ansis.green(`${zetaHeader}\n${"=".repeat(zetaHeader.length)}`));
 
     const zetaAddresses = {
       "Gateway ZetaChain": addr.gatewayZetaChain,
@@ -105,7 +112,6 @@ const localnet = async (args: any) => {
       }, {}),
     };
 
-    console.log(ansis.green("ZetaChain Contract Addresses and ZRC-20 Tokens"));
     console.table(zetaAddresses);
 
     fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
