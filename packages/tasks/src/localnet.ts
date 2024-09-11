@@ -1,14 +1,45 @@
 import { task, types } from "hardhat/config";
 import { initLocalnet } from "../../localnet/src";
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import waitOn from "wait-on";
 import ansis from "ansis";
 import fs from "fs";
+import { confirm } from "@inquirer/prompts";
 
 const LOCALNET_PID_FILE = "./localnet.pid";
 
+const killProcessOnPort = async (port: number) => {
+  try {
+    const output = execSync(`lsof -ti tcp:${port}`).toString().trim();
+    if (output) {
+      console.log(
+        ansis.yellow(`Port ${port} is already in use by process ${output}.`)
+      );
+
+      const answer = await confirm({
+        message: `Do you want to kill the process running on port ${port}?`,
+        default: true,
+      });
+
+      if (answer) {
+        execSync(`kill -9 ${output}`);
+        console.log(
+          ansis.green(`Successfully killed process ${output} on port ${port}.`)
+        );
+      } else {
+        console.log(ansis.red("Process not killed. Exiting..."));
+        process.exit(1);
+      }
+    }
+  } catch (error) {
+    // Silently continue if no process is found or killing fails
+  }
+};
+
 const localnet = async (args: any) => {
   const port = args.port || 8545;
+
+  await killProcessOnPort(port);
 
   if (args.anvil !== "")
     console.log(`Starting anvil on port ${port} with args: ${args.anvil}`);

@@ -33,6 +33,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@inquirer/prompts": "^5.5.0",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "@zetachain/protocol-contracts": "10.0.0-rc10",
