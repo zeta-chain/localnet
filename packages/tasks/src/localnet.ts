@@ -8,7 +8,7 @@ import { confirm } from "@inquirer/prompts";
 
 const LOCALNET_PID_FILE = "./localnet.pid";
 
-const killProcessOnPort = async (port: number) => {
+const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
     const output = execSync(`lsof -ti tcp:${port}`).toString().trim();
     if (output) {
@@ -16,19 +16,30 @@ const killProcessOnPort = async (port: number) => {
         ansis.yellow(`Port ${port} is already in use by process ${output}.`)
       );
 
-      const answer = await confirm({
-        message: `Do you want to kill the process running on port ${port}?`,
-        default: true,
-      });
-
-      if (answer) {
+      if (forceKill) {
+        // In CI or automated environments, force kill without prompting
         execSync(`kill -9 ${output}`);
         console.log(
           ansis.green(`Successfully killed process ${output} on port ${port}.`)
         );
       } else {
-        console.log(ansis.red("Process not killed. Exiting..."));
-        process.exit(1);
+        // Prompt the user for confirmation if not using forceKill
+        const answer = await confirm({
+          message: `Do you want to kill the process running on port ${port}?`,
+          default: true,
+        });
+
+        if (answer) {
+          execSync(`kill -9 ${output}`);
+          console.log(
+            ansis.green(
+              `Successfully killed process ${output} on port ${port}.`
+            )
+          );
+        } else {
+          console.log(ansis.red("Process not killed. Exiting..."));
+          process.exit(1);
+        }
       }
     }
   } catch (error) {
@@ -38,8 +49,10 @@ const killProcessOnPort = async (port: number) => {
 
 const localnet = async (args: any) => {
   const port = args.port || 8545;
+  const forceKill = args.forceKill || false;
 
-  await killProcessOnPort(port);
+  // Kill any process using the port, either with or without prompting
+  await killProcessOnPort(port, forceKill);
 
   if (args.anvil !== "")
     console.log(`Starting anvil on port ${port} with args: ${args.anvil}`);
@@ -122,4 +135,5 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
     "Additional arguments to pass to anvil",
     "",
     types.string
-  );
+  )
+  .addFlag("forceKill", "Force kill any process on the port without prompting"); // Added forceKill flag
