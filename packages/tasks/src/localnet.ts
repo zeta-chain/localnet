@@ -7,7 +7,7 @@ import fs from "fs";
 
 const LOCALNET_PID_FILE = "./localnet.pid";
 
-const main = async (args: any) => {
+const localnet = async (args: any) => {
   const port = args.port || 8545;
   const anvilArgs = args.anvil ? `${args.anvil}` : "";
 
@@ -84,7 +84,7 @@ System contract:   ${addr.sytemContractZetaChain}`);
   await new Promise(() => {});
 };
 
-export const localnetTask = task("localnet", "Start localnet", main)
+export const localnetTask = task("localnet", "Start localnet", localnet)
   .addOptionalParam("port", "Port to run anvil on", 8545, types.int)
   .addOptionalParam(
     "anvil",
