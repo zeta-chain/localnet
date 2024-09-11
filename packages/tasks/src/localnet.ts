@@ -46,16 +46,13 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
 };
 
 const localnet = async (args: any) => {
-  const port = args.port || 8545;
-  const forceKill = args.forceKill || false;
-
-  await killProcessOnPort(port, forceKill);
+  await killProcessOnPort(args.port, args.forceKill);
 
   if (args.anvil !== "")
-    console.log(`Starting anvil on port ${port} with args: ${args.anvil}`);
+    console.log(`Starting anvil on port ${args.port} with args: ${args.anvil}`);
 
   const anvilProcess = exec(
-    `anvil --auto-impersonate --port ${port} ${args.anvil}`
+    `anvil --auto-impersonate --port ${args.port} ${args.anvil}`
   );
 
   if (anvilProcess.stdout && anvilProcess.stderr) {
@@ -63,7 +60,7 @@ const localnet = async (args: any) => {
     anvilProcess.stderr.pipe(process.stderr);
   }
 
-  await waitOn({ resources: [`tcp:127.0.0.1:${port}`] });
+  await waitOn({ resources: [`tcp:127.0.0.1:${args.port}`] });
 
   const cleanup = () => {
     console.log("\nShutting down anvil and cleaning up...");
@@ -76,7 +73,7 @@ const localnet = async (args: any) => {
   };
 
   try {
-    const addr = await initLocalnet(port);
+    const addr = await initLocalnet(args.port);
 
     // EVM Contract Addresses
     const evmHeader = "\nEVM Contract Addresses";
@@ -97,7 +94,6 @@ const localnet = async (args: any) => {
 
     console.table(evmAddresses);
 
-    // ZetaChain Contract Addresses
     const zetaHeader = "\nZetaChain Contract Addresses";
     console.log(ansis.green(`${zetaHeader}\n${"=".repeat(zetaHeader.length)}`));
 
@@ -115,6 +111,14 @@ const localnet = async (args: any) => {
     console.table(zetaAddresses);
 
     fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
+
+    if (args.stopAfterInit) {
+      console.log(
+        ansis.green("Localnet successfully initialized. Stopping...")
+      );
+      cleanup();
+      process.exit(0);
+    }
   } catch (error: any) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
@@ -145,4 +149,8 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
     "",
     types.string
   )
-  .addFlag("forceKill", "Force kill any process on the port without prompting");
+  .addFlag("forceKill", "Force kill any process on the port without prompting")
+  .addFlag(
+    "stopAfterInit",
+    "Stop the localnet after successful initialization"
+  );
