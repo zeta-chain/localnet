@@ -9,12 +9,12 @@ const LOCALNET_PID_FILE = "./localnet.pid";
 
 const localnet = async (args: any) => {
   const port = args.port || 8545;
-  const anvilArgs = args.anvil ? `${args.anvil}` : "";
 
-  console.log(`Starting anvil on port ${port} with args: ${anvilArgs}`);
+  if (args.anvil !== "")
+    console.log(`Starting anvil on port ${port} with args: ${args.anvil}`);
 
   const anvilProcess = exec(
-    `anvil --auto-impersonate --port ${port} ${anvilArgs}`
+    `anvil --auto-impersonate --port ${port} ${args.anvil}`
   );
 
   if (anvilProcess.stdout && anvilProcess.stderr) {
