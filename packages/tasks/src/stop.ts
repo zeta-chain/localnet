@@ -14,12 +14,8 @@ const localnetStop = async (args: any) => {
   try {
     process.kill(Number(pid));
     console.log(ansis.green(`Successfully stopped localnet (PID: ${pid})`));
-
-    // Unlink PID file only if it exists
-    if (fs.existsSync(LOCALNET_PID_FILE)) {
-      fs.unlinkSync(LOCALNET_PID_FILE);
-      console.log(ansis.green(`PID file ${LOCALNET_PID_FILE} removed.`));
-    }
+    fs.unlinkSync(LOCALNET_PID_FILE);
+    console.log(ansis.green(`PID file ${LOCALNET_PID_FILE} removed.`));
   } catch (err) {
     console.error(ansis.red(`Failed to stop localnet: ${err}`));
   }
