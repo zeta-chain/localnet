@@ -111,14 +111,6 @@ const localnet = async (args: any) => {
     console.table(zetaAddresses);
 
     fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
-
-    if (args.stopAfterInit) {
-      console.log(
-        ansis.green("Localnet successfully initialized. Stopping...")
-      );
-      cleanup();
-      process.exit(0);
-    }
   } catch (error: any) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
@@ -137,6 +129,12 @@ const localnet = async (args: any) => {
   process.on("exit", () => {
     console.log("Process exiting...");
   });
+
+  if (args.stopAfterInit) {
+    console.log(ansis.green("Localnet successfully initialized. Stopping..."));
+    cleanup();
+    process.exit(0);
+  }
 
   await new Promise(() => {});
 };
