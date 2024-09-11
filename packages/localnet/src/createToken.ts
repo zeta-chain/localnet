@@ -44,7 +44,7 @@ export const createToken = async ({
       `ZRC20${symbol}`,
       18,
       1,
-      1,
+      isGasToken ? 1 : 2,
       1,
       systemContract.target,
       gatewayZEVM.target,
