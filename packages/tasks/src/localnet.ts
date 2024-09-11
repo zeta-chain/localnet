@@ -49,7 +49,6 @@ const localnet = async (args: any) => {
   const port = args.port || 8545;
   const forceKill = args.forceKill || false;
 
-  // Kill any process using the port, either with or without prompting
   await killProcessOnPort(port, forceKill);
 
   if (args.anvil !== "")
@@ -111,13 +110,11 @@ System contract:   ${addr.sytemContractZetaChain}`);
 
     fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
   } catch (error: any) {
-    // If initLocalnet fails, cleanup and exit
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
     process.exit(1);
   }
 
-  // Set up cleanup on exit or signals
   const handleExit = (signal: string) => {
     console.log(`\nReceived ${signal}, shutting down...`);
     cleanup();
