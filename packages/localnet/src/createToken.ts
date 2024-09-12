@@ -51,6 +51,8 @@ export const createToken = async ({
       deployOpts
     );
 
+  await zrc20.waitForDeployment();
+
   if (!isGasToken) {
     const erc20Factory = new ethers.ContractFactory(
       TestERC20.abi,
@@ -58,6 +60,7 @@ export const createToken = async ({
       deployer
     );
     erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
+    await erc20.waitForDeployment();
     const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
 
     await (erc20 as any)
