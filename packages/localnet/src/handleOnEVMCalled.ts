@@ -11,6 +11,7 @@ export const handleOnEVMCalled = async ({
   args,
   deployer,
   fungibleModuleSigner,
+  foreignCoins,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
@@ -18,6 +19,7 @@ export const handleOnEVMCalled = async ({
   args: any;
   deployer: any;
   fungibleModuleSigner: any;
+  foreignCoins: any[];
 }) => {
   log("EVM", "Gateway: 'Called' event emitted");
   try {
@@ -30,7 +32,10 @@ export const handleOnEVMCalled = async ({
       sender: await fungibleModuleSigner.getAddress(),
       chainID: 1,
     };
-    const zrc20 = protocolContracts.zrc20Eth.target;
+    const zrc20 = foreignCoins.find(
+      (coin) => coin.foreign_chain_id === "1" && coin.coin_type === "Gas"
+    )?.zrc20_contract_address;
+
     log(
       "ZetaChain",
       `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(

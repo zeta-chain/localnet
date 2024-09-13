@@ -321,6 +321,7 @@ export const initLocalnet = async (port: number) => {
       args,
       deployer,
       fungibleModuleSigner,
+      foreignCoins,
     });
   });
 
