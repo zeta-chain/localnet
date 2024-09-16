@@ -21,3 +21,5 @@ tsconfig.tsbuildinfo
 .DS_Store
 .secrets
 .wallet.json
+
+localnet.pid
