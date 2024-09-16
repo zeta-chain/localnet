@@ -12,30 +12,35 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
     const output = execSync(`lsof -ti tcp:${port}`).toString().trim();
     if (output) {
+      const pids = output.split("\n");
       console.log(
-        ansis.yellow(`Port ${port} is already in use by process ${output}.`)
+        ansis.yellow(
+          `Port ${port} is already in use by process(es): ${pids.join(", ")}.`
+        )
       );
 
       if (forceKill) {
-        execSync(`kill -9 ${output}`);
-        console.log(
-          ansis.green(`Successfully killed process ${output} on port ${port}.`)
-        );
+        for (const pid of pids) {
+          execSync(`kill -9 ${pid}`);
+          console.log(
+            ansis.green(`Successfully killed process ${pid} on port ${port}.`)
+          );
+        }
       } else {
         const answer = await confirm({
-          message: `Do you want to kill the process running on port ${port}?`,
+          message: `Do you want to kill all processes running on port ${port}?`,
           default: true,
         });
 
         if (answer) {
-          execSync(`kill -9 ${output}`);
-          console.log(
-            ansis.green(
-              `Successfully killed process ${output} on port ${port}.`
-            )
-          );
+          for (const pid of pids) {
+            execSync(`kill -9 ${pid}`);
+            console.log(
+              ansis.green(`Successfully killed process ${pid} on port ${port}.`)
+            );
+          }
         } else {
-          console.log(ansis.red("Process not killed. Exiting..."));
+          console.log(ansis.red("Processes not killed. Exiting..."));
           process.exit(1);
         }
       }
