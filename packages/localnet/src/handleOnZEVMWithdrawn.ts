@@ -23,13 +23,9 @@ export const handleOnZEVMWithdrawn = async ({
   log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
   try {
     const receiver = args[2];
-    console.log("receiver", receiver);
     const zrc20 = args[3];
-    console.log("zrc20", zrc20);
     const amount = args[4];
-    console.log("amount", amount);
     const message = args[7];
-    console.log("message", message);
     (tss as NonceManager).reset();
     if (message !== "0x") {
       log("EVM", `Calling ${receiver} with message ${message}`);
