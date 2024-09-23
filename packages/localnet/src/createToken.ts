@@ -82,7 +82,7 @@ export const createToken = async ({
         deployOpts
       );
     await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
-
+  } else {
     (systemContract as any)
       .connect(fungibleModuleSigner)
       .setGasCoinZRC20(1, zrc20.target);
