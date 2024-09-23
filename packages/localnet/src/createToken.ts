@@ -53,7 +53,12 @@ export const createToken = async ({
 
   await zrc20.waitForDeployment();
 
-  if (!isGasToken) {
+  if (isGasToken) {
+    (systemContract as any)
+      .connect(fungibleModuleSigner)
+      .setGasCoinZRC20(1, zrc20.target);
+    (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
+  } else {
     const erc20Factory = new ethers.ContractFactory(
       TestERC20.abi,
       TestERC20.bytecode,
@@ -82,11 +87,6 @@ export const createToken = async ({
         deployOpts
       );
     await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
-  } else {
-    (systemContract as any)
-      .connect(fungibleModuleSigner)
-      .setGasCoinZRC20(1, zrc20.target);
-    (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
   }
 
   foreignCoins.push({
