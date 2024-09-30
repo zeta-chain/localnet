@@ -12,6 +12,7 @@ export const handleOnZEVMWithdrawn = async ({
   args,
   deployer,
   foreignCoins,
+  exitOnError = false,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
@@ -19,6 +20,7 @@ export const handleOnZEVMWithdrawn = async ({
   args: any;
   deployer: any;
   foreignCoins: any[];
+  exitOnError: boolean;
 }) => {
   log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
   try {
@@ -74,15 +76,16 @@ export const handleOnZEVMWithdrawn = async ({
         `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
       );
     }
-  } catch (e) {
+  } catch (err) {
     const revertOptions = args[9];
-    await handleOnRevertZEVM(
+    return await handleOnRevertZEVM({
       revertOptions,
-      e,
+      err,
       tss,
       log,
       protocolContracts,
-      deployOpts
-    );
+      deployOpts,
+      exitOnError,
+    });
   }
 };

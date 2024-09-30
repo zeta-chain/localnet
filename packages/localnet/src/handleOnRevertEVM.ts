@@ -8,12 +8,14 @@ export const handleOnRevertEVM = async ({
   provider,
   tss,
   protocolContracts,
+  exitOnError = false,
 }: {
   revertOptions: any;
   err: any;
   provider: any;
   tss: any;
   protocolContracts: any;
+  exitOnError: boolean;
 }) => {
   const callOnRevert = revertOptions[1];
   const revertAddress = revertOptions[0];
@@ -45,10 +47,14 @@ export const handleOnRevertEVM = async ({
       logs.forEach((data: any) => {
         log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
       });
-    } catch (e: any) {
-      logErr("EVM", `Gateway: Call onRevert failed: ${e}`);
+    } catch (err) {
+      const error = `Gateway: Call onRevert failed: ${err}`;
+      logErr("EVM", error);
+      if (exitOnError) throw new Error(error);
     }
   } else {
-    logErr("EVM", `Tx reverted without callOnRevert: ${err}`);
+    const error = `Tx reverted without callOnRevert: ${err}`;
+    logErr("EVM", error);
+    if (exitOnError) throw new Error(error);
   }
 };
