@@ -89,7 +89,10 @@ const localnet = async (args: any) => {
   };
 
   try {
-    const addr = await initLocalnet(args.port);
+    const addr = await initLocalnet({
+      port: args.port,
+      exitOnError: args.exitOnError,
+    });
 
     // EVM Contract Addresses
     const evmHeader = "\nEVM Contract Addresses";
@@ -135,7 +138,6 @@ const localnet = async (args: any) => {
 
   const handleExit = (signal: string) => {
     console.log(`\nReceived ${signal}, shutting down...`);
-    cleanup();
     process.exit();
   };
 
@@ -144,6 +146,7 @@ const localnet = async (args: any) => {
 
   process.on("exit", () => {
     console.log("Process exiting...");
+    cleanup();
   });
 
   if (args.stopAfterInit) {
@@ -164,7 +167,5 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
     types.string
   )
   .addFlag("forceKill", "Force kill any process on the port without prompting")
-  .addFlag(
-    "stopAfterInit",
-    "Stop the localnet after successful initialization"
-  );
+  .addFlag("stopAfterInit", "Stop the localnet after successful initialization")
+  .addFlag("exitOnError", "Exit with an error if revert is not handled");

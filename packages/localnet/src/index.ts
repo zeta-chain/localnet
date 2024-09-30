@@ -264,7 +264,13 @@ const deployProtocolContracts = async (
   };
 };
 
-export const initLocalnet = async (port: number) => {
+export const initLocalnet = async ({
+  port,
+  exitOnError,
+}: {
+  port: number;
+  exitOnError: boolean;
+}) => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
@@ -299,7 +305,7 @@ export const initLocalnet = async (port: number) => {
 
   // Listen to contracts events
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    handleOnZEVMCalled({ tss, provider, protocolContracts, args });
+    handleOnZEVMCalled({ tss, provider, protocolContracts, args, exitOnError });
   });
 
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
@@ -310,11 +316,12 @@ export const initLocalnet = async (port: number) => {
       args,
       deployer,
       foreignCoins,
+      exitOnError,
     });
   });
 
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    handleOnEVMCalled({
+    return await handleOnEVMCalled({
       tss,
       provider,
       protocolContracts,
@@ -322,6 +329,7 @@ export const initLocalnet = async (port: number) => {
       deployer,
       fungibleModuleSigner,
       foreignCoins,
+      exitOnError,
     });
   });
 
@@ -334,6 +342,7 @@ export const initLocalnet = async (port: number) => {
       deployer,
       fungibleModuleSigner,
       foreignCoins,
+      exitOnError,
     });
   });
 

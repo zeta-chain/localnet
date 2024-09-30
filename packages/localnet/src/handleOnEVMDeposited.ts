@@ -12,6 +12,7 @@ export const handleOnEVMDeposited = async ({
   deployer,
   fungibleModuleSigner,
   foreignCoins,
+  exitOnError = false,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
@@ -20,6 +21,7 @@ export const handleOnEVMDeposited = async ({
   deployer: any;
   fungibleModuleSigner: any;
   foreignCoins: any[];
+  exitOnError: boolean;
 }) => {
   log("EVM", "Gateway: 'Deposited' event emitted");
   try {
@@ -80,15 +82,16 @@ export const handleOnEVMDeposited = async ({
       await tx.wait();
       log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
     }
-  } catch (e: any) {
-    logErr("ZetaChain", `Error depositing: ${e}`);
+  } catch (err) {
+    logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];
-    await handleOnRevertEVM({
+    return await handleOnRevertEVM({
       revertOptions,
-      err: e,
+      err,
       tss,
       provider,
       protocolContracts,
+      exitOnError,
     });
   }
 };

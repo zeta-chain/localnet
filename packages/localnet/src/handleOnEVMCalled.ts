@@ -12,6 +12,7 @@ export const handleOnEVMCalled = async ({
   deployer,
   fungibleModuleSigner,
   foreignCoins,
+  exitOnError = false,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
@@ -20,6 +21,7 @@ export const handleOnEVMCalled = async ({
   deployer: any;
   fungibleModuleSigner: any;
   foreignCoins: any[];
+  exitOnError: boolean;
 }) => {
   log("EVM", "Gateway: 'Called' event emitted");
   try {
@@ -54,15 +56,16 @@ export const handleOnEVMCalled = async ({
     logs.forEach((data) => {
       log("ZetaChain", `Event from onCrossChainCall: ${JSON.stringify(data)}`);
     });
-  } catch (e: any) {
-    logErr("ZetaChain", `Error executing onCrossChainCall: ${e}`);
+  } catch (err: any) {
+    logErr("ZetaChain", `Error executing onCrossChainCall: ${err}`);
     const revertOptions = args[3];
-    await handleOnRevertEVM({
+    return await handleOnRevertEVM({
       revertOptions,
-      err: e,
+      err,
       tss,
       provider,
       protocolContracts,
+      exitOnError,
     });
   }
 };
