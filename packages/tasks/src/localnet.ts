@@ -89,7 +89,7 @@ const localnet = async (args: any) => {
   };
 
   try {
-    const addr = await initLocalnet(args.port);
+    const addr = await initLocalnet({ port: args.port });
 
     // EVM Contract Addresses
     const evmHeader = "\nEVM Contract Addresses";

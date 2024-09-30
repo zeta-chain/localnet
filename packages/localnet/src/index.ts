@@ -264,7 +264,7 @@ const deployProtocolContracts = async (
   };
 };
 
-export const initLocalnet = async (port: number) => {
+export const initLocalnet = async ({ port }: { port: number }) => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
