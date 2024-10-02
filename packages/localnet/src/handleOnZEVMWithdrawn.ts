@@ -29,20 +29,7 @@ export const handleOnZEVMWithdrawn = async ({
     const amount = args[4];
     const message = args[7];
     (tss as NonceManager).reset();
-    if (message !== "0x") {
-      log("EVM", `Calling ${receiver} with message ${message}`);
-      const executeTx = await protocolContracts.gatewayEVM
-        .connect(tss)
-        .execute(receiver, message, deployOpts);
-      await executeTx.wait();
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-      logs.forEach((data) => {
-        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
-      });
-    }
+
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const coinType = await zrc20Contract.COIN_TYPE();
     if (coinType === 1n) {
@@ -75,6 +62,20 @@ export const handleOnZEVMWithdrawn = async ({
         "EVM",
         `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
       );
+    }
+    if (message !== "0x") {
+      log("EVM", `Calling ${receiver} with message ${message}`);
+      const executeTx = await protocolContracts.gatewayEVM
+        .connect(tss)
+        .execute(receiver, message, deployOpts);
+      await executeTx.wait();
+      const logs = await provider.getLogs({
+        address: receiver,
+        fromBlock: "latest",
+      });
+      logs.forEach((data) => {
+        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
+      });
     }
   } catch (err) {
     const revertOptions = args[9];
