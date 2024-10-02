@@ -44,7 +44,7 @@ ZetaChain Contract Addresses
 │  Fungible Module  │ '0x735b14BB79463307AAcBED86DAf3322B1e6226aB' │
 │  System Contract  │ '0x610178dA211FEF7D417bC0e6FeD39F05609AD788' │
 │  ZRC-20 USDC.ETH  │ '0x9fd96203f7b22bCF72d9DCb40ff98302376cE09c' │
-│  ZRC-20 ETH.ETH   │ '0x91d18e54DAf4F677cB28167158d6dd21F6aB3921' │
+│  ZRC-20 ETH.ETH   │ '0x2ca7d64A7EFE2D62A725E2B35Cf7230D6677FfEe' │
 └───────────────────┴──────────────────────────────────────────────┘
 ```
 
