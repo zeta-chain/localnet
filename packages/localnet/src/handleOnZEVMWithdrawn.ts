@@ -29,36 +29,11 @@ export const handleOnZEVMWithdrawn = async ({
     const amount = args[4];
     const message = args[7];
     (tss as NonceManager).reset();
-    if (message !== "0x") {
-      log("EVM", `Calling ${receiver} with message ${message}`);
-      const executeTx = await protocolContracts.gatewayEVM
-        .connect(tss)
-        .execute(receiver, message, deployOpts);
-      await executeTx.wait();
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-      logs.forEach((data) => {
-        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
-      });
-    }
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const coinType = await zrc20Contract.COIN_TYPE();
-    if (coinType === 1n) {
-      const tx = await tss.sendTransaction({
-        to: receiver,
-        value: amount,
-        ...deployOpts,
-      });
-      await tx.wait();
-      log(
-        "EVM",
-        `Transferred ${ethers.formatEther(
-          amount
-        )} native gas tokens from TSS to ${receiver}`
-      );
-    } else if (coinType === 2n) {
+    const isGasToken = coinType === 1n;
+    const isERC20orZETA = coinType === 2n;
+    const getERC20ByZRC20 = (zrc20: string) => {
       const foreignCoin = foreignCoins.find(
         (coin: any) => coin.zrc20_contract_address === zrc20
       );
@@ -66,15 +41,57 @@ export const handleOnZEVMWithdrawn = async ({
         logErr("EVM", `Foreign coin not found for ZRC20 address: ${zrc20}`);
         return;
       }
-      const erc20 = foreignCoin.asset;
-      const tx = await protocolContracts.custody
-        .connect(tss)
-        .withdraw(receiver, erc20, amount, deployOpts);
-      await tx.wait();
-      log(
-        "EVM",
-        `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-      );
+      return foreignCoin.asset;
+    };
+    if (message !== "0x") {
+      // The message is not empty, so this is a withhdrawAndCall operation
+      log("EVM", `Calling ${receiver} with message ${message}`);
+      if (isGasToken) {
+        const executeTx = await protocolContracts.gatewayEVM
+          .connect(tss)
+          .execute(receiver, message, deployOpts);
+        await executeTx.wait();
+      } else {
+        const erc20 = getERC20ByZRC20(zrc20);
+
+        const executeTx = await protocolContracts.gatewayEVM
+          .connect(tss)
+          .executeWithERC20(erc20, receiver, message, deployOpts);
+        await executeTx.wait();
+      }
+      const logs = await provider.getLogs({
+        address: receiver,
+        fromBlock: "latest",
+      });
+      logs.forEach((data) => {
+        log("EVM", `Event from contract: ${JSON.stringify(data)}`);
+      });
+    } else {
+      // The message is empty, so this is a withdraw operation
+      if (isGasToken) {
+        const tx = await tss.sendTransaction({
+          to: receiver,
+          value: amount,
+          ...deployOpts,
+        });
+        await tx.wait();
+        log(
+          "EVM",
+          `Transferred ${ethers.formatEther(
+            amount
+          )} native gas tokens from TSS to ${receiver}`
+        );
+      } else if (isERC20orZETA) {
+        const erc20 = getERC20ByZRC20(zrc20);
+        const tx = await protocolContracts.custody
+          .connect(tss)
+          .withdraw(receiver, erc20, amount, deployOpts);
+        await tx.wait();
+        log(
+          "EVM",
+          `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+        );
+      }
     }
   } catch (err) {
     const revertOptions = args[9];
