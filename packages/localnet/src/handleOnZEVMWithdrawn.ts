@@ -10,6 +10,7 @@ export const handleOnZEVMWithdrawn = async ({
   provider,
   protocolContracts,
   args,
+  fungibleModuleSigner,
   deployer,
   foreignCoins,
   exitOnError = false,
@@ -18,6 +19,7 @@ export const handleOnZEVMWithdrawn = async ({
   provider: ethers.JsonRpcProvider;
   protocolContracts: any;
   args: any;
+  fungibleModuleSigner: any;
   deployer: any;
   foreignCoins: any[];
   exitOnError: boolean;
@@ -98,8 +100,10 @@ export const handleOnZEVMWithdrawn = async ({
     return await handleOnRevertZEVM({
       revertOptions,
       err,
+      provider,
       tss,
       log,
+      fungibleModuleSigner,
       protocolContracts,
       deployOpts,
       exitOnError,

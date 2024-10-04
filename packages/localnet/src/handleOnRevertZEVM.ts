@@ -1,16 +1,21 @@
 import { ethers, NonceManager } from "ethers";
+import { logErr } from "./log";
 
 export const handleOnRevertZEVM = async ({
   revertOptions,
   err,
+  provider,
   tss,
   log,
+  fungibleModuleSigner,
   protocolContracts,
   deployOpts,
   exitOnError = false,
 }: {
   revertOptions: any;
   err: any;
+  provider: any;
+  fungibleModuleSigner: any;
   tss: NonceManager;
   log: (chain: "EVM" | "ZetaChain", ...messages: string[]) => void;
   protocolContracts: any;
@@ -30,18 +35,27 @@ export const handleOnRevertZEVM = async ({
     log("ZetaChain", "Gateway: calling executeRevert");
     try {
       tss.reset();
-      await protocolContracts.gatewayZEVM
-        .connect(tss)
+      const tx = await protocolContracts.gatewayZEVM
+        .connect(fungibleModuleSigner)
         .executeRevert(revertAddress, revertContext, deployOpts);
-      log("ZetaChain", "Gateway: Call onRevert success");
+      await tx.wait();
+      log("ZetaChain", "Gateway: successfully called onRevert");
+      const logs = await provider.getLogs({
+        address: revertAddress,
+        fromBlock: "latest",
+      });
+
+      logs.forEach((data: any) => {
+        log("ZetaChain", `Event from onRevert: ${JSON.stringify(data)}`);
+      });
     } catch (err) {
       const error = `Gateway: Call onRevert failed: ${err}`;
-      log("ZetaChain", error);
+      logErr("ZetaChain", error);
       if (exitOnError) throw new Error(error);
     }
   } else {
     const error = `Tx reverted without callOnRevert: ${err}`;
-    log("ZetaChain", error);
+    logErr("ZetaChain", error);
     if (exitOnError) throw new Error(error);
   }
 };
