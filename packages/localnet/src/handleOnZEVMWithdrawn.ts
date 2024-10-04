@@ -46,19 +46,18 @@ export const handleOnZEVMWithdrawn = async ({
       return foreignCoin.asset;
     };
     if (message !== "0x") {
-      // The message is not empty, so this is a withhdrawAndCall operation
+      // The message is not empty, so this is a withdrawAndCall operation
       log("EVM", `Calling ${receiver} with message ${message}`);
       if (isGasToken) {
         const executeTx = await protocolContracts.gatewayEVM
           .connect(tss)
-          .execute(receiver, message, deployOpts);
+          .execute(receiver, message, { value: amount, ...deployOpts });
         await executeTx.wait();
       } else {
         const erc20 = getERC20ByZRC20(zrc20);
-
         const executeTx = await protocolContracts.gatewayEVM
-          .connect(tss)
-          .executeWithERC20(erc20, receiver, message, deployOpts);
+          .connect(tss) // should be custody
+          .executeWithERC20(erc20, receiver, amount, message, deployOpts);
         await executeTx.wait();
       }
       const logs = await provider.getLogs({
