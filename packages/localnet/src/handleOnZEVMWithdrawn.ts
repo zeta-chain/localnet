@@ -54,10 +54,11 @@ export const handleOnZEVMWithdrawn = async ({
           .execute(receiver, message, { value: amount, ...deployOpts });
         await executeTx.wait();
       } else {
+        console.log("!!!");
         const erc20 = getERC20ByZRC20(zrc20);
-        const executeTx = await protocolContracts.gatewayEVM
-          .connect(tss) // should be custody
-          .executeWithERC20(erc20, receiver, amount, message, deployOpts);
+        const executeTx = await protocolContracts.custody
+          .connect(tss)
+          .withdrawAndCall(receiver, erc20, amount, message, deployOpts);
         await executeTx.wait();
       }
       const logs = await provider.getLogs({
