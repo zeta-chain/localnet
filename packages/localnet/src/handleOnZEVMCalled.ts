@@ -9,12 +9,14 @@ export const handleOnZEVMCalled = async ({
   provider,
   protocolContracts,
   args,
+  fungibleModuleSigner,
   exitOnError = false,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
   protocolContracts: any;
   args: any;
+  fungibleModuleSigner: any;
   exitOnError: boolean;
 }) => {
   log("ZetaChain", "Gateway: 'Called' event emitted");
@@ -38,10 +40,13 @@ export const handleOnZEVMCalled = async ({
     });
     await executeTx.wait();
   } catch (err) {
+    logErr("EVM", `Error executing a contract: ${err}`);
     const revertOptions = args[5];
     return await handleOnRevertZEVM({
       revertOptions,
       err,
+      provider,
+      fungibleModuleSigner,
       tss,
       log,
       protocolContracts,

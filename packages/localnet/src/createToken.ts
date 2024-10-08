@@ -82,6 +82,13 @@ export const createToken = async ({
     await (erc20 as any)
       .connect(deployer)
       .mint(
+        tss.getAddress(),
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      );
+    await (erc20 as any)
+      .connect(deployer)
+      .mint(
         await deployer.getAddress(),
         ethers.parseUnits("1000000", erc20Decimals),
         deployOpts

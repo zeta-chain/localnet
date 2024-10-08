@@ -4,7 +4,6 @@ import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
-import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
@@ -305,7 +304,14 @@ export const initLocalnet = async ({
 
   // Listen to contracts events
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    handleOnZEVMCalled({ tss, provider, protocolContracts, args, exitOnError });
+    handleOnZEVMCalled({
+      tss,
+      provider,
+      fungibleModuleSigner,
+      protocolContracts,
+      args,
+      exitOnError,
+    });
   });
 
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
@@ -315,6 +321,7 @@ export const initLocalnet = async ({
       protocolContracts,
       args,
       deployer,
+      fungibleModuleSigner,
       foreignCoins,
       exitOnError,
     });

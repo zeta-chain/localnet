@@ -10,6 +10,7 @@ export const handleOnZEVMWithdrawn = async ({
   provider,
   protocolContracts,
   args,
+  fungibleModuleSigner,
   deployer,
   foreignCoins,
   exitOnError = false,
@@ -18,6 +19,7 @@ export const handleOnZEVMWithdrawn = async ({
   provider: ethers.JsonRpcProvider;
   protocolContracts: any;
   args: any;
+  fungibleModuleSigner: any;
   deployer: any;
   foreignCoins: any[];
   exitOnError: boolean;
@@ -44,19 +46,19 @@ export const handleOnZEVMWithdrawn = async ({
       return foreignCoin.asset;
     };
     if (message !== "0x") {
-      // The message is not empty, so this is a withhdrawAndCall operation
+      // The message is not empty, so this is a withdrawAndCall operation
       log("EVM", `Calling ${receiver} with message ${message}`);
       if (isGasToken) {
         const executeTx = await protocolContracts.gatewayEVM
           .connect(tss)
-          .execute(receiver, message, deployOpts);
+          .execute(receiver, message, { value: amount, ...deployOpts });
         await executeTx.wait();
       } else {
+        console.log("!!!");
         const erc20 = getERC20ByZRC20(zrc20);
-
-        const executeTx = await protocolContracts.gatewayEVM
+        const executeTx = await protocolContracts.custody
           .connect(tss)
-          .executeWithERC20(erc20, receiver, message, deployOpts);
+          .withdrawAndCall(receiver, erc20, amount, message, deployOpts);
         await executeTx.wait();
       }
       const logs = await provider.getLogs({
@@ -98,8 +100,10 @@ export const handleOnZEVMWithdrawn = async ({
     return await handleOnRevertZEVM({
       revertOptions,
       err,
+      provider,
       tss,
       log,
+      fungibleModuleSigner,
       protocolContracts,
       deployOpts,
       exitOnError,
