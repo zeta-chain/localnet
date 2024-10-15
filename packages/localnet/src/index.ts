@@ -147,7 +147,28 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
     ZetaConnectorNonNative.bytecode,
     deployer
   );
-  const zetaConnector = await zetaConnectorFactory.deploy(
+  const zetaConnectorImpl = await zetaConnectorFactory.deploy(deployOpts);
+
+  const custodyFactory = new ethers.ContractFactory(
+    Custody.abi,
+    Custody.bytecode,
+    deployer
+  );
+  const custodyImpl = await custodyFactory.deploy(deployOpts);
+
+  const zetaConnectorProxy = new ethers.Contract(
+    zetaConnectorImpl.target,
+    ZetaConnectorNonNative.abi,
+    deployer
+  );
+
+  const custodyProxy = new ethers.Contract(
+    custodyImpl.target,
+    Custody.abi,
+    deployer
+  );
+
+  await zetaConnectorProxy.initialize(
     gatewayEVM.target,
     testEVMZeta.target,
     await tss.getAddress(),
@@ -155,12 +176,7 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
     deployOpts
   );
 
-  const custodyFactory = new ethers.ContractFactory(
-    Custody.abi,
-    Custody.bytecode,
-    deployer
-  );
-  const custody = await custodyFactory.deploy(
+  await custodyProxy.initialize(
     gatewayEVM.target,
     await tss.getAddress(),
     await deployer.getAddress(),
@@ -169,11 +185,17 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
 
   await (gatewayEVM as any)
     .connect(deployer)
-    .setCustody(custody.target, deployOpts);
+    .setCustody(custodyImpl.target, deployOpts);
   await (gatewayEVM as any)
     .connect(deployer)
-    .setConnector(zetaConnector.target, deployOpts);
-  return { zetaConnector, gatewayEVM, custody, testEVMZeta };
+    .setConnector(zetaConnectorImpl.target, deployOpts);
+
+  return {
+    zetaConnector: zetaConnectorProxy,
+    gatewayEVM,
+    custody: custodyProxy,
+    testEVMZeta,
+  };
 };
 
 const deployProtocolContracts = async (
