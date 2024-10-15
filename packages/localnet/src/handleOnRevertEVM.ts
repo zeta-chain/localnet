@@ -4,6 +4,8 @@ import { ethers, NonceManager } from "ethers";
 
 export const handleOnRevertEVM = async ({
   revertOptions,
+  asset,
+  amount,
   err,
   provider,
   tss,
@@ -12,6 +14,8 @@ export const handleOnRevertEVM = async ({
 }: {
   revertOptions: any;
   err: any;
+  asset: any;
+  amount: any;
   provider: any;
   tss: any;
   protocolContracts: any;
@@ -21,8 +25,8 @@ export const handleOnRevertEVM = async ({
   const revertAddress = revertOptions[0];
   const revertMessage = revertOptions[3];
   const revertContext = {
-    asset: ethers.ZeroAddress,
-    amount: 0,
+    asset,
+    amount, // this should deduct the gas costs
     revertMessage,
   };
   if (callOnRevert) {

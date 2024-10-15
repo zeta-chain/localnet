@@ -98,7 +98,7 @@ export const createToken = async ({
 
   foreignCoins.push({
     zrc20_contract_address: zrc20.target,
-    asset: isGasToken ? "" : (erc20 as any).target,
+    asset: isGasToken ? ethers.ZeroAddress : (erc20 as any).target,
     foreign_chain_id: "1",
     decimals: 18,
     name: `ZetaChain ZRC-20 ${symbol}`,

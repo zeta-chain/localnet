@@ -24,12 +24,11 @@ export const handleOnEVMDeposited = async ({
   exitOnError: boolean;
 }) => {
   log("EVM", "Gateway: 'Deposited' event emitted");
+  const receiver = args[1];
+  const amount = args[2];
+  const asset = args[3];
+  const message = args[4];
   try {
-    const receiver = args[1];
-    const amount = args[2];
-    const asset = args[3];
-    const message = args[4];
-
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
@@ -87,6 +86,8 @@ export const handleOnEVMDeposited = async ({
     const revertOptions = args[5];
     return await handleOnRevertEVM({
       revertOptions,
+      asset,
+      amount,
       err,
       tss,
       provider,
