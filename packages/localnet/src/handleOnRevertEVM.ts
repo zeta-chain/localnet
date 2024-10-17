@@ -52,22 +52,13 @@ export const handleOnRevertEVM = async ({
             deployOpts,
           });
       } else {
-        console.log(
-          "!!!",
-          revertAddress,
-          token,
-          amount,
-          "0x",
-          revertContext,
-          deployOpts
-        );
-        tx = await protocolContracts.custody // this is failing
+        tx = await protocolContracts.custody
           .connect(tss)
           .withdrawAndRevert(
             revertAddress,
             token,
             amount,
-            "",
+            "0x",
             revertContext,
             deployOpts
           );

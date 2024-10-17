@@ -160,7 +160,7 @@ export const handleOnEVMDeposited = async ({
       err,
       tss,
       isGas,
-      token: "",
+      token,
       provider,
       protocolContracts,
       exitOnError,
