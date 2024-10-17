@@ -1,6 +1,6 @@
 import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
-import { ethers, NonceManager } from "ethers";
+import { NonceManager } from "ethers";
 
 export const handleOnRevertEVM = async ({
   revertOptions,
@@ -10,6 +10,8 @@ export const handleOnRevertEVM = async ({
   provider,
   tss,
   protocolContracts,
+  isGas,
+  token,
   exitOnError = false,
 }: {
   revertOptions: any;
@@ -19,6 +21,8 @@ export const handleOnRevertEVM = async ({
   provider: any;
   tss: any;
   protocolContracts: any;
+  isGas: boolean;
+  token: string;
   exitOnError: boolean;
 }) => {
   const callOnRevert = revertOptions[1];
@@ -38,9 +42,36 @@ export const handleOnRevertEVM = async ({
         )})`
       );
       (tss as NonceManager).reset();
-      const tx = await protocolContracts.gatewayEVM
-        .connect(tss)
-        .executeRevert(revertAddress, "0x", revertContext, deployOpts);
+      let tx;
+      if (isGas) {
+        console.log(protocolContracts.gatewayEVM.connect(tss).functions);
+        tx = await protocolContracts.gatewayEVM
+          .connect(tss)
+          .executeRevert(revertAddress, "0x", revertContext, {
+            value: amount,
+            deployOpts,
+          });
+      } else {
+        console.log(
+          "!!!",
+          revertAddress,
+          token,
+          amount,
+          "0x",
+          revertContext,
+          deployOpts
+        );
+        tx = await protocolContracts.custody // this is failing
+          .connect(tss)
+          .withdrawAndRevert(
+            revertAddress,
+            token,
+            amount,
+            "",
+            revertContext,
+            deployOpts
+          );
+      }
       await tx.wait();
       log("EVM", "Gateway: successfully called onRevert");
       const logs = await provider.getLogs({
@@ -51,10 +82,9 @@ export const handleOnRevertEVM = async ({
       logs.forEach((data: any) => {
         log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
       });
-    } catch (err) {
-      const error = `Gateway: Call onRevert failed: ${err}`;
-      logErr("EVM", error);
-      if (exitOnError) throw new Error(error);
+    } catch (err: any) {
+      logErr("EVM", `Gateway: Call onRevert failed`, err);
+      if (exitOnError) throw new Error(err);
     }
   } else {
     const error = `Tx reverted without callOnRevert: ${err}`;

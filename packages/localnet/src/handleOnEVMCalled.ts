@@ -65,6 +65,8 @@ export const handleOnEVMCalled = async ({
       amount: 0,
       asset: ethers.ZeroAddress,
       tss,
+      isGas: true,
+      token: "",
       provider,
       protocolContracts,
       exitOnError,
