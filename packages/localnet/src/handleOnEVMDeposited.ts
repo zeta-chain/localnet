@@ -2,6 +2,7 @@ import { ethers, NonceManager } from "ethers";
 import { handleOnRevertEVM } from "./handleOnRevertEVM";
 import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
 // event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload, RevertOptions revertOptions);
 export const handleOnEVMDeposited = async ({
@@ -28,21 +29,20 @@ export const handleOnEVMDeposited = async ({
   const amount = args[2];
   const asset = args[3];
   const message = args[4];
+  let foreignCoin;
+  if (asset === ethers.ZeroAddress) {
+    foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
+  } else {
+    foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
+  }
+
+  if (!foreignCoin) {
+    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    return;
+  }
+
+  const zrc20 = foreignCoin.zrc20_contract_address;
   try {
-    let foreignCoin;
-    if (asset === ethers.ZeroAddress) {
-      foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
-    } else {
-      foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
-    }
-
-    if (!foreignCoin) {
-      logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
-      return;
-    }
-
-    const zrc20 = foreignCoin.zrc20_contract_address;
-
     const context = {
       origin: protocolContracts.gatewayZEVM.target,
       sender: await fungibleModuleSigner.getAddress(),
@@ -84,10 +84,15 @@ export const handleOnEVMDeposited = async ({
   } catch (err) {
     logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];
+    const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+    const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
+      revertOptions[4]
+    );
+    const amountReverted = amount - gasFee;
     return await handleOnRevertEVM({
       revertOptions,
       asset,
-      amount,
+      amount: amountReverted,
       err,
       tss,
       provider,

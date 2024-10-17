@@ -26,7 +26,7 @@ export const handleOnRevertEVM = async ({
   const revertMessage = revertOptions[3];
   const revertContext = {
     asset,
-    amount, // this should deduct the gas costs
+    amount,
     revertMessage,
   };
   if (callOnRevert) {
