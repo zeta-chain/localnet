@@ -44,7 +44,6 @@ export const handleOnRevertEVM = async ({
       (tss as NonceManager).reset();
       let tx;
       if (isGas) {
-        console.log(protocolContracts.gatewayEVM.connect(tss).functions);
         tx = await protocolContracts.gatewayEVM
           .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, {
