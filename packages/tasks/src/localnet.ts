@@ -121,6 +121,7 @@ const localnet = async (args: any) => {
       ZETA: addr.zetaZetaChain,
       "Fungible Module": addr.fungibleModuleZetaChain,
       "System Contract": addr.sytemContractZetaChain,
+      "Uniswap Router": addr.uniswapRouter,
       ...addr.foreignCoins.reduce((acc: any, coin: any) => {
         acc[`ZRC-20 ${coin.symbol}`] = coin.zrc20_contract_address;
         return acc;

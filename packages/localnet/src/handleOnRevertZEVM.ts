@@ -4,6 +4,8 @@ import { logErr } from "./log";
 export const handleOnRevertZEVM = async ({
   revertOptions,
   err,
+  asset,
+  amount,
   provider,
   tss,
   log,
@@ -14,6 +16,8 @@ export const handleOnRevertZEVM = async ({
 }: {
   revertOptions: any;
   err: any;
+  asset: any;
+  amount: any;
   provider: any;
   fungibleModuleSigner: any;
   tss: NonceManager;
@@ -26,8 +30,8 @@ export const handleOnRevertZEVM = async ({
   const revertAddress = revertOptions[0];
   const revertMessage = revertOptions[3];
   const revertContext = {
-    asset: ethers.ZeroAddress,
-    amount: 0,
+    asset,
+    amount,
     revertMessage,
   };
 

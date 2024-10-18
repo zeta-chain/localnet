@@ -45,6 +45,8 @@ export const handleOnZEVMCalled = async ({
     return await handleOnRevertZEVM({
       revertOptions,
       err,
+      amount: 0,
+      asset: ethers.ZeroAddress,
       provider,
       fungibleModuleSigner,
       tss,
