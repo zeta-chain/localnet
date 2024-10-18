@@ -98,58 +98,18 @@ export const handleOnEVMDeposited = async ({
         (coin) => coin.zrc20_contract_address === zrc20
       )?.asset;
       isGas = false;
-      const uniswapV2Router = new ethers.Contract(
-        protocolContracts.uniswapRouterInstance.target,
-        UniswapV2Router02.abi,
-        deployer
+      revertGasFee = await swapToCoverGas(
+        deployer,
+        zrc20,
+        gasZRC20,
+        gasFee,
+        amount,
+        await fungibleModuleSigner.getAddress(),
+        zrc20Contract,
+        provider,
+        protocolContracts.wzeta.target,
+        protocolContracts.uniswapRouterInstance.target
       );
-      deployer.reset();
-      const approvalTx = await zrc20Contract.approve(
-        protocolContracts.uniswapRouterInstance.target,
-        amount
-      );
-      await approvalTx.wait();
-
-      const path = [zrc20, protocolContracts.wzeta.target, gasZRC20];
-
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-      const maxZRC20ToSpend = amount;
-
-      try {
-        const swapTx = await uniswapV2Router.swapTokensForExactTokens(
-          gasFee,
-          maxZRC20ToSpend,
-          path,
-          await fungibleModuleSigner.getAddress(),
-          deadline
-        );
-
-        const amountInZeta = await getAmounts(
-          "in",
-          provider,
-          gasFee,
-          protocolContracts.wzeta.target,
-          gasZRC20,
-          protocolContracts.uniswapRouterInstance.target,
-          UniswapV2Router02
-        );
-
-        const amountInZRC20 = await getAmounts(
-          "in",
-          provider,
-          amountInZeta[0],
-          zrc20,
-          protocolContracts.wzeta.target,
-          protocolContracts.uniswapRouterInstance.target,
-          UniswapV2Router02
-        );
-
-        revertGasFee = amountInZRC20[0];
-
-        await swapTx.wait();
-      } catch (swapError) {
-        logErr("ZetaChain", `Error performing swap on Uniswap: ${swapError}`);
-      }
     }
     revertAmount = amount - revertGasFee;
     return await handleOnRevertEVM({
@@ -167,40 +127,103 @@ export const handleOnEVMDeposited = async ({
   }
 };
 
-/**
- * Retrieves the amounts for swapping tokens using UniswapV2.
- * @param {"in" | "out"} direction - The direction of the swap ("in" or "out").
- * @param {any} provider - The ethers provider.
- * @param {any} amount - The amount to swap.
- * @param {string} tokenA - The address of token A.
- * @param {string} tokenB - The address of token B.
- * @returns {Promise<any>} - The amounts for the swap.
- * @throws Will throw an error if the UniswapV2 router address cannot be retrieved.
- */
-const getAmounts = async (
-  direction: "in" | "out",
-  provider: any,
+const swapToCoverGas = async (
+  deployer: any,
+  zrc20: string,
+  gasZRC20: string,
+  gasFee: any,
   amount: any,
-  tokenA: string,
-  tokenB: string,
-  routerAddress: any,
-  routerABI: any
+  fungibleModule: any,
+  zrc20Contract: any,
+  provider: any,
+  wzeta: string,
+  router: string
 ) => {
-  if (!routerAddress) {
-    throw new Error("Cannot get uniswapV2Router02 address");
+  /**
+   * Retrieves the amounts for swapping tokens using UniswapV2.
+   * @param {"in" | "out"} direction - The direction of the swap ("in" or "out").
+   * @param {any} provider - The ethers provider.
+   * @param {any} amount - The amount to swap.
+   * @param {string} tokenA - The address of token A.
+   * @param {string} tokenB - The address of token B.
+   * @returns {Promise<any>} - The amounts for the swap.
+   * @throws Will throw an error if the UniswapV2 router address cannot be retrieved.
+   */
+  const getAmounts = async (
+    direction: "in" | "out",
+    provider: any,
+    amount: any,
+    tokenA: string,
+    tokenB: string,
+    routerAddress: any,
+    routerABI: any
+  ) => {
+    if (!routerAddress) {
+      throw new Error("Cannot get uniswapV2Router02 address");
+    }
+
+    const uniswapRouter = new ethers.Contract(
+      routerAddress,
+      routerABI.abi,
+      provider
+    );
+
+    const path = [tokenA, tokenB];
+
+    const amounts =
+      direction === "in"
+        ? await uniswapRouter.getAmountsIn(amount, path)
+        : await uniswapRouter.getAmountsOut(amount, path);
+    return amounts;
+  };
+
+  const uniswapV2Router = new ethers.Contract(
+    router,
+    UniswapV2Router02.abi,
+    deployer
+  );
+  deployer.reset();
+  const approvalTx = await zrc20Contract.approve(router, amount);
+  await approvalTx.wait();
+
+  const path = [zrc20, wzeta, gasZRC20];
+
+  const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+  const maxZRC20ToSpend = amount;
+
+  try {
+    const swapTx = await uniswapV2Router.swapTokensForExactTokens(
+      gasFee,
+      maxZRC20ToSpend,
+      path,
+      fungibleModule,
+      deadline
+    );
+
+    await swapTx.wait();
+  } catch (swapError) {
+    logErr("ZetaChain", `Error performing swap on Uniswap: ${swapError}`);
   }
 
-  const uniswapRouter = new ethers.Contract(
-    routerAddress,
-    routerABI.abi,
-    provider
+  const amountInZeta = await getAmounts(
+    "in",
+    provider,
+    gasFee,
+    wzeta,
+    gasZRC20,
+    router,
+    UniswapV2Router02
   );
 
-  const path = [tokenA, tokenB];
+  const amountInZRC20 = await getAmounts(
+    "in",
+    provider,
+    amountInZeta[0],
+    zrc20,
+    wzeta,
+    router,
+    UniswapV2Router02
+  );
 
-  const amounts =
-    direction === "in"
-      ? await uniswapRouter.getAmountsIn(amount, path)
-      : await uniswapRouter.getAmountsOut(amount, path);
-  return amounts;
+  return amountInZRC20[0];
 };
