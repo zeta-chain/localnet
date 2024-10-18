@@ -97,7 +97,6 @@ export const handleOnEVMDeposited = async ({
       token = foreignCoins.find(
         (coin) => coin.zrc20_contract_address === zrc20
       )?.asset;
-      console.log("token!", token);
       isGas = false;
       const uniswapV2Router = new ethers.Contract(
         protocolContracts.uniswapRouterInstance.target,
