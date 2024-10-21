@@ -22,13 +22,20 @@ export const handleOnZEVMCalled = async ({
   log("ZetaChain", "Gateway: 'Called' event emitted");
   try {
     tss.reset();
+    const sender = args[0];
     const receiver = args[2];
     const message = args[3];
+    const callOptions = args[4];
+    const isArbitraryCall = callOptions[1];
+    const messageContext = {
+      sender: isArbitraryCall ? ethers.ZeroAddress : sender,
+    };
+    console.log(messageContext);
     log("EVM", `Calling ${receiver} with message ${message}`);
 
     const executeTx = await protocolContracts.gatewayEVM
       .connect(tss)
-      .execute(receiver, message, deployOpts);
+      .execute(messageContext, receiver, message, deployOpts);
 
     const logs = await provider.getLogs({
       address: receiver,
