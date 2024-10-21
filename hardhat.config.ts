@@ -1,5 +1,6 @@
 import "./packages/tasks/src/localnet";
 import "./packages/tasks/src/stop";
+import "./packages/tasks/src/check";
 
 import { HardhatUserConfig } from "hardhat/config";
 
