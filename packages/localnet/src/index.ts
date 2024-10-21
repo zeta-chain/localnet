@@ -20,6 +20,11 @@ const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 const foreignCoins: any[] = [];
 
+// A hack to make BigInt serializable
+(BigInt as any).prototype["toJSON"] = function () {
+  return this.toString();
+};
+
 let protocolContracts: any;
 let deployer: Signer;
 let tss: Signer;
@@ -217,7 +222,6 @@ const deployProtocolContracts = async (
 
   const { uniswapFactoryInstance, uniswapRouterInstance } =
     await prepareUniswap(deployer, tss, wzeta);
-
   const { systemContract, gatewayZEVM } = await prepareZetaChain(
     deployer,
     wzeta.target,

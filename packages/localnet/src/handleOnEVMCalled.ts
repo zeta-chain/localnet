@@ -62,7 +62,11 @@ export const handleOnEVMCalled = async ({
     return await handleOnRevertEVM({
       revertOptions,
       err,
+      amount: 0,
+      asset: ethers.ZeroAddress,
       tss,
+      isGas: true,
+      token: "",
       provider,
       protocolContracts,
       exitOnError,

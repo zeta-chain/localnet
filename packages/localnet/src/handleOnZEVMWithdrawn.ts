@@ -25,26 +25,26 @@ export const handleOnZEVMWithdrawn = async ({
   exitOnError: boolean;
 }) => {
   log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
+  const getERC20ByZRC20 = (zrc20: string) => {
+    const foreignCoin = foreignCoins.find(
+      (coin: any) => coin.zrc20_contract_address === zrc20
+    );
+    if (!foreignCoin) {
+      logErr("EVM", `Foreign coin not found for ZRC20 address: ${zrc20}`);
+      return;
+    }
+    return foreignCoin.asset;
+  };
+  const zrc20 = args[3];
+  const amount = args[4];
   try {
     const receiver = args[2];
-    const zrc20 = args[3];
-    const amount = args[4];
     const message = args[7];
     (tss as NonceManager).reset();
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
     const isERC20orZETA = coinType === 2n;
-    const getERC20ByZRC20 = (zrc20: string) => {
-      const foreignCoin = foreignCoins.find(
-        (coin: any) => coin.zrc20_contract_address === zrc20
-      );
-      if (!foreignCoin) {
-        logErr("EVM", `Foreign coin not found for ZRC20 address: ${zrc20}`);
-        return;
-      }
-      return foreignCoin.asset;
-    };
     if (message !== "0x") {
       // The message is not empty, so this is a withdrawAndCall operation
       log("EVM", `Calling ${receiver} with message ${message}`);
@@ -54,7 +54,6 @@ export const handleOnZEVMWithdrawn = async ({
           .execute(receiver, message, { value: amount, ...deployOpts });
         await executeTx.wait();
       } else {
-        console.log("!!!");
         const erc20 = getERC20ByZRC20(zrc20);
         const executeTx = await protocolContracts.custody
           .connect(tss)
@@ -102,6 +101,8 @@ export const handleOnZEVMWithdrawn = async ({
       err,
       provider,
       tss,
+      asset: getERC20ByZRC20(zrc20),
+      amount,
       log,
       fungibleModuleSigner,
       protocolContracts,
