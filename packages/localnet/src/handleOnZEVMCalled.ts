@@ -30,7 +30,6 @@ export const handleOnZEVMCalled = async ({
     const messageContext = {
       sender: isArbitraryCall ? ethers.ZeroAddress : sender,
     };
-    console.log(messageContext);
     log("EVM", `Calling ${receiver} with message ${message}`);
 
     const executeTx = await protocolContracts.gatewayEVM

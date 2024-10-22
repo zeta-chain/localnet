@@ -4,8 +4,7 @@ import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
-// event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
-export const handleOnZEVMWithdrawn = async ({
+export const handleOnZEVMWithdrawnAndCalled = async ({
   tss,
   provider,
   protocolContracts,
@@ -24,7 +23,8 @@ export const handleOnZEVMWithdrawn = async ({
   foreignCoins: any[];
   exitOnError: boolean;
 }) => {
-  log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
+  log("ZetaChain", "Gateway: 'WithdrawnAndCalled' event emitted");
+  console.log(args);
   const getERC20ByZRC20 = (zrc20: string) => {
     const foreignCoin = foreignCoins.find(
       (coin: any) => coin.zrc20_contract_address === zrc20
@@ -35,8 +35,14 @@ export const handleOnZEVMWithdrawn = async ({
     }
     return foreignCoin.asset;
   };
+  const sender = args[0];
   const zrc20 = args[3];
   const amount = args[4];
+  const callOptions = args[8];
+  const isArbitraryCall = callOptions[1];
+  const messageContext = {
+    sender: isArbitraryCall ? ethers.ZeroAddress : sender,
+  };
   try {
     const receiver = args[2];
     const message = args[7];
@@ -45,30 +51,37 @@ export const handleOnZEVMWithdrawn = async ({
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
     const isERC20orZETA = coinType === 2n;
+    // The message is not empty, so this is a withdrawAndCall operation
+    log("EVM", `Calling ${receiver} with message ${message}`);
     if (isGasToken) {
-      const tx = await tss.sendTransaction({
-        to: receiver,
-        value: amount,
-        ...deployOpts,
-      });
-      await tx.wait();
-      log(
-        "EVM",
-        `Transferred ${ethers.formatEther(
-          amount
-        )} native gas tokens from TSS to ${receiver}`
-      );
-    } else if (isERC20orZETA) {
-      const erc20 = getERC20ByZRC20(zrc20);
-      const tx = await protocolContracts.custody
+      const executeTx = await protocolContracts.gatewayEVM
         .connect(tss)
-        .withdraw(receiver, erc20, amount, deployOpts);
-      await tx.wait();
-      log(
-        "EVM",
-        `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-      );
+        .execute(messageContext, receiver, message, {
+          value: amount,
+          ...deployOpts,
+        });
+      await executeTx.wait();
+    } else {
+      const erc20 = getERC20ByZRC20(zrc20);
+      const executeTx = await protocolContracts.custody
+        .connect(tss)
+        .withdrawAndCall(
+          messageContext,
+          receiver,
+          erc20,
+          amount,
+          message,
+          deployOpts
+        );
+      await executeTx.wait();
     }
+    const logs = await provider.getLogs({
+      address: receiver,
+      fromBlock: "latest",
+    });
+    logs.forEach((data) => {
+      log("EVM", `Event from contract: ${JSON.stringify(data)}`);
+    });
   } catch (err) {
     const revertOptions = args[9];
     return await handleOnRevertZEVM({

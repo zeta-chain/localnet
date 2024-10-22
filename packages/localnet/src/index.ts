@@ -15,6 +15,7 @@ import { deployOpts } from "./deployOpts";
 import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
+import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -352,6 +353,22 @@ export const initLocalnet = async ({
       exitOnError,
     });
   });
+
+  protocolContracts.gatewayZEVM.on(
+    "WithdrawnAndCalled",
+    async (...args: Array<any>) => {
+      handleOnZEVMWithdrawnAndCalled({
+        tss,
+        provider,
+        protocolContracts,
+        args,
+        deployer,
+        fungibleModuleSigner,
+        foreignCoins,
+        exitOnError,
+      });
+    }
+  );
 
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await handleOnEVMCalled({
