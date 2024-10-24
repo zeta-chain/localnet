@@ -25,12 +25,12 @@ export const handleOnEVMCalled = async ({
 }) => {
   log("EVM", "Gateway: 'Called' event emitted");
   try {
+    const sender = args[0];
     const receiver = args[1];
     const message = args[2];
-
     (deployer as NonceManager).reset();
     const context = {
-      origin: protocolContracts.gatewayZEVM.target,
+      origin: sender,
       sender: await fungibleModuleSigner.getAddress(),
       chainID: 1,
     };

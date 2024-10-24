@@ -15,6 +15,7 @@ import { deployOpts } from "./deployOpts";
 import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
+import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -152,7 +153,28 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
     ZetaConnectorNonNative.bytecode,
     deployer
   );
-  const zetaConnector = await zetaConnectorFactory.deploy(
+  const zetaConnectorImpl = await zetaConnectorFactory.deploy(deployOpts);
+
+  const custodyFactory = new ethers.ContractFactory(
+    Custody.abi,
+    Custody.bytecode,
+    deployer
+  );
+  const custodyImpl = await custodyFactory.deploy(deployOpts);
+
+  const zetaConnectorProxy = new ethers.Contract(
+    zetaConnectorImpl.target,
+    ZetaConnectorNonNative.abi,
+    deployer
+  );
+
+  const custodyProxy = new ethers.Contract(
+    custodyImpl.target,
+    Custody.abi,
+    deployer
+  );
+
+  await zetaConnectorProxy.initialize(
     gatewayEVM.target,
     testEVMZeta.target,
     await tss.getAddress(),
@@ -160,12 +182,7 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
     deployOpts
   );
 
-  const custodyFactory = new ethers.ContractFactory(
-    Custody.abi,
-    Custody.bytecode,
-    deployer
-  );
-  const custody = await custodyFactory.deploy(
+  await custodyProxy.initialize(
     gatewayEVM.target,
     await tss.getAddress(),
     await deployer.getAddress(),
@@ -174,11 +191,17 @@ const prepareEVM = async (deployer: Signer, TSS: Signer) => {
 
   await (gatewayEVM as any)
     .connect(deployer)
-    .setCustody(custody.target, deployOpts);
+    .setCustody(custodyImpl.target, deployOpts);
   await (gatewayEVM as any)
     .connect(deployer)
-    .setConnector(zetaConnector.target, deployOpts);
-  return { zetaConnector, gatewayEVM, custody, testEVMZeta };
+    .setConnector(zetaConnectorImpl.target, deployOpts);
+
+  return {
+    zetaConnector: zetaConnectorProxy,
+    gatewayEVM,
+    custody: custodyProxy,
+    testEVMZeta,
+  };
 };
 
 const deployProtocolContracts = async (
@@ -330,6 +353,22 @@ export const initLocalnet = async ({
       exitOnError,
     });
   });
+
+  protocolContracts.gatewayZEVM.on(
+    "WithdrawnAndCalled",
+    async (...args: Array<any>) => {
+      handleOnZEVMWithdrawnAndCalled({
+        tss,
+        provider,
+        protocolContracts,
+        args,
+        deployer,
+        fungibleModuleSigner,
+        foreignCoins,
+        exitOnError,
+      });
+    }
+  );
 
   protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await handleOnEVMCalled({
