@@ -3,34 +3,26 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { deployOpts } from "./deployOpts";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 
-export const createToken = async ({
-  fungibleModuleSigner,
-  deployer,
-  systemContract,
-  gatewayZEVM,
-  foreignCoins,
-  custody,
-  tss,
-  uniswapFactoryInstance,
-  wzeta,
-  uniswapRouterInstance,
-  symbol,
-  isGasToken = false,
-}: {
-  fungibleModuleSigner: any;
-  deployer: ethers.Signer;
-  systemContract: any;
-  gatewayZEVM: any;
-  foreignCoins: any[];
-  custody: ethers.BaseContract;
-  tss: ethers.Signer;
-  uniswapFactoryInstance: ethers.BaseContract;
-  wzeta: ethers.BaseContract;
-  uniswapRouterInstance: ethers.BaseContract;
-  symbol: string;
-  isGasToken: boolean;
-}) => {
+export const createToken = async (
+  addresses: any,
+  custody: any,
+  symbol: string,
+  isGasToken: boolean,
+  chainID: string
+) => {
   let erc20;
+
+  const {
+    fungibleModuleSigner,
+    deployer,
+    foreignCoins,
+    tss,
+    systemContract,
+    gatewayZEVM,
+    uniswapFactoryInstance,
+    uniswapRouterInstance,
+    wzeta,
+  } = addresses;
 
   const zrc20Factory = new ethers.ContractFactory(
     ZRC20.abi,
@@ -40,10 +32,10 @@ export const createToken = async ({
   const zrc20 = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
-      `ZRC-20 ${symbol}`,
+      `ZRC-20 ${symbol} on ${chainID}`,
       `ZRC20${symbol}`,
       18,
-      1,
+      chainID,
       isGasToken ? 1 : 2,
       1,
       systemContract.target,
@@ -56,8 +48,10 @@ export const createToken = async ({
   if (isGasToken) {
     (systemContract as any)
       .connect(fungibleModuleSigner)
-      .setGasCoinZRC20(1, zrc20.target);
-    (systemContract as any).connect(fungibleModuleSigner).setGasPrice(1, 1);
+      .setGasCoinZRC20(chainID, zrc20.target);
+    (systemContract as any)
+      .connect(fungibleModuleSigner)
+      .setGasPrice(chainID, 1);
   } else {
     const erc20Factory = new ethers.ContractFactory(
       TestERC20.abi,
@@ -99,10 +93,10 @@ export const createToken = async ({
   foreignCoins.push({
     zrc20_contract_address: zrc20.target,
     asset: isGasToken ? "" : (erc20 as any).target,
-    foreign_chain_id: "1",
+    foreign_chain_id: chainID,
     decimals: 18,
-    name: `ZetaChain ZRC-20 ${symbol}`,
-    symbol: `${symbol}.ETH`,
+    name: `ZRC-20 ${symbol} on ${chainID}`,
+    symbol: `${symbol}`,
     coin_type: isGasToken ? "Gas" : "ERC20",
     gas_limit: null,
     paused: null,

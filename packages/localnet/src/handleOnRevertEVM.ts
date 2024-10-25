@@ -9,10 +9,13 @@ export const handleOnRevertEVM = async ({
   err,
   provider,
   tss,
-  protocolContracts,
   isGas,
   token,
   exitOnError = false,
+  chain,
+  gatewayEVM,
+  custody,
+  sender,
 }: {
   revertOptions: any;
   err: any;
@@ -20,23 +23,22 @@ export const handleOnRevertEVM = async ({
   amount: any;
   provider: any;
   tss: any;
-  protocolContracts: any;
   isGas: boolean;
   token: string;
   exitOnError: boolean;
+  chain: string;
+  gatewayEVM: any;
+  custody: any;
+  sender: string;
 }) => {
   const callOnRevert = revertOptions[1];
   const revertAddress = revertOptions[0];
   const revertMessage = revertOptions[3];
-  const revertContext = {
-    asset,
-    amount,
-    revertMessage,
-  };
+  const revertContext = { asset, amount, revertMessage, sender };
   if (callOnRevert) {
     try {
       log(
-        "EVM",
+        chain,
         `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
           revertContext
         )})`
@@ -44,14 +46,14 @@ export const handleOnRevertEVM = async ({
       (tss as NonceManager).reset();
       let tx;
       if (isGas) {
-        tx = await protocolContracts.gatewayEVM
+        tx = await gatewayEVM
           .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, {
             value: amount,
             deployOpts,
           });
       } else {
-        tx = await protocolContracts.custody
+        tx = await custody
           .connect(tss)
           .withdrawAndRevert(
             revertAddress,
@@ -63,22 +65,22 @@ export const handleOnRevertEVM = async ({
           );
       }
       await tx.wait();
-      log("EVM", "Gateway: successfully called onRevert");
+      log(chain, "Gateway: successfully called onRevert");
       const logs = await provider.getLogs({
         address: revertAddress,
         fromBlock: "latest",
       });
 
       logs.forEach((data: any) => {
-        log("EVM", `Event from onRevert: ${JSON.stringify(data)}`);
+        log(chain, `Event from onRevert: ${JSON.stringify(data)}`);
       });
     } catch (err: any) {
-      logErr("EVM", `Gateway: Call onRevert failed`, err);
+      logErr(chain, `Gateway: Call onRevert failed`, err);
       if (exitOnError) throw new Error(err);
     }
   } else {
     const error = `Tx reverted without callOnRevert: ${err}`;
-    logErr("EVM", error);
+    logErr(chain, error);
     if (exitOnError) throw new Error(error);
   }
 };

@@ -3,7 +3,6 @@ import { handleOnRevertEVM } from "./handleOnRevertEVM";
 import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
 
-// event Called(address indexed sender, address indexed receiver, bytes payload, RevertOptions revertOptions);
 export const handleOnEVMCalled = async ({
   tss,
   provider,
@@ -13,6 +12,10 @@ export const handleOnEVMCalled = async ({
   fungibleModuleSigner,
   foreignCoins,
   exitOnError = false,
+  chainID,
+  chain,
+  gatewayEVM,
+  custody,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
@@ -22,20 +25,24 @@ export const handleOnEVMCalled = async ({
   fungibleModuleSigner: any;
   foreignCoins: any[];
   exitOnError: boolean;
+  chainID: string;
+  chain: string;
+  gatewayEVM: any;
+  custody: any;
 }) => {
-  log("EVM", "Gateway: 'Called' event emitted");
+  log(chain, "Gateway: 'Called' event emitted");
+  const sender = args[0];
+  const receiver = args[1];
+  const message = args[2];
   try {
-    const sender = args[0];
-    const receiver = args[1];
-    const message = args[2];
     (deployer as NonceManager).reset();
     const context = {
       origin: sender,
       sender: await fungibleModuleSigner.getAddress(),
-      chainID: 1,
+      chainID,
     };
     const zrc20 = foreignCoins.find(
-      (coin) => coin.foreign_chain_id === "1" && coin.coin_type === "Gas"
+      (coin) => coin.foreign_chain_id === chainID && coin.coin_type === "Gas"
     )?.zrc20_contract_address;
 
     log(
@@ -68,8 +75,11 @@ export const handleOnEVMCalled = async ({
       isGas: true,
       token: "",
       provider,
-      protocolContracts,
       exitOnError,
+      chain,
+      gatewayEVM,
+      custody,
+      sender,
     });
   }
 };

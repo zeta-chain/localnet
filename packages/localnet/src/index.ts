@@ -26,10 +26,6 @@ const foreignCoins: any[] = [];
   return this.toString();
 };
 
-let protocolContracts: any;
-let deployer: Signer;
-let tss: Signer;
-
 const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
   const uniswapFactory = new ethers.ContractFactory(
     UniswapV2Factory.abi,
@@ -108,7 +104,7 @@ const prepareZetaChain = async (
   return { systemContract, gatewayZEVM };
 };
 
-const prepareEVM = async (deployer: Signer, TSS: Signer) => {
+const prepareEVM = async (deployer: Signer, tss: Signer) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -209,11 +205,6 @@ const deployProtocolContracts = async (
   tss: Signer,
   fungibleModuleSigner: Signer
 ) => {
-  const { zetaConnector, gatewayEVM, custody, testEVMZeta } = await prepareEVM(
-    deployer,
-    tss
-  );
-
   const weth9Factory = new ethers.ContractFactory(
     WETH9.abi,
     WETH9.bytecode,
@@ -230,36 +221,6 @@ const deployProtocolContracts = async (
     await uniswapRouterInstance.getAddress()
   );
 
-  await createToken({
-    fungibleModuleSigner,
-    deployer,
-    systemContract,
-    gatewayZEVM,
-    foreignCoins,
-    custody,
-    tss,
-    uniswapFactoryInstance,
-    wzeta,
-    uniswapRouterInstance,
-    symbol: "USDC",
-    isGasToken: false,
-  });
-
-  await createToken({
-    fungibleModuleSigner,
-    deployer,
-    systemContract,
-    gatewayZEVM,
-    foreignCoins,
-    custody,
-    tss,
-    uniswapFactoryInstance,
-    wzeta,
-    uniswapRouterInstance,
-    symbol: "ETH",
-    isGasToken: true,
-  });
-
   await (wzeta as any)
     .connect(fungibleModuleSigner)
     .deposit({ ...deployOpts, value: ethers.parseEther("10") });
@@ -274,19 +235,12 @@ const deployProtocolContracts = async (
     .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
 
   return {
-    custody,
-    zetaConnector,
-    gatewayEVM,
     gatewayZEVM,
     systemContract,
-    testEVMZeta,
     wzeta,
     tss,
     uniswapFactoryInstance,
     uniswapRouterInstance,
-    uniswapFactoryAddressZetaChain: await uniswapFactoryInstance.getAddress(),
-    uniswapRouterAddressZetaChain: await uniswapRouterInstance.getAddress(),
-    custodyEVM: custody,
   };
 };
 
@@ -313,29 +267,53 @@ export const initLocalnet = async ({
   );
 
   // use 1st anvil account for deployer and admin
-  deployer = new NonceManager(ethers.Wallet.fromPhrase(phrase, provider));
+  let deployer = new NonceManager(ethers.Wallet.fromPhrase(phrase, provider));
   deployer = deployer.connect(provider);
 
   // use 2nd anvil account for tss
   const mnemonic = ethers.Mnemonic.fromPhrase(phrase);
-  tss = new NonceManager(
+  let tss = new NonceManager(
     ethers.HDNodeWallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${1}`)
   );
   tss = tss.connect(provider);
 
-  protocolContracts = await deployProtocolContracts(
+  const protocolContracts = await deployProtocolContracts(
     deployer,
     tss,
     fungibleModuleSigner
   );
 
-  // Listen to contracts events
+  const contractsEthereum = await prepareEVM(deployer, tss);
+
+  const contractsBNB = await prepareEVM(deployer, tss);
+
+  const addresses = {
+    ...protocolContracts,
+    fungibleModuleSigner,
+    deployer,
+    protocolContracts,
+    foreignCoins,
+    tss,
+  };
+
+  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5");
+  await createToken(addresses, contractsEthereum.custody, "USDC", false, "5");
+  await createToken(addresses, contractsBNB.custody, "BNB", true, "97");
+  await createToken(addresses, contractsBNB.custody, "USDC", false, "97");
+
+  const evmContracts = {
+    5: contractsEthereum,
+    97: contractsBNB,
+  };
+
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
     handleOnZEVMCalled({
+      evmContracts,
+      foreignCoins,
       tss,
       provider,
       fungibleModuleSigner,
-      protocolContracts,
+      gatewayZEVM: protocolContracts.gatewayZEVM,
       args,
       exitOnError,
     });
@@ -343,13 +321,14 @@ export const initLocalnet = async ({
 
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
     handleOnZEVMWithdrawn({
+      evmContracts,
+      foreignCoins,
       tss,
       provider,
-      protocolContracts,
+      gatewayZEVM: protocolContracts.gatewayZEVM,
       args,
       deployer,
       fungibleModuleSigner,
-      foreignCoins,
       exitOnError,
     });
   });
@@ -358,19 +337,20 @@ export const initLocalnet = async ({
     "WithdrawnAndCalled",
     async (...args: Array<any>) => {
       handleOnZEVMWithdrawnAndCalled({
+        evmContracts,
+        foreignCoins,
         tss,
         provider,
-        protocolContracts,
+        gatewayZEVM: protocolContracts.gatewayZEVM,
         args,
         deployer,
         fungibleModuleSigner,
-        foreignCoins,
         exitOnError,
       });
     }
   );
 
-  protocolContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
+  contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await handleOnEVMCalled({
       tss,
       provider,
@@ -380,10 +360,14 @@ export const initLocalnet = async ({
       fungibleModuleSigner,
       foreignCoins,
       exitOnError,
+      chainID: "5",
+      chain: "ethereum",
+      gatewayEVM: contractsEthereum.gatewayEVM,
+      custody: contractsEthereum.custody,
     });
   });
 
-  protocolContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+  contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     handleOnEVMDeposited({
       tss,
       provider,
@@ -393,22 +377,82 @@ export const initLocalnet = async ({
       fungibleModuleSigner,
       foreignCoins,
       exitOnError,
+      chainID: "5",
+      chain: "ethereum",
+      gatewayEVM: contractsEthereum.gatewayEVM,
+      custody: contractsEthereum.custody,
     });
   });
 
-  process.stdin.resume();
+  contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
+    return await handleOnEVMCalled({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      fungibleModuleSigner,
+      foreignCoins,
+      exitOnError,
+      chainID: "97",
+      chain: "bnb",
+      gatewayEVM: contractsBNB.gatewayEVM,
+      custody: contractsBNB.custody,
+    });
+  });
 
-  return {
-    gatewayEVM: protocolContracts.gatewayEVM.target,
-    gatewayZetaChain: protocolContracts.gatewayZEVM.target,
-    zetaEVM: protocolContracts.testEVMZeta.target,
-    zetaZetaChain: protocolContracts.wzeta.target,
-    uniswapFactory: protocolContracts.uniswapFactoryInstance.target,
-    uniswapRouter: protocolContracts.uniswapRouterInstance.target,
-    fungibleModuleZetaChain: FUNGIBLE_MODULE_ADDRESS,
-    foreignCoins,
-    sytemContractZetaChain: protocolContracts.systemContract.target,
-    custodyEVM: protocolContracts.custodyEVM.target,
-    tssEVM: await tss.getAddress(),
-  };
+  contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+    handleOnEVMDeposited({
+      tss,
+      provider,
+      protocolContracts,
+      args,
+      deployer,
+      fungibleModuleSigner,
+      foreignCoins,
+      exitOnError,
+      chainID: "97",
+      chain: "bnb",
+      gatewayEVM: contractsBNB.gatewayEVM,
+      custody: contractsBNB.custody,
+    });
+  });
+
+  return [
+    ...Object.entries(protocolContracts)
+      .filter(([_, value]) => value.target !== undefined)
+      .map(([key, value]) => {
+        return {
+          chain: "zetachain",
+          type: key,
+          address: value.target,
+        };
+      }),
+    ...Object.entries(foreignCoins).map(([key, value]) => {
+      return {
+        chain: "zetachain",
+        type: value.name,
+        address: value.zrc20_contract_address,
+      };
+    }),
+    {
+      chain: "zetachain",
+      type: "tss",
+      address: await protocolContracts.tss.getAddress(),
+    },
+    ...Object.entries(contractsEthereum).map(([key, value]) => {
+      return {
+        chain: "ethereum",
+        type: key,
+        address: value.target,
+      };
+    }),
+    ...Object.entries(contractsBNB).map(([key, value]) => {
+      return {
+        chain: "bnb",
+        type: key,
+        address: value.target,
+      };
+    }),
+  ];
 };

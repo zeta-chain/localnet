@@ -5,7 +5,6 @@ import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 
-// event Deposited(address indexed sender, address indexed receiver, uint256 amount, address asset, bytes payload, RevertOptions revertOptions);
 export const handleOnEVMDeposited = async ({
   tss,
   provider,
@@ -15,6 +14,10 @@ export const handleOnEVMDeposited = async ({
   fungibleModuleSigner,
   foreignCoins,
   exitOnError = false,
+  chainID,
+  chain,
+  gatewayEVM,
+  custody,
 }: {
   tss: any;
   provider: ethers.JsonRpcProvider;
@@ -24,8 +27,13 @@ export const handleOnEVMDeposited = async ({
   fungibleModuleSigner: any;
   foreignCoins: any[];
   exitOnError: boolean;
+  chainID: string;
+  chain: string;
+  gatewayEVM: any;
+  custody: any;
 }) => {
-  log("EVM", "Gateway: 'Deposited' event emitted");
+  log(chain, "Gateway: 'Deposited' event emitted");
+  const sender = args[0];
   const receiver = args[1];
   const amount = args[2];
   const asset = args[3];
@@ -47,7 +55,7 @@ export const handleOnEVMDeposited = async ({
     const context = {
       origin: protocolContracts.gatewayZEVM.target,
       sender: await fungibleModuleSigner.getAddress(),
-      chainID: 1,
+      chainID: chainID,
     };
 
     // If message is not empty, execute depositAndCall
@@ -121,8 +129,11 @@ export const handleOnEVMDeposited = async ({
       isGas,
       token,
       provider,
-      protocolContracts,
       exitOnError,
+      chain,
+      gatewayEVM,
+      custody,
+      sender,
     });
   }
 };

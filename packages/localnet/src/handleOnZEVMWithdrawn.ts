@@ -4,20 +4,21 @@ import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
-// event Withdrawn(address indexed sender, uint256 indexed chainId, bytes receiver, address zrc20, uint256 value, uint256 gasfee, uint256 protocolFlatFee, bytes message, uint256 gasLimit, RevertOptions revertOptions);
 export const handleOnZEVMWithdrawn = async ({
+  evmContracts,
   tss,
   provider,
-  protocolContracts,
+  gatewayZEVM,
   args,
   fungibleModuleSigner,
   deployer,
   foreignCoins,
   exitOnError = false,
 }: {
+  evmContracts: any;
   tss: any;
   provider: ethers.JsonRpcProvider;
-  protocolContracts: any;
+  gatewayZEVM: any;
   args: any;
   fungibleModuleSigner: any;
   deployer: any;
@@ -25,21 +26,26 @@ export const handleOnZEVMWithdrawn = async ({
   exitOnError: boolean;
 }) => {
   log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
+  const sender = args[0];
+  const zrc20 = args[3];
+  const chainID = foreignCoins.find(
+    (coin: any) => coin.zrc20_contract_address === zrc20
+  )?.foreign_chain_id;
+
   const getERC20ByZRC20 = (zrc20: string) => {
     const foreignCoin = foreignCoins.find(
       (coin: any) => coin.zrc20_contract_address === zrc20
     );
     if (!foreignCoin) {
-      logErr("EVM", `Foreign coin not found for ZRC20 address: ${zrc20}`);
+      logErr(chainID, `Foreign coin not found for ZRC20 address: ${zrc20}`);
       return;
     }
     return foreignCoin.asset;
   };
-  const zrc20 = args[3];
+
   const amount = args[4];
   try {
     const receiver = args[2];
-    const message = args[7];
     (tss as NonceManager).reset();
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const coinType = await zrc20Contract.COIN_TYPE();
@@ -53,19 +59,19 @@ export const handleOnZEVMWithdrawn = async ({
       });
       await tx.wait();
       log(
-        "EVM",
+        chainID,
         `Transferred ${ethers.formatEther(
           amount
         )} native gas tokens from TSS to ${receiver}`
       );
     } else if (isERC20orZETA) {
       const erc20 = getERC20ByZRC20(zrc20);
-      const tx = await protocolContracts.custody
+      const tx = await evmContracts[chainID].custody
         .connect(tss)
         .withdraw(receiver, erc20, amount, deployOpts);
       await tx.wait();
       log(
-        "EVM",
+        chainID,
         `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
       );
     }
@@ -80,9 +86,10 @@ export const handleOnZEVMWithdrawn = async ({
       amount,
       log,
       fungibleModuleSigner,
-      protocolContracts,
+      gatewayZEVM,
       deployOpts,
       exitOnError,
+      sender,
     });
   }
 };
