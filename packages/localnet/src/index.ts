@@ -16,6 +16,7 @@ import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
+import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -384,6 +385,26 @@ export const initLocalnet = async ({
     });
   });
 
+  contractsEthereum.gatewayEVM.on(
+    "DepositedAndCalled",
+    async (...args: Array<any>) => {
+      handleOnEVMDepositedAndCalled({
+        tss,
+        provider,
+        protocolContracts,
+        args,
+        deployer,
+        fungibleModuleSigner,
+        foreignCoins,
+        exitOnError,
+        chainID: "5",
+        chain: "ethereum",
+        gatewayEVM: contractsEthereum.gatewayEVM,
+        custody: contractsEthereum.custody,
+      });
+    }
+  );
+
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await handleOnEVMCalled({
       tss,
@@ -417,6 +438,26 @@ export const initLocalnet = async ({
       custody: contractsBNB.custody,
     });
   });
+
+  contractsBNB.gatewayEVM.on(
+    "DepositedAndCalled",
+    async (...args: Array<any>) => {
+      handleOnEVMDepositedAndCalled({
+        tss,
+        provider,
+        protocolContracts,
+        args,
+        deployer,
+        fungibleModuleSigner,
+        foreignCoins,
+        exitOnError,
+        chainID: "97",
+        chain: "bnb",
+        gatewayEVM: contractsBNB.gatewayEVM,
+        custody: contractsBNB.custody,
+      });
+    }
+  );
 
   return [
     ...Object.entries(protocolContracts)
