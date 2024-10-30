@@ -54,7 +54,7 @@ export const handleOnEVMDeposited = async ({
     if (message !== "0x") {
       log(
         "ZetaChain",
-        `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
+        `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
           context
         )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
       );
@@ -70,10 +70,7 @@ export const handleOnEVMDeposited = async ({
       });
 
       logs.forEach((data) => {
-        log(
-          "ZetaChain",
-          `Event from onCrossChainCall: ${JSON.stringify(data)}`
-        );
+        log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
       });
     } else {
       const tx = await protocolContracts.gatewayZEVM
