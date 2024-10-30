@@ -953,13 +953,21 @@
     "@uniswap/lib" "1.1.1"
     "@uniswap/v2-core" "1.0.0"
 
-"@zetachain/protocol-contracts@10.0.0-rc10":
-  version "10.0.0-rc10"
-  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-10.0.0-rc10.tgz#e3c21b493904ec743c9026627b2f809009fec7a2"
-  integrity sha512-kOH7Lk0os3xt9N/FCdeaLUMyonfez97q69Jy2YFwddjv9jpqaxwLXWj2hvdIFc21inKZ7HIjmDDcj9/n8gITKg==
+"@zetachain/networks@^10.0.0":
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/@zetachain/networks/-/networks-10.0.0.tgz#dd5d14a0870f6b658644aded8c96859f15531089"
+  integrity sha512-FPolaO19oVkSLSPDUA/Hu+8AhG3lDEslRDpLnMzbMbnNSC669Fkah0/TEf+6egrQbAifBRfFLzwWidAGs8oxtA==
+  dependencies:
+    dotenv "^16.1.4"
+
+"@zetachain/protocol-contracts@10.0.0-rc11":
+  version "10.0.0-rc11"
+  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-10.0.0-rc11.tgz#53f55ead492f7b5802b1feae4e51abc75730af33"
+  integrity sha512-qWazjqnIGRngf4OmyeSIv7sHICQRdMQ1CKPIQIqxA8qFR+gHhDHSfvMdRAvgWbsfkimXOIFiHVIATypyWhviJw==
   dependencies:
     "@openzeppelin/contracts" "^5.0.2"
     "@openzeppelin/contracts-upgradeable" "^5.0.2"
+    "@zetachain/networks" "^10.0.0"
     ethers "^6.13.1"
 
 acorn-jsx@^5.3.2:
@@ -1536,6 +1544,11 @@ dir-glob@^3.0.1:
   integrity sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==
   dependencies:
     path-type "^4.0.0"
+
+dotenv@^16.1.4:
+  version "16.4.5"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.4.5.tgz#cdd3b3b604cb327e286b4762e13502f717cb099f"
+  integrity sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==
 
 elliptic@6.5.4:
   version "6.5.4"
