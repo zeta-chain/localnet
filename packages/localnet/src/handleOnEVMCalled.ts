@@ -40,7 +40,7 @@ export const handleOnEVMCalled = async ({
 
     log(
       "ZetaChain",
-      `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
+      `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
         context
       )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
     );
@@ -54,10 +54,10 @@ export const handleOnEVMCalled = async ({
     });
 
     logs.forEach((data) => {
-      log("ZetaChain", `Event from onCrossChainCall: ${JSON.stringify(data)}`);
+      log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
     });
   } catch (err: any) {
-    logErr("ZetaChain", `Error executing onCrossChainCall: ${err}`);
+    logErr("ZetaChain", `Error executing onCall: ${err}`);
     const revertOptions = args[3];
     return await handleOnRevertEVM({
       revertOptions,
