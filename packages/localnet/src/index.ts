@@ -17,6 +17,10 @@ import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
+import * as gw from "@zetachain/protocol-contracts-ton/wrappers/Gateway";
+import * as TonGatewayCompiled from "@zetachain/protocol-contracts-ton/build/Gateway.compiled.json";
+import { Blockchain, SandboxContract, TreasuryContract } from "@ton/sandbox";
+import { Cell } from "@ton/core";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -245,6 +249,36 @@ const deployProtocolContracts = async (
   };
 };
 
+const prepareTon = async () => {
+  function unix(date: Date): number {
+    return Math.floor(date.getTime() / 1000);
+  }
+  const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+  const tssWallet = new ethers.Wallet(
+    "0xb984cd65727cfd03081fc7bf33bf5c208bca697ce16139b5ded275887e81395a"
+  );
+
+  const blockchain: Blockchain = await Blockchain.create();
+  blockchain.now = unix(startOfYear);
+  const deployer: SandboxContract<TreasuryContract> = await blockchain.treasury(
+    "deployer"
+  );
+
+  const deployConfig = {
+    depositsEnabled: true,
+    tss: tssWallet.address,
+    authority: deployer.address,
+  };
+
+  const buffer = Buffer.from(TonGatewayCompiled.hex, "hex");
+
+  const cell = Cell.fromBoc(buffer)[0];
+  const gateway = blockchain.openContract(
+    gw.Gateway.createFromConfig(deployConfig, cell)
+  );
+};
+
 export const initLocalnet = async ({
   port,
   exitOnError,
@@ -252,6 +286,8 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
+  prepareTon();
+
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
