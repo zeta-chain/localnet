@@ -6,7 +6,7 @@ import ansis from "ansis";
 import fs from "fs";
 import { confirm } from "@inquirer/prompts";
 
-const LOCALNET_PID_FILE = "./localnet.pid";
+const LOCALNET_JSON_FILE = "./localnet.json";
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -83,8 +83,8 @@ const localnet = async (args: any) => {
     if (anvilProcess) {
       anvilProcess.kill();
     }
-    if (fs.existsSync(LOCALNET_PID_FILE)) {
-      fs.unlinkSync(LOCALNET_PID_FILE);
+    if (fs.existsSync(LOCALNET_JSON_FILE)) {
+      fs.unlinkSync(LOCALNET_JSON_FILE);
     }
   };
 
@@ -110,7 +110,12 @@ const localnet = async (args: any) => {
       console.table(chainContracts);
     });
 
-    fs.writeFileSync(LOCALNET_PID_FILE, process.pid.toString(), "utf-8");
+    // Write PID to localnet.json in JSON format
+    fs.writeFileSync(
+      LOCALNET_JSON_FILE,
+      JSON.stringify({ pid: process.pid, addresses }, null, 2),
+      "utf-8"
+    );
   } catch (error: any) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
