@@ -17,7 +17,7 @@ async function main() {
   const engines: LiteEngine[] = [];
   engines.push(
     new LiteSingleEngine({
-      host: `http://0.0.0.0:8111`,
+      host: `http://127.0.0.1:8111`,
       publicKey: Buffer.from(server.id.key, "base64"),
     })
   );
