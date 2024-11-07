@@ -57,7 +57,6 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
     const isERC20orZETA = coinType === 2n;
-    // The message is not empty, so this is a withdrawAndCall operation
     log(chainID, `Calling ${receiver} with message ${message}`);
     if (isGasToken) {
       const executeTx = await evmContracts[chainID].gatewayEVM
@@ -95,7 +94,7 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
       err,
       provider,
       tss,
-      asset: getERC20ByZRC20(zrc20),
+      asset: zrc20,
       amount,
       log,
       fungibleModuleSigner,

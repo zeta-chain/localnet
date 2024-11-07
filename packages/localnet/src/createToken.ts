@@ -109,6 +109,14 @@ export const createToken = async (
     deployOpts
   );
 
+  await (zrc20 as any)
+    .connect(deployer)
+    .transfer(
+      fungibleModuleSigner.getAddress(),
+      ethers.parseUnits("100", await (zrc20 as any).decimals()),
+      deployOpts
+    );
+
   await (wzeta as any)
     .connect(deployer)
     .deposit({ value: ethers.parseEther("1000"), ...deployOpts });

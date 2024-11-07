@@ -41,6 +41,13 @@ export const handleOnRevertZEVM = async ({
   if (callOnRevert) {
     log("ZetaChain", "Gateway: calling executeRevert");
     try {
+      const assetContract = new ethers.Contract(
+        asset,
+        ["function transfer(address to, uint256 amount) public returns (bool)"],
+        fungibleModuleSigner
+      );
+      const transferTx = await assetContract.transfer(revertAddress, amount);
+      await transferTx.wait();
       tss.reset();
       const tx = await gatewayZEVM
         .connect(fungibleModuleSigner)
