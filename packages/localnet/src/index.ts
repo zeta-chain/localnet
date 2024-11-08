@@ -476,6 +476,17 @@ export const initLocalnet = async ({
         address: value.zrc20_contract_address,
       };
     }),
+    ...Object.entries(foreignCoins)
+      .map(([key, value]) => {
+        if (value.asset) {
+          return {
+            chain: value.foreign_chain_id === "5" ? "ethereum" : "bnb",
+            type: `ERC-20 ${value.symbol}`,
+            address: value.asset,
+          };
+        }
+      })
+      .filter(Boolean),
     {
       chain: "zetachain",
       type: "tss",

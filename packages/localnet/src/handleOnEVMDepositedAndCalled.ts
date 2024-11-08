@@ -55,18 +55,18 @@ export const handleOnEVMDepositedAndCalled = async ({
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
     const context = {
-      origin: sender,
-      sender: await fungibleModuleSigner.getAddress(),
+      origin: ethers.ZeroAddress,
+      sender: sender,
       chainID: chainID,
     };
 
     log(
       "ZetaChain",
-      `Universal contract ${receiver} executing onCrossChainCall (context: ${JSON.stringify(
+      `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
         context
       )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
     );
-
+    console.log("!!!", context, zrc20, amount, receiver, message, deployOpts);
     const tx = await protocolContracts.gatewayZEVM
       .connect(fungibleModuleSigner)
       .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
@@ -78,7 +78,7 @@ export const handleOnEVMDepositedAndCalled = async ({
     });
 
     logs.forEach((data) => {
-      log("ZetaChain", `Event from onCrossChainCall: ${JSON.stringify(data)}`);
+      log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
     });
   } catch (err) {
     logErr("ZetaChain", `Error depositing: ${err}`);
