@@ -66,7 +66,6 @@ export const handleOnEVMDepositedAndCalled = async ({
         context
       )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
     );
-    console.log("!!!", context, zrc20, amount, receiver, message, deployOpts);
     const tx = await protocolContracts.gatewayZEVM
       .connect(fungibleModuleSigner)
       .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
