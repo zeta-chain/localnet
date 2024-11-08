@@ -171,13 +171,15 @@ const prepareEVM = async (deployer: Signer, tss: Signer) => {
     deployer
   );
 
-  await zetaConnectorProxy.initialize(
-    gatewayEVM.target,
-    testEVMZeta.target,
-    await tss.getAddress(),
-    await deployer.getAddress(),
-    deployOpts
-  );
+  // Temporarily disable
+  //
+  // await zetaConnectorProxy.initialize(
+  //   gatewayEVM.target,
+  //   testEVMZeta.target,
+  //   await tss.getAddress(),
+  //   await deployer.getAddress(),
+  //   deployOpts
+  // );
 
   await custodyProxy.initialize(
     gatewayEVM.target,
