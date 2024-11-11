@@ -95,13 +95,13 @@ const localnet = async (args: any) => {
     });
 
     // Get unique chains
-    const chains = [...new Set(addresses.map((item) => item.chain))];
+    const chains = [...new Set(addresses.map((item: any) => item.chain))];
 
     // Create tables for each chain
     chains.forEach((chain) => {
       const chainContracts = addresses
-        .filter((contract) => contract.chain === chain)
-        .reduce((acc: any, { type, address }) => {
+        .filter((contract: any) => contract.chain === chain)
+        .reduce((acc: any, { type, address }: any) => {
           acc[type] = address;
           return acc;
         }, {});
