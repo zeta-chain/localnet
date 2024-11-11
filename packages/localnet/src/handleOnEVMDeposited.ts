@@ -53,8 +53,8 @@ export const handleOnEVMDeposited = async ({
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
     const context = {
-      origin: protocolContracts.gatewayZEVM.target,
-      sender: await fungibleModuleSigner.getAddress(),
+      origin: ethers.ZeroAddress,
+      sender,
       chainID: chainID,
     };
 

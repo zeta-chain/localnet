@@ -37,8 +37,8 @@ export const handleOnEVMCalled = async ({
   try {
     (deployer as NonceManager).reset();
     const context = {
-      origin: sender,
-      sender: await fungibleModuleSigner.getAddress(),
+      origin: ethers.ZeroAddress,
+      sender,
       chainID,
     };
     const zrc20 = foreignCoins.find(

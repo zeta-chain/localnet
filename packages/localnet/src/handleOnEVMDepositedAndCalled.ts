@@ -56,8 +56,8 @@ export const handleOnEVMDepositedAndCalled = async ({
   try {
     const context = {
       origin: ethers.ZeroAddress,
-      sender: sender,
-      chainID: chainID,
+      sender,
+      chainID,
     };
 
     log(
