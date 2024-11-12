@@ -52,41 +52,11 @@ export const handleOnEVMDeposited = async ({
 
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
-    const context = {
-      origin: ethers.ZeroAddress,
-      sender,
-      chainID: chainID,
-    };
-
-    // If message is not empty, execute depositAndCall
-    if (message !== "0x") {
-      log(
-        "ZetaChain",
-        `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
-          context
-        )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
-      );
-
-      const tx = await protocolContracts.gatewayZEVM
-        .connect(fungibleModuleSigner)
-        .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
-
-      await tx.wait();
-      const logs = await provider.getLogs({
-        address: receiver,
-        fromBlock: "latest",
-      });
-
-      logs.forEach((data) => {
-        log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
-      });
-    } else {
-      const tx = await protocolContracts.gatewayZEVM
-        .connect(fungibleModuleSigner)
-        .deposit(zrc20, amount, receiver, deployOpts);
-      await tx.wait();
-      log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
-    }
+    const tx = await protocolContracts.gatewayZEVM
+      .connect(fungibleModuleSigner)
+      .deposit(zrc20, amount, receiver, deployOpts);
+    await tx.wait();
+    log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
   } catch (err) {
     logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];
