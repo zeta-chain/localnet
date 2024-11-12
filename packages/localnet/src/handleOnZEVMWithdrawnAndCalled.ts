@@ -56,7 +56,17 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
-    const isERC20orZETA = coinType === 2n;
+
+    if (isArbitraryCall) {
+      const selector = message.slice(0, 10);
+      const code = await provider.getCode(receiver);
+      if (!code.includes(selector.slice(2))) {
+        throw new Error(
+          `Receiver contract does not contain function with selector ${selector}`
+        );
+      }
+    }
+
     log(chainID, `Calling ${receiver} with message ${message}`);
     if (isGasToken) {
       const executeTx = await evmContracts[chainID].gatewayEVM

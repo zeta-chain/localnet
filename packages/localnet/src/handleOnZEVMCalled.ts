@@ -43,6 +43,16 @@ export const handleOnZEVMCalled = async ({
     };
     log(chainID, `Calling ${receiver} with message ${message}`);
 
+    if (isArbitraryCall) {
+      const selector = message.slice(0, 10);
+      const code = await provider.getCode(receiver);
+      if (!code.includes(selector.slice(2))) {
+        throw new Error(
+          `Receiver contract does not contain function with selector ${selector}`
+        );
+      }
+    }
+
     const executeTx = await evmContracts[chainID].gatewayEVM
       .connect(tss)
       .execute(messageContext, receiver, message, deployOpts);
