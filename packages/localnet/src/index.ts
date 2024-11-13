@@ -17,6 +17,7 @@ import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
+import { setupSolana } from "./setupSolana";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -254,6 +255,7 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
+  await setupSolana();
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
