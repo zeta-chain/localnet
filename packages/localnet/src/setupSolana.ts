@@ -4,72 +4,63 @@ import * as anchor from "@coral-xyz/anchor";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import * as fs from "fs";
+import { keccak256 } from "ethereumjs-util";
+import { ec as EC } from "elliptic";
 
 const execAsync = util.promisify(exec);
 
 const keypairFilePath =
-  "./packages/localnet/src/solana/deploy/protocol_contracts_solana-keypair.json";
+  "./packages/localnet/src/solana/deploy/gateway-keypair.json";
 
 const providerUrl = "http://localhost:8899";
 
+const ec = new EC("secp256k1");
+
+const tssKeyPair = ec.keyFromPrivate(
+  "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8"
+);
+
+const chain_id = 111111;
+const chain_id_bn = new anchor.BN(chain_id);
+
 export const setupSolana = async () => {
-  const gatewaySO =
-    "./packages/localnet/src/solana/deploy/protocol_contracts_solana.so";
+  const gatewaySO = "./packages/localnet/src/solana/deploy/gateway.so";
   console.log(`Deploying Solana program: ${gatewaySO}`);
 
   try {
-    // Load wallet keypair from file
     if (!fs.existsSync(keypairFilePath)) {
       throw new Error(`Keypair file not found: ${keypairFilePath}`);
     }
+
+    const publicKeyBuffer = Buffer.from(
+      tssKeyPair.getPublic(false, "hex").slice(2),
+      "hex"
+    );
+
+    const addressBuffer = keccak256(publicKeyBuffer);
+    const address = addressBuffer.slice(-20);
+    const tssAddress = Array.from(address);
+
     const keypairData = JSON.parse(fs.readFileSync(keypairFilePath, "utf-8"));
-    const walletKeypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+    const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+    const wallet = new anchor.Wallet(keypair);
 
-    // Deploy the program using the program keypair
-    const deployCommand = `solana program deploy --program-id ${keypairFilePath} --keypair ${keypairFilePath} ${gatewaySO} --url localhost`;
+    const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
     console.log(`Running command: ${deployCommand}`);
+
     const { stdout } = await execAsync(deployCommand);
-    console.log(stdout);
-
-    // Parse the program ID from deployment output
-    const programIdMatch = stdout.match(/Program Id: (\w+)/);
-    if (!programIdMatch) {
-      throw new Error("Program ID not found in deployment output.");
-    }
-    const programId = new PublicKey(programIdMatch[1]);
-    console.log(`Deployed Program ID: ${programId.toBase58()}`);
-
-    // Initialize connection, wallet, and provider
-    const wallet = new anchor.Wallet(walletKeypair);
     const connection = new anchor.web3.Connection(providerUrl, "confirmed");
+
     const provider = new anchor.AnchorProvider(
       connection,
       wallet,
       anchor.AnchorProvider.defaultOptions()
     );
-    anchor.setProvider(provider);
-
-    // Dynamically update the program ID in the IDL
-    const updatedIDL = {
-      ...Gateway_IDL,
-      metadata: {
-        ...Gateway_IDL.metadata,
-        address: programId.toBase58(),
-      },
-    };
-
-    // Initialize the gateway program using the updated IDL
     const gatewayProgram = new anchor.Program(
-      updatedIDL as anchor.Idl,
+      Gateway_IDL as anchor.Idl,
       provider
     );
-
-    console.log(
-      "Gateway Program initialized with updated programId:",
-      programId.toBase58()
-    );
-
-    // Continue with further program initialization or testing as needed
+    // await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {

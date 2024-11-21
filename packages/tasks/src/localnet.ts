@@ -76,12 +76,18 @@ const localnet = async (args: any) => {
     anvilProcess.stderr.pipe(process.stderr);
   }
 
+  const solanaTestValidator = exec(`solana-test-validator --reset`);
+
+  await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
   await waitOn({ resources: [`tcp:127.0.0.1:${args.port}`] });
 
   const cleanup = () => {
     console.log("\nShutting down anvil and cleaning up...");
     if (anvilProcess) {
       anvilProcess.kill();
+    }
+    if (solanaTestValidator) {
+      solanaTestValidator.kill();
     }
     if (fs.existsSync(LOCALNET_JSON_FILE)) {
       fs.unlinkSync(LOCALNET_JSON_FILE);
