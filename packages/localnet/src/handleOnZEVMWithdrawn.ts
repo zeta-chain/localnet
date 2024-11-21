@@ -82,7 +82,7 @@ export const handleOnZEVMWithdrawn = async ({
       err,
       provider,
       tss,
-      asset: getERC20ByZRC20(zrc20),
+      asset: zrc20,
       amount,
       log,
       fungibleModuleSigner,
