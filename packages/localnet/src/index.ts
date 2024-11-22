@@ -15,6 +15,7 @@ import { deployOpts } from "./deployOpts";
 import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
+import { tonStart } from "./tonStart";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -296,6 +297,7 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
+  tonStart();
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
