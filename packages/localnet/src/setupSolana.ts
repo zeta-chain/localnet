@@ -9,10 +9,11 @@ import { ec as EC } from "elliptic";
 
 const execAsync = util.promisify(exec);
 
+process.env.ANCHOR_WALLET = "./id.json";
+process.env.ANCHOR_PROVIDER_URL = "https://localhost:8899";
+
 const keypairFilePath =
   "./packages/localnet/src/solana/deploy/gateway-keypair.json";
-
-const providerUrl = "http://localhost:8899";
 
 const ec = new EC("secp256k1");
 
@@ -43,24 +44,18 @@ export const setupSolana = async () => {
 
     const keypairData = JSON.parse(fs.readFileSync(keypairFilePath, "utf-8"));
     const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
-    const wallet = new anchor.Wallet(keypair);
+
+    // Set provider locally
+    anchor.setProvider(anchor.AnchorProvider.env());
 
     const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
     console.log(`Running command: ${deployCommand}`);
 
     const { stdout } = await execAsync(deployCommand);
-    const connection = new anchor.web3.Connection(providerUrl, "confirmed");
+    console.log(`Deployment output: ${stdout}`);
 
-    const provider = new anchor.AnchorProvider(
-      connection,
-      wallet,
-      anchor.AnchorProvider.defaultOptions()
-    );
-    const gatewayProgram = new anchor.Program(
-      Gateway_IDL as anchor.Idl,
-      provider
-    );
-    // await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
+    const gateway = new anchor.Program(Gateway_IDL as anchor.Idl);
+    await gateway.methods.initialize(tssAddress, chain_id_bn).rpc();
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {
