@@ -45,8 +45,7 @@ export const setupSolana = async () => {
     const keypairData = JSON.parse(fs.readFileSync(keypairFilePath, "utf-8"));
     const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
 
-    // Set provider locally
-    anchor.setProvider(anchor.AnchorProvider.env());
+    anchor.setProvider(anchor.AnchorProvider.local());
 
     const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
     console.log(`Running command: ${deployCommand}`);
@@ -55,7 +54,7 @@ export const setupSolana = async () => {
     console.log(`Deployment output: ${stdout}`);
 
     const gateway = new anchor.Program(Gateway_IDL as anchor.Idl);
-    // await gateway.methods.initialize(tssAddress, chain_id_bn).rpc();
+    await gateway.methods.initialize(tssAddress, chain_id_bn).rpc();
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {
