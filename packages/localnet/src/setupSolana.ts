@@ -55,7 +55,7 @@ export const setupSolana = async () => {
     console.log(`Deployment output: ${stdout}`);
 
     const gateway = new anchor.Program(Gateway_IDL as anchor.Idl);
-    await gateway.methods.initialize(tssAddress, chain_id_bn).rpc();
+    // await gateway.methods.initialize(tssAddress, chain_id_bn).rpc();
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {
