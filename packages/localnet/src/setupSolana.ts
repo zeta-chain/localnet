@@ -10,7 +10,7 @@ import { ec as EC } from "elliptic";
 const execAsync = util.promisify(exec);
 
 process.env.ANCHOR_WALLET = "./id.json";
-process.env.ANCHOR_PROVIDER_URL = "https://localhost:8899";
+process.env.ANCHOR_PROVIDER_URL = "http://localhost:8899";
 
 const keypairFilePath =
   "./packages/localnet/src/solana/deploy/gateway-keypair.json";
