@@ -10,9 +10,10 @@ export const handleOnRevertZEVM = async ({
   tss,
   log,
   fungibleModuleSigner,
-  protocolContracts,
+  gatewayZEVM,
   deployOpts,
   exitOnError = false,
+  sender,
 }: {
   revertOptions: any;
   err: any;
@@ -21,10 +22,11 @@ export const handleOnRevertZEVM = async ({
   provider: any;
   fungibleModuleSigner: any;
   tss: NonceManager;
-  log: (chain: "EVM" | "ZetaChain", ...messages: string[]) => void;
-  protocolContracts: any;
+  log: (chain: string, ...messages: string[]) => void;
+  gatewayZEVM: any;
   deployOpts: any;
   exitOnError: boolean;
+  sender: string;
 }) => {
   const callOnRevert = revertOptions[1];
   const revertAddress = revertOptions[0];
@@ -33,13 +35,21 @@ export const handleOnRevertZEVM = async ({
     asset,
     amount,
     revertMessage,
+    sender,
   };
 
   if (callOnRevert) {
     log("ZetaChain", "Gateway: calling executeRevert");
     try {
+      const assetContract = new ethers.Contract(
+        asset,
+        ["function transfer(address to, uint256 amount) public returns (bool)"],
+        fungibleModuleSigner
+      );
+      const transferTx = await assetContract.transfer(revertAddress, amount);
+      await transferTx.wait();
       tss.reset();
-      const tx = await protocolContracts.gatewayZEVM
+      const tx = await gatewayZEVM
         .connect(fungibleModuleSigner)
         .executeRevert(revertAddress, revertContext, deployOpts);
       await tx.wait();

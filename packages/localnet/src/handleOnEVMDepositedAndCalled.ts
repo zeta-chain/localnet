@@ -5,7 +5,7 @@ import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 
-export const handleOnEVMDeposited = async ({
+export const handleOnEVMDepositedAndCalled = async ({
   tss,
   provider,
   protocolContracts,
@@ -32,7 +32,7 @@ export const handleOnEVMDeposited = async ({
   gatewayEVM: any;
   custody: any;
 }) => {
-  log(chain, "Gateway: 'Deposited' event emitted");
+  log(chain, "Gateway: 'DepositedAndCalled' event emitted");
   const sender = args[0];
   const receiver = args[1];
   const amount = args[2];
@@ -40,7 +40,9 @@ export const handleOnEVMDeposited = async ({
   const message = args[4];
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
-    foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
+    foreignCoin = foreignCoins.find(
+      (coin) => coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
+    );
   } else {
     foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
   }
@@ -52,11 +54,31 @@ export const handleOnEVMDeposited = async ({
 
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
+    const context = {
+      origin: ethers.ZeroAddress,
+      sender,
+      chainID,
+    };
+
+    log(
+      "ZetaChain",
+      `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
+        context
+      )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
+    );
     const tx = await protocolContracts.gatewayZEVM
       .connect(fungibleModuleSigner)
-      .deposit(zrc20, amount, receiver, deployOpts);
+      .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
+
     await tx.wait();
-    log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
+    const logs = await provider.getLogs({
+      address: receiver,
+      fromBlock: "latest",
+    });
+
+    logs.forEach((data) => {
+      log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
+    });
   } catch (err) {
     logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];

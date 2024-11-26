@@ -3,32 +3,59 @@ import { handleOnRevertZEVM } from "./handleOnRevertZEVM";
 import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
 
-// event Called(address indexed sender, address indexed zrc20, bytes receiver, bytes message, uint256 gasLimit, RevertOptions revertOptions);
 export const handleOnZEVMCalled = async ({
+  evmContracts,
+  foreignCoins,
   tss,
   provider,
-  protocolContracts,
+  gatewayZEVM,
   args,
   fungibleModuleSigner,
   exitOnError = false,
 }: {
+  evmContracts: any;
+  foreignCoins: any[];
   tss: any;
   provider: ethers.JsonRpcProvider;
-  protocolContracts: any;
+  gatewayZEVM: any;
   args: any;
   fungibleModuleSigner: any;
   exitOnError: boolean;
 }) => {
   log("ZetaChain", "Gateway: 'Called' event emitted");
+  const sender = args[0];
+
+  const zrc20 = args[1];
+  const chainID = foreignCoins.find(
+    (coin: any) => coin.zrc20_contract_address === zrc20
+  )?.foreign_chain_id;
+
+  const receiver = args[2];
+  const message = args[3];
+  const callOptions = args[4];
+  const isArbitraryCall = callOptions[1];
+
   try {
     tss.reset();
-    const receiver = args[2];
-    const message = args[3];
-    log("EVM", `Calling ${receiver} with message ${message}`);
 
-    const executeTx = await protocolContracts.gatewayEVM
+    const messageContext = {
+      sender: isArbitraryCall ? ethers.ZeroAddress : sender,
+    };
+    log(chainID, `Calling ${receiver} with message ${message}`);
+
+    if (isArbitraryCall) {
+      const selector = message.slice(0, 10);
+      const code = await provider.getCode(receiver);
+      if (!code.includes(selector.slice(2))) {
+        throw new Error(
+          `Receiver contract does not contain function with selector ${selector}`
+        );
+      }
+    }
+
+    const executeTx = await evmContracts[chainID].gatewayEVM
       .connect(tss)
-      .execute(receiver, message, deployOpts);
+      .execute(messageContext, receiver, message, deployOpts);
 
     const logs = await provider.getLogs({
       address: receiver,
@@ -36,11 +63,11 @@ export const handleOnZEVMCalled = async ({
     });
 
     logs.forEach((data) => {
-      log("EVM", `Event from contract: ${JSON.stringify(data)}`);
+      log(chainID, `Event from contract: ${JSON.stringify(data)}`);
     });
     await executeTx.wait();
   } catch (err) {
-    logErr("EVM", `Error executing a contract: ${err}`);
+    logErr(chainID, `Error executing a contract: ${err}`);
     const revertOptions = args[5];
     return await handleOnRevertZEVM({
       revertOptions,
@@ -51,9 +78,10 @@ export const handleOnZEVMCalled = async ({
       fungibleModuleSigner,
       tss,
       log,
-      protocolContracts,
+      gatewayZEVM,
       deployOpts,
       exitOnError,
+      sender,
     });
   }
 };

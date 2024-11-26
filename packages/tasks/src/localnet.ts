@@ -89,50 +89,31 @@ const localnet = async (args: any) => {
   };
 
   try {
-    const addr = await initLocalnet({
+    const addresses = await initLocalnet({
       port: args.port,
       exitOnError: args.exitOnError,
     });
 
-    // EVM Contract Addresses
-    const evmHeader = "\nEVM Contract Addresses";
-    console.log(ansis.cyan(`${evmHeader}\n${"=".repeat(evmHeader.length)}`));
+    // Get unique chains
+    const chains = [...new Set(addresses.map((item: any) => item.chain))];
 
-    const evmAddresses = {
-      "Gateway EVM": addr.gatewayEVM,
-      "ERC-20 Custody": addr.custodyEVM,
-      TSS: addr.tssEVM,
-      ZETA: addr.zetaEVM,
-      ...addr.foreignCoins
-        .filter((coin: any) => coin.asset !== "")
-        .reduce((acc: any, coin: any) => {
-          acc[`ERC-20 ${coin.symbol}`] = coin.asset;
+    // Create tables for each chain
+    chains.forEach((chain) => {
+      const chainContracts = addresses
+        .filter((contract: any) => contract.chain === chain)
+        .reduce((acc: any, { type, address }: any) => {
+          acc[type] = address;
           return acc;
-        }, {}),
-    };
+        }, {});
 
-    console.table(evmAddresses);
+      console.log(`\n${chain.toUpperCase()}`);
+      console.table(chainContracts);
+    });
 
-    const zetaHeader = "\nZetaChain Contract Addresses";
-    console.log(ansis.green(`${zetaHeader}\n${"=".repeat(zetaHeader.length)}`));
-
-    const zetaAddresses = {
-      "Gateway ZetaChain": addr.gatewayZetaChain,
-      ZETA: addr.zetaZetaChain,
-      "Fungible Module": addr.fungibleModuleZetaChain,
-      "System Contract": addr.sytemContractZetaChain,
-      "Uniswap Router": addr.uniswapRouter,
-      ...addr.foreignCoins.reduce((acc: any, coin: any) => {
-        acc[`ZRC-20 ${coin.symbol}`] = coin.zrc20_contract_address;
-        return acc;
-      }, {}),
-    };
-
-    console.table(zetaAddresses);
-
+    // Write PID to localnet.json in JSON format
     fs.writeFileSync(
       LOCALNET_JSON_FILE,
-      JSON.stringify({ pid: process.pid, addresses: addr }, null, 2),
+      JSON.stringify({ pid: process.pid, addresses }, null, 2),
       "utf-8"
     );
   } catch (error: any) {
