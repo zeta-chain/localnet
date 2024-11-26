@@ -6,10 +6,14 @@ import { PublicKey, Keypair } from "@solana/web3.js";
 import * as fs from "fs";
 import { keccak256 } from "ethereumjs-util";
 import { ec as EC } from "elliptic";
+import path from "path";
 
 const execAsync = util.promisify(exec);
 
-process.env.ANCHOR_WALLET = "./id.json";
+process.env.ANCHOR_WALLET = path.resolve(
+  process.env.HOME || process.env.USERPROFILE || "",
+  ".config/solana/id.json"
+);
 process.env.ANCHOR_PROVIDER_URL = "http://localhost:8899";
 
 const keypairFilePath =
@@ -52,6 +56,8 @@ export const setupSolana = async () => {
 
     const { stdout } = await execAsync(deployCommand);
     console.log(`Deployment output: ${stdout}`);
+
+    await new Promise((r) => setTimeout(r, 1000));
 
     const gateway = new anchor.Program(Gateway_IDL as anchor.Idl);
     await gateway.methods.initialize(tssAddress, chain_id_bn).rpc();
