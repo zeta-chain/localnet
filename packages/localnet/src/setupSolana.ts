@@ -1,14 +1,11 @@
 import { exec } from "child_process";
 import util from "util";
 import * as anchor from "@coral-xyz/anchor";
-import { Program, web3 } from "@coral-xyz/anchor";
 import Gateway_IDL from "./solana/idl/gateway.json";
-import { PublicKey, Keypair } from "@solana/web3.js";
 import * as fs from "fs";
 import { keccak256 } from "ethereumjs-util";
 import { ec as EC } from "elliptic";
 import path from "path";
-const { TransactionInstruction } = anchor.web3;
 
 const execAsync = util.promisify(exec);
 
@@ -48,9 +45,6 @@ export const setupSolana = async () => {
     const address = addressBuffer.slice(-20);
     const tssAddress = Array.from(address);
 
-    const keypairData = JSON.parse(fs.readFileSync(keypairFilePath, "utf-8"));
-    const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
-
     anchor.setProvider(anchor.AnchorProvider.local());
 
     const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
@@ -63,14 +57,10 @@ export const setupSolana = async () => {
 
     const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
-    // Initialize the gateway program
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
 
-    await gatewayProgram.methods
-      .deposit(new anchor.BN(1_000_000_000), Array.from(address))
-      .accounts({})
-      .rpc();
+    return { gatewayProgram, address };
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {

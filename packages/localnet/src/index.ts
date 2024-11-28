@@ -18,6 +18,7 @@ import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
 import { setupSolana } from "./setupSolana";
+import * as anchor from "@coral-xyz/anchor";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -248,6 +249,58 @@ const deployProtocolContracts = async (
   };
 };
 
+async function monitorProgramTransactions(programId: any, connection: any) {
+  console.log(`Monitoring transactions for program: ${programId.toBase58()}`);
+
+  let lastSignature: string | undefined = undefined;
+
+  setInterval(async () => {
+    try {
+      const signatures = await connection.getSignaturesForAddress(
+        programId,
+        { limit: 10, before: lastSignature },
+        "confirmed"
+      );
+
+      if (signatures.length === 0) return;
+
+      for (const signatureInfo of signatures.reverse()) {
+        const transaction = await connection.getTransaction(
+          signatureInfo.signature,
+          { commitment: "confirmed" }
+        );
+
+        if (transaction) {
+          console.log("Transaction Details:", transaction);
+
+          for (const instruction of transaction.transaction.message
+            .instructions) {
+            // Map programId from accountKeys
+            const programIdIndex =
+              instruction.programIdIndex || instruction.programId;
+            const programIdFromInstruction =
+              transaction.transaction.message.accountKeys[programIdIndex];
+
+            if (
+              programIdFromInstruction &&
+              programIdFromInstruction.equals(programId)
+            ) {
+              console.log("Instruction for program detected:", instruction);
+
+              const decodedData = instruction.data; // Add your decoding logic here
+              console.log("Decoded Instruction Data:", decodedData);
+            }
+          }
+        }
+      }
+
+      lastSignature = signatures[signatures.length - 1].signature;
+    } catch (error) {
+      console.error("Error monitoring transactions:", error);
+    }
+  }, 1000);
+}
+
 export const initLocalnet = async ({
   port,
   exitOnError,
@@ -255,7 +308,19 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
-  await setupSolana();
+  const { gatewayProgram, address } = await setupSolana();
+
+  const connection = gatewayProgram.provider.connection;
+
+  monitorProgramTransactions(gatewayProgram.programId, connection);
+
+  await new Promise((r) => setTimeout(r, 3000));
+
+  await gatewayProgram.methods
+    .deposit(new anchor.BN(1_000_000_000), Array.from(address))
+    .accounts({})
+    .rpc();
+
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
