@@ -249,15 +249,17 @@ const deployProtocolContracts = async (
   };
 };
 
-async function monitorProgramTransactions(programId: any, connection: any) {
-  console.log(`Monitoring transactions for program: ${programId.toBase58()}`);
+async function monitorProgramTransactions(program: any, connection: any) {
+  console.log(
+    `Monitoring transactions for program: ${program.programId.toBase58()}`
+  );
 
   let lastSignature: string | undefined = undefined;
 
   setInterval(async () => {
     try {
       const signatures = await connection.getSignaturesForAddress(
-        programId,
+        program.programId,
         { limit: 10, before: lastSignature },
         "confirmed"
       );
@@ -275,7 +277,6 @@ async function monitorProgramTransactions(programId: any, connection: any) {
 
           for (const instruction of transaction.transaction.message
             .instructions) {
-            // Map programId from accountKeys
             const programIdIndex =
               instruction.programIdIndex || instruction.programId;
             const programIdFromInstruction =
@@ -283,12 +284,14 @@ async function monitorProgramTransactions(programId: any, connection: any) {
 
             if (
               programIdFromInstruction &&
-              programIdFromInstruction.equals(programId)
+              programIdFromInstruction.equals(program.programId)
             ) {
               console.log("Instruction for program detected:", instruction);
 
-              const decodedData = instruction.data; // Add your decoding logic here
-              console.log("Decoded Instruction Data:", decodedData);
+              const rawData = Buffer.from(instruction.data, "base64"); // Adjust if data isn't base64
+              const decodedInstruction =
+                program.coder.instruction.decode(rawData);
+              console.log("Decoded Instruction:", decodedInstruction);
             }
           }
         }
@@ -312,7 +315,7 @@ export const initLocalnet = async ({
 
   const connection = gatewayProgram.provider.connection;
 
-  monitorProgramTransactions(gatewayProgram.programId, connection);
+  monitorProgramTransactions(gatewayProgram, connection);
 
   await new Promise((r) => setTimeout(r, 3000));
 
