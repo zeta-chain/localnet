@@ -23,3 +23,5 @@ tsconfig.tsbuildinfo
 .wallet.json
 
 localnet.pid
+
+test-ledger

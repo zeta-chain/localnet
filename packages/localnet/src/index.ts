@@ -17,6 +17,9 @@ import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
+import { setupSolana } from "./setupSolana";
+import * as anchor from "@coral-xyz/anchor";
+import * as borsh from "borsh";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -246,6 +249,97 @@ const deployProtocolContracts = async (
     uniswapRouterInstance,
   };
 };
+async function monitorOnlyNewTransactions(program: any, connection: any) {
+  console.log(
+    `Monitoring new transactions for program: ${program.programId.toBase58()}`
+  );
+
+  let lastSignature: string | undefined = undefined;
+
+  setInterval(async () => {
+    let signatures;
+    try {
+      signatures = await connection.getSignaturesForAddress(
+        program.programId,
+        { limit: 10 },
+        "confirmed"
+      );
+
+      if (signatures.length === 0) return;
+
+      const newSignatures = [];
+
+      for (const signatureInfo of signatures) {
+        if (signatureInfo.signature === lastSignature) {
+          break;
+        } else {
+          newSignatures.push(signatureInfo);
+        }
+      }
+
+      if (newSignatures.length === 0) return;
+
+      for (const signatureInfo of newSignatures.reverse()) {
+        try {
+          const transaction = await connection.getTransaction(
+            signatureInfo.signature,
+            { commitment: "confirmed" }
+          );
+
+          if (transaction) {
+            console.log("New Transaction Details:", transaction);
+
+            for (const instruction of transaction.transaction.message
+              .instructions) {
+              const programIdIndex =
+                instruction.programIdIndex || instruction.programId;
+              const programIdFromInstruction =
+                transaction.transaction.message.accountKeys[programIdIndex];
+
+              if (
+                programIdFromInstruction &&
+                programIdFromInstruction.equals(program.programId)
+              ) {
+                console.log("Instruction for program detected:", instruction);
+                const DepositInstructionSchema = {
+                  struct: {
+                    discriminator: { array: { type: "u8", length: 8 } }, // 8-byte discriminator
+                    amount: "u64", // Amount as uint64
+                    receiver: { array: { type: "u8", length: 20 } }, // Receiver as 20-byte array
+                  },
+                };
+
+                const rawData = Buffer.from(instruction.data, "base64");
+                const decoded = borsh.deserialize(
+                  DepositInstructionSchema,
+                  rawData
+                );
+
+                const decodedInstruction =
+                  program.coder.instruction.decode(rawData);
+                console.log("Decoded Instruction:", decoded);
+              }
+            }
+          }
+        } catch (transactionError) {
+          console.error(
+            `Error processing transaction ${signatureInfo.signature}:`,
+            transactionError
+          );
+          // Continue to the next transaction even if an error occurs
+          continue;
+        }
+      }
+    } catch (error) {
+      console.error("Error monitoring new transactions:", error);
+    } finally {
+      // Update lastSignature even if an error occurs
+      if (signatures && signatures.length > 0) {
+        lastSignature = signatures[0].signature;
+      }
+    }
+  }, 1000);
+}
 
 export const initLocalnet = async ({
   port,
@@ -254,6 +348,25 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
+  const { gatewayProgram, address } = await setupSolana();
+
+  const connection = gatewayProgram.provider.connection;
+  await gatewayProgram.methods
+    .deposit(new anchor.BN(1_000_000_000), Array.from(address))
+    .accounts({})
+    .rpc();
+
+  await new Promise((r) => setTimeout(r, 7000));
+
+  monitorOnlyNewTransactions(gatewayProgram, connection);
+
+  await new Promise((r) => setTimeout(r, 7000));
+
+  await gatewayProgram.methods
+    .deposit(new anchor.BN(2_000_000_000), Array.from(address))
+    .accounts({})
+    .rpc();
+
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
