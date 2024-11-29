@@ -248,10 +248,9 @@ const deployProtocolContracts = async (
     uniswapRouterInstance,
   };
 };
-
-async function monitorProgramTransactions(program: any, connection: any) {
+async function monitorOnlyNewTransactions(program: any, connection: any) {
   console.log(
-    `Monitoring transactions for program: ${program.programId.toBase58()}`
+    `Monitoring new transactions for program: ${program.programId.toBase58()}`
   );
 
   let lastSignature: string | undefined = undefined;
@@ -260,20 +259,32 @@ async function monitorProgramTransactions(program: any, connection: any) {
     try {
       const signatures = await connection.getSignaturesForAddress(
         program.programId,
-        { limit: 10, before: lastSignature },
+        { limit: 10 },
         "confirmed"
       );
 
       if (signatures.length === 0) return;
 
-      for (const signatureInfo of signatures.reverse()) {
+      const newSignatures = [];
+
+      for (const signatureInfo of signatures) {
+        if (signatureInfo.signature === lastSignature) {
+          break;
+        } else {
+          newSignatures.push(signatureInfo);
+        }
+      }
+
+      if (newSignatures.length === 0) return;
+
+      for (const signatureInfo of newSignatures.reverse()) {
         const transaction = await connection.getTransaction(
           signatureInfo.signature,
           { commitment: "confirmed" }
         );
 
         if (transaction) {
-          console.log("Transaction Details:", transaction);
+          console.log("New Transaction Details:", transaction);
 
           for (const instruction of transaction.transaction.message
             .instructions) {
@@ -288,7 +299,7 @@ async function monitorProgramTransactions(program: any, connection: any) {
             ) {
               console.log("Instruction for program detected:", instruction);
 
-              const rawData = Buffer.from(instruction.data, "base64"); // Adjust if data isn't base64
+              const rawData = Buffer.from(instruction.data, "base64");
               const decodedInstruction =
                 program.coder.instruction.decode(rawData);
               console.log("Decoded Instruction:", decodedInstruction);
@@ -297,9 +308,9 @@ async function monitorProgramTransactions(program: any, connection: any) {
         }
       }
 
-      lastSignature = signatures[signatures.length - 1].signature;
+      lastSignature = signatures[0].signature;
     } catch (error) {
-      console.error("Error monitoring transactions:", error);
+      console.error("Error monitoring new transactions:", error);
     }
   }, 1000);
 }
@@ -314,13 +325,19 @@ export const initLocalnet = async ({
   const { gatewayProgram, address } = await setupSolana();
 
   const connection = gatewayProgram.provider.connection;
-
-  monitorProgramTransactions(gatewayProgram, connection);
-
-  await new Promise((r) => setTimeout(r, 3000));
-
   await gatewayProgram.methods
     .deposit(new anchor.BN(1_000_000_000), Array.from(address))
+    .accounts({})
+    .rpc();
+
+  await new Promise((r) => setTimeout(r, 7000));
+
+  monitorOnlyNewTransactions(gatewayProgram, connection);
+
+  await new Promise((r) => setTimeout(r, 7000));
+
+  await gatewayProgram.methods
+    .deposit(new anchor.BN(2_000_000_000), Array.from(address))
     .accounts({})
     .rpc();
 
