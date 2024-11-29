@@ -303,11 +303,12 @@ async function monitorOnlyNewTransactions(program: any, connection: any) {
                 console.log("Instruction for program detected:", instruction);
                 const DepositInstructionSchema = {
                   struct: {
-                    discriminator: { array: { type: "u8", length: 8 } },
-                    amount: "u64",
-                    memo: { array: { type: "u8" } },
+                    discriminator: { array: { type: "u8", length: 8 } }, // 8-byte discriminator
+                    amount: "u64", // Amount as uint64
+                    receiver: { array: { type: "u8", length: 20 } }, // Receiver as 20-byte array
                   },
                 };
+
                 const rawData = Buffer.from(instruction.data, "base64");
                 const decoded = borsh.deserialize(
                   DepositInstructionSchema,
