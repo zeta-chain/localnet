@@ -19,6 +19,7 @@ import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
 import { setupSolana } from "./setupSolana";
 import * as anchor from "@coral-xyz/anchor";
+import * as borsh from "borsh";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -256,8 +257,9 @@ async function monitorOnlyNewTransactions(program: any, connection: any) {
   let lastSignature: string | undefined = undefined;
 
   setInterval(async () => {
+    let signatures;
     try {
-      const signatures = await connection.getSignaturesForAddress(
+      signatures = await connection.getSignaturesForAddress(
         program.programId,
         { limit: 10 },
         "confirmed"
@@ -278,39 +280,62 @@ async function monitorOnlyNewTransactions(program: any, connection: any) {
       if (newSignatures.length === 0) return;
 
       for (const signatureInfo of newSignatures.reverse()) {
-        const transaction = await connection.getTransaction(
-          signatureInfo.signature,
-          { commitment: "confirmed" }
-        );
+        try {
+          const transaction = await connection.getTransaction(
+            signatureInfo.signature,
+            { commitment: "confirmed" }
+          );
 
-        if (transaction) {
-          console.log("New Transaction Details:", transaction);
+          if (transaction) {
+            console.log("New Transaction Details:", transaction);
 
-          for (const instruction of transaction.transaction.message
-            .instructions) {
-            const programIdIndex =
-              instruction.programIdIndex || instruction.programId;
-            const programIdFromInstruction =
-              transaction.transaction.message.accountKeys[programIdIndex];
+            for (const instruction of transaction.transaction.message
+              .instructions) {
+              const programIdIndex =
+                instruction.programIdIndex || instruction.programId;
+              const programIdFromInstruction =
+                transaction.transaction.message.accountKeys[programIdIndex];
 
-            if (
-              programIdFromInstruction &&
-              programIdFromInstruction.equals(program.programId)
-            ) {
-              console.log("Instruction for program detected:", instruction);
+              if (
+                programIdFromInstruction &&
+                programIdFromInstruction.equals(program.programId)
+              ) {
+                console.log("Instruction for program detected:", instruction);
+                const DepositInstructionSchema = {
+                  struct: {
+                    discriminator: { array: { type: "u8", length: 8 } },
+                    amount: "u64",
+                    memo: { array: { type: "u8" } },
+                  },
+                };
+                const rawData = Buffer.from(instruction.data, "base64");
+                const decoded = borsh.deserialize(
+                  DepositInstructionSchema,
+                  rawData
+                );
 
-              const rawData = Buffer.from(instruction.data, "base64");
-              const decodedInstruction =
-                program.coder.instruction.decode(rawData);
-              console.log("Decoded Instruction:", decodedInstruction);
+                const decodedInstruction =
+                  program.coder.instruction.decode(rawData);
+                console.log("Decoded Instruction:", decoded);
+              }
             }
           }
+        } catch (transactionError) {
+          console.error(
+            `Error processing transaction ${signatureInfo.signature}:`,
+            transactionError
+          );
+          // Continue to the next transaction even if an error occurs
+          continue;
         }
       }
-
-      lastSignature = signatures[0].signature;
     } catch (error) {
       console.error("Error monitoring new transactions:", error);
+    } finally {
+      // Update lastSignature even if an error occurs
+      if (signatures && signatures.length > 0) {
+        lastSignature = signatures[0].signature;
+      }
     }
   }, 1000);
 }
