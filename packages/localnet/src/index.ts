@@ -19,7 +19,7 @@ import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
 import { setupSolana } from "./setupSolana";
 import * as anchor from "@coral-xyz/anchor";
-import * as borsh from "borsh";
+import Gateway_IDL from "./solana/idl/gateway.json";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -301,23 +301,10 @@ async function monitorOnlyNewTransactions(program: any, connection: any) {
                 programIdFromInstruction.equals(program.programId)
               ) {
                 console.log("Instruction for program detected:", instruction);
-                const DepositInstructionSchema = {
-                  struct: {
-                    discriminator: { array: { type: "u8", length: 8 } }, // 8-byte discriminator
-                    amount: "u64", // Amount as uint64
-                    receiver: { array: { type: "u8", length: 20 } }, // Receiver as 20-byte array
-                  },
-                };
 
-                const rawData = Buffer.from(instruction.data, "base64");
-                const decoded = borsh.deserialize(
-                  DepositInstructionSchema,
-                  rawData
-                );
-
-                const decodedInstruction =
-                  program.coder.instruction.decode(rawData);
-                console.log("Decoded Instruction:", decoded);
+                let coder = new anchor.BorshInstructionCoder(Gateway_IDL as anchor.Idl);
+                let decodedInstruction = coder.decode(instruction.data, "base58");
+                console.log("Decoded Instruction:", decodedInstruction);
               }
             }
           }
