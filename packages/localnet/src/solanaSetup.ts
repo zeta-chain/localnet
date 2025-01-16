@@ -6,6 +6,7 @@ import * as fs from "fs";
 import { keccak256 } from "ethereumjs-util";
 import { ec as EC } from "elliptic";
 import path from "path";
+import { solanaMonitorTransactions } from "./solanaMonitorTransactions";
 
 const execAsync = util.promisify(exec);
 
@@ -60,7 +61,7 @@ export const solanaSetup = async () => {
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
 
-    return { gatewayProgram, address };
+    solanaMonitorTransactions();
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {

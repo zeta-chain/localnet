@@ -19,7 +19,6 @@ import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
 import { solanaSetup } from "./solanaSetup";
 import * as anchor from "@coral-xyz/anchor";
-import { solanaMonitorTransactions } from "./solanaMonitorTransactions";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -258,8 +257,6 @@ export const initLocalnet = async ({
   exitOnError: boolean;
 }) => {
   await solanaSetup();
-
-  solanaMonitorTransactions();
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
