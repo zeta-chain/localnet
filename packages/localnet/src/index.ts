@@ -18,7 +18,6 @@ import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
 import { solanaSetup } from "./solanaSetup";
-import * as anchor from "@coral-xyz/anchor";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
