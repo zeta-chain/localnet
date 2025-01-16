@@ -1,12 +1,13 @@
 import Gateway_IDL from "./solana/idl/gateway.json";
 import * as anchor from "@coral-xyz/anchor";
 
-export const solanaMonitorTransactions = async (
-  program: any,
-  connection: any
-) => {
+export const solanaMonitorTransactions = async () => {
+  const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
+
+  const connection = gatewayProgram.provider.connection;
+
   console.log(
-    `Monitoring new transactions for program: ${program.programId.toBase58()}`
+    `Monitoring new transactions for program: ${gatewayProgram.programId.toBase58()}`
   );
 
   let lastSignature: string | undefined = undefined;
@@ -15,7 +16,7 @@ export const solanaMonitorTransactions = async (
     let signatures;
     try {
       signatures = await connection.getSignaturesForAddress(
-        program.programId,
+        gatewayProgram.programId,
         { limit: 10 },
         "confirmed"
       );
@@ -47,13 +48,13 @@ export const solanaMonitorTransactions = async (
             for (const instruction of transaction.transaction.message
               .instructions) {
               const programIdIndex =
-                instruction.programIdIndex || instruction.programId;
+                instruction.programIdIndex || (instruction as any).programId;
               const programIdFromInstruction =
                 transaction.transaction.message.accountKeys[programIdIndex];
 
               if (
                 programIdFromInstruction &&
-                programIdFromInstruction.equals(program.programId)
+                programIdFromInstruction.equals(gatewayProgram.programId)
               ) {
                 console.log("Instruction for program detected:", instruction);
 

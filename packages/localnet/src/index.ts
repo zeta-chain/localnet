@@ -257,24 +257,9 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
-  const { gatewayProgram, address } = await solanaSetup();
+  await solanaSetup();
 
-  const connection = gatewayProgram.provider.connection;
-  await gatewayProgram.methods
-    .deposit(new anchor.BN(1_000_000_000), Array.from(address))
-    .accounts({})
-    .rpc();
-
-  await new Promise((r) => setTimeout(r, 7000));
-
-  solanaMonitorTransactions(gatewayProgram, connection);
-
-  await new Promise((r) => setTimeout(r, 7000));
-
-  await gatewayProgram.methods
-    .deposit(new anchor.BN(2_000_000_000), Array.from(address))
-    .accounts({})
-    .rpc();
+  solanaMonitorTransactions();
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
