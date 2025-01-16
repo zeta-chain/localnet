@@ -27,7 +27,7 @@ const tssKeyPair = ec.keyFromPrivate(
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
 
-export const setupSolana = async () => {
+export const solanaSetup = async () => {
   const gatewaySO = "./packages/localnet/src/solana/deploy/gateway.so";
   console.log(`Deploying Solana program: ${gatewaySO}`);
 
