@@ -6,6 +6,7 @@ import * as fs from "fs";
 import { keccak256 } from "ethereumjs-util";
 import { ec as EC } from "elliptic";
 import path from "path";
+import { ethers } from "ethers";
 
 const execAsync = util.promisify(exec);
 
@@ -27,7 +28,7 @@ const tssKeyPair = ec.keyFromPrivate(
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
 
-export const solanaSetup = async () => {
+export const solanaSetup = async ({ depositAndCall }: any) => {
   const gatewaySO = "./packages/localnet/src/solana/deploy/gateway.so";
   console.log(`Deploying Solana program: ${gatewaySO}`);
 
@@ -60,7 +61,7 @@ export const solanaSetup = async () => {
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
 
-    solanaMonitorTransactions();
+    solanaMonitorTransactions({ depositAndCall });
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {
@@ -70,7 +71,7 @@ export const solanaSetup = async () => {
   }
 };
 
-export const solanaMonitorTransactions = async () => {
+export const solanaMonitorTransactions = async ({ depositAndCall }: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   const connection = gatewayProgram.provider.connection;
@@ -112,7 +113,10 @@ export const solanaMonitorTransactions = async () => {
           );
 
           if (transaction) {
-            console.log("New Transaction Details:", transaction);
+            console.log(
+              "New Transaction Details:",
+              JSON.stringify(transaction, null, 2)
+            );
 
             for (const instruction of transaction.transaction.message
               .instructions) {
@@ -135,6 +139,27 @@ export const solanaMonitorTransactions = async () => {
                   "base58"
                 );
                 console.log("Decoded Instruction:", decodedInstruction);
+                if (decodedInstruction) {
+                  if (decodedInstruction.name === "deposit_and_call") {
+                    const data = decodedInstruction.data as any;
+                    const amount = data.amount.toString();
+                    const receiver =
+                      "0x" +
+                      data.receiver
+                        .map((byte: any) => byte.toString(16).padStart(2, "0"))
+                        .join("");
+                    const message = data.message;
+                    const sender = ethers.hexlify(
+                      ethers.toUtf8Bytes(
+                        transaction.transaction.message.accountKeys[0].toString()
+                      )
+                    );
+                    // const sender = ethers.ZeroAddress;
+                    const asset = ethers.ZeroAddress;
+                    const args = [sender, receiver, amount, asset, message];
+                    depositAndCall(args);
+                  }
+                }
               }
             }
           }

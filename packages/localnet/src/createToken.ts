@@ -58,36 +58,38 @@ export const createToken = async (
       TestERC20.bytecode,
       deployer
     );
-    erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
-    await erc20.waitForDeployment();
-    const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
+    if (custody) {
+      erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
+      await erc20.waitForDeployment();
+      const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
 
-    await (erc20 as any)
-      .connect(deployer)
-      .approve(custody.target, ethers.MaxUint256, deployOpts);
+      await (erc20 as any)
+        .connect(deployer)
+        .approve(custody.target, ethers.MaxUint256, deployOpts);
 
-    await (erc20 as any)
-      .connect(deployer)
-      .mint(
-        custody.target,
-        ethers.parseUnits("1000000", erc20Decimals),
-        deployOpts
-      );
-    await (erc20 as any)
-      .connect(deployer)
-      .mint(
-        tss.getAddress(),
-        ethers.parseUnits("1000000", erc20Decimals),
-        deployOpts
-      );
-    await (erc20 as any)
-      .connect(deployer)
-      .mint(
-        await deployer.getAddress(),
-        ethers.parseUnits("1000000", erc20Decimals),
-        deployOpts
-      );
-    await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
+      await (erc20 as any)
+        .connect(deployer)
+        .mint(
+          custody.target,
+          ethers.parseUnits("1000000", erc20Decimals),
+          deployOpts
+        );
+      await (erc20 as any)
+        .connect(deployer)
+        .mint(
+          tss.getAddress(),
+          ethers.parseUnits("1000000", erc20Decimals),
+          deployOpts
+        );
+      await (erc20 as any)
+        .connect(deployer)
+        .mint(
+          await deployer.getAddress(),
+          ethers.parseUnits("1000000", erc20Decimals),
+          deployOpts
+        );
+      await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
+    }
   }
 
   foreignCoins.push({

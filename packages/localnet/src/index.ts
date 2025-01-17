@@ -16,7 +16,10 @@ import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
-import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
+import {
+  handleOnEVMDepositedAndCalled,
+  handleDepositAndCall,
+} from "./handleOnEVMDepositedAndCalled";
 import { solanaSetup } from "./solanaSetup";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
@@ -255,7 +258,17 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
-  await solanaSetup();
+  await solanaSetup({
+    depositAndCall: (args: any) =>
+      handleDepositAndCall({
+        provider,
+        protocolContracts,
+        args,
+        fungibleModuleSigner,
+        foreignCoins,
+        chainID: "901",
+      }),
+  });
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
@@ -306,6 +319,7 @@ export const initLocalnet = async ({
   await createToken(addresses, contractsEthereum.custody, "USDC", false, "5");
   await createToken(addresses, contractsBNB.custody, "BNB", true, "97");
   await createToken(addresses, contractsBNB.custody, "USDC", false, "97");
+  await createToken(addresses, null, "SOL", true, "901");
 
   const evmContracts = {
     5: contractsEthereum,

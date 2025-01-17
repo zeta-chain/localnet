@@ -5,11 +5,12 @@ import { ethers } from "ethers";
 
 const solanaDepositAndCall = async (args: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
+  const message = Buffer.from(args.message);
   await gatewayProgram.methods
     .depositAndCall(
-      new anchor.BN(2_000_000_000),
+      new anchor.BN(args.amount),
       ethers.getBytes(args.address),
-      Buffer.from(args.message)
+      message
     )
     .accounts({})
     .rpc();
@@ -21,4 +22,5 @@ export const solanaDepositAndCallTask = task(
   solanaDepositAndCall
 )
   .addParam("address", "Address to deposit and call")
-  .addParam("message", "Message");
+  .addParam("message", "Message")
+  .addParam("amount", "Amount to deposit and call");
