@@ -148,7 +148,7 @@ export const solanaMonitorTransactions = async ({ depositAndCall }: any) => {
                       data.receiver
                         .map((byte: any) => byte.toString(16).padStart(2, "0"))
                         .join("");
-                    const message = data.message;
+                    const message = data.message.toString();
                     const sender = ethers.hexlify(
                       ethers.toUtf8Bytes(
                         transaction.transaction.message.accountKeys[0].toString()
