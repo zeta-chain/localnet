@@ -28,7 +28,7 @@ const tssKeyPair = ec.keyFromPrivate(
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
 
-export const solanaSetup = async ({ depositAndCall }: any) => {
+export const solanaSetup = async ({ handlers }: any) => {
   const gatewaySO = "./packages/localnet/src/solana/deploy/gateway.so";
   console.log(`Deploying Solana program: ${gatewaySO}`);
 
@@ -61,7 +61,7 @@ export const solanaSetup = async ({ depositAndCall }: any) => {
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
 
-    solanaMonitorTransactions({ depositAndCall });
+    solanaMonitorTransactions({ handlers });
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
     if (error.logs) {
@@ -71,7 +71,7 @@ export const solanaSetup = async ({ depositAndCall }: any) => {
   }
 };
 
-export const solanaMonitorTransactions = async ({ depositAndCall }: any) => {
+export const solanaMonitorTransactions = async ({ handlers }: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   const connection = gatewayProgram.provider.connection;
@@ -134,30 +134,34 @@ export const solanaMonitorTransactions = async ({ depositAndCall }: any) => {
                 let coder = new anchor.BorshInstructionCoder(
                   Gateway_IDL as anchor.Idl
                 );
-                let decodedInstruction = coder.decode(
+                let decodedInstruction: any = coder.decode(
                   instruction.data,
                   "base58"
                 );
                 console.log("Decoded Instruction:", decodedInstruction);
                 if (decodedInstruction) {
+                  const data = decodedInstruction.data as any;
+                  const amount = data.amount.toString();
+                  const receiver =
+                    "0x" +
+                    data.receiver
+                      .map((byte: any) => byte.toString(16).padStart(2, "0"))
+                      .join("");
+                  const sender = ethers.hexlify(
+                    ethers.toUtf8Bytes(
+                      transaction.transaction.message.accountKeys[0].toString()
+                    )
+                  );
+                  // const sender = ethers.ZeroAddress;
+                  const asset = ethers.ZeroAddress;
+                  let args = [sender, receiver, amount, asset];
                   if (decodedInstruction.name === "deposit_and_call") {
-                    const data = decodedInstruction.data as any;
-                    const amount = data.amount.toString();
-                    const receiver =
-                      "0x" +
-                      data.receiver
-                        .map((byte: any) => byte.toString(16).padStart(2, "0"))
-                        .join("");
                     const message = data.message.toString();
-                    const sender = ethers.hexlify(
-                      ethers.toUtf8Bytes(
-                        transaction.transaction.message.accountKeys[0].toString()
-                      )
-                    );
-                    // const sender = ethers.ZeroAddress;
-                    const asset = ethers.ZeroAddress;
-                    const args = [sender, receiver, amount, asset, message];
-                    depositAndCall(args);
+                    args.push(message);
+                    handlers.depositAndCall(args);
+                  } else if (decodedInstruction.name === "deposit") {
+                    const args = [sender, receiver, amount, asset];
+                    handlers.deposit(args);
                   }
                 }
               }

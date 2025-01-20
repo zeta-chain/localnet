@@ -30,7 +30,7 @@ const solanaDepositAndCall = async (args: any) => {
   await gatewayProgram.methods
     .depositAndCall(
       new anchor.BN(args.amount),
-      ethers.getBytes(args.address),
+      ethers.getBytes(args.receiver),
       Buffer.from(encodedParameters)
     )
     .accounts({})
@@ -42,7 +42,7 @@ export const solanaDepositAndCallTask = task(
   "Solana deposit and call",
   solanaDepositAndCall
 )
-  .addParam("address", "Address to deposit and call")
+  .addParam("receiver", "Address to deposit and call")
   .addParam("amount", "Amount to deposit and call")
   .addParam("types", `The types of the parameters (example: '["string"]')`)
   .addVariadicPositionalParam("values", "The values of the parameters");

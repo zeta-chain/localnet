@@ -12,7 +12,7 @@ import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router0
 import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
 import { handleOnEVMCalled } from "./handleOnEVMCalled";
 import { deployOpts } from "./deployOpts";
-import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
+import { handleOnEVMDeposited, handleDeposit } from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
@@ -259,15 +259,25 @@ export const initLocalnet = async ({
   exitOnError: boolean;
 }) => {
   await solanaSetup({
-    depositAndCall: (args: any) =>
-      handleDepositAndCall({
-        provider,
-        protocolContracts,
-        args,
-        fungibleModuleSigner,
-        foreignCoins,
-        chainID: "901",
-      }),
+    handlers: {
+      depositAndCall: (args: any) =>
+        handleDepositAndCall({
+          provider,
+          protocolContracts,
+          args,
+          fungibleModuleSigner,
+          foreignCoins,
+          chainID: "901",
+        }),
+      deposit: (args: any) =>
+        handleDeposit({
+          protocolContracts,
+          fungibleModuleSigner,
+          foreignCoins,
+          args,
+          chainID: "901",
+        }),
+    },
   });
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);

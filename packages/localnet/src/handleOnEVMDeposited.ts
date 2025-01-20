@@ -5,6 +5,40 @@ import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 
+export const handleDeposit = async ({
+  protocolContracts,
+  fungibleModuleSigner,
+  foreignCoins,
+  args,
+  chainID,
+}: any) => {
+  const sender = args[0];
+  const receiver = args[1];
+  const amount = args[2];
+  const asset = args[3];
+  let foreignCoin;
+  if (asset === ethers.ZeroAddress) {
+    foreignCoin = foreignCoins.find(
+      (coin: any) =>
+        coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
+    );
+  } else {
+    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
+  }
+
+  if (!foreignCoin) {
+    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    return;
+  }
+
+  const zrc20 = foreignCoin.zrc20_contract_address;
+  const tx = await protocolContracts.gatewayZEVM
+    .connect(fungibleModuleSigner)
+    .deposit(zrc20, amount, receiver, deployOpts);
+  await tx.wait();
+  log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
+};
+
 export const handleOnEVMDeposited = async ({
   tss,
   provider,
@@ -37,7 +71,6 @@ export const handleOnEVMDeposited = async ({
   const receiver = args[1];
   const amount = args[2];
   const asset = args[3];
-  const message = args[4];
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
@@ -52,11 +85,13 @@ export const handleOnEVMDeposited = async ({
 
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
-    const tx = await protocolContracts.gatewayZEVM
-      .connect(fungibleModuleSigner)
-      .deposit(zrc20, amount, receiver, deployOpts);
-    await tx.wait();
-    log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
+    handleDeposit({
+      args,
+      protocolContracts,
+      fungibleModuleSigner,
+      foreignCoins,
+      chainID,
+    });
   } catch (err) {
     logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];
