@@ -31,7 +31,7 @@ export const solanaWithdraw = async () => {
   const pdaAccountData = await gatewayProgram.account.pda.fetch(pdaAccount);
 
   const nonce = pdaAccountData.nonce;
-  const amount = new anchor.BN(500000000);
+  const amount = new anchor.BN(1000);
   const to = await spl.getAssociatedTokenAddress(
     mint.publicKey,
     payer.publicKey
@@ -56,8 +56,6 @@ export const solanaWithdraw = async () => {
     .withdraw(amount, Array.from(signatureBuffer), Number(recoveryParam), nonce)
     .accounts({
       recipient: to,
-      signer: mint.publicKey,
     })
-    .signers([mint])
     .rpc();
 };
