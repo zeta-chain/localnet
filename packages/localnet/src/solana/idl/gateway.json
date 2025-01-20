@@ -9,6 +9,14 @@
   "instructions": [
     {
       "name": "deposit",
+      "docs": [
+        "Deposits SOL into the program and credits the `receiver` on ZetaChain zEVM.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `amount` - The amount of lamports to deposit.",
+        "* `receiver` - The Ethereum address of the receiver on ZetaChain zEVM."
+      ],
       "discriminator": [
         242,
         35,
@@ -22,11 +30,17 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer making the deposit."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -44,6 +58,9 @@
         },
         {
           "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -65,6 +82,15 @@
     },
     {
       "name": "deposit_and_call",
+      "docs": [
+        "Deposits SOL and calls a contract on ZetaChain zEVM.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `amount` - The amount of lamports to deposit.",
+        "* `receiver` - The Ethereum address of the receiver on ZetaChain zEVM.",
+        "* `message` - The message passed to the contract."
+      ],
       "discriminator": [
         65,
         33,
@@ -78,11 +104,17 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer making the deposit."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -100,6 +132,9 @@
         },
         {
           "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -125,6 +160,14 @@
     },
     {
       "name": "deposit_spl_token",
+      "docs": [
+        "Deposits SPL tokens and credits the `receiver` on ZetaChain zEVM.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `amount` - The amount of SPL tokens to deposit.",
+        "* `receiver` - The Ethereum address of the receiver on ZetaChain zEVM."
+      ],
       "discriminator": [
         86,
         172,
@@ -138,11 +181,18 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer making the deposit."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -159,6 +209,9 @@
         },
         {
           "name": "whitelist_entry",
+          "docs": [
+            "The whitelist entry account for the SPL token."
+          ],
           "pda": {
             "seeds": [
               {
@@ -183,19 +236,38 @@
           }
         },
         {
-          "name": "mint_account"
+          "name": "mint_account",
+          "docs": [
+            "The mint account of the SPL token being deposited."
+          ]
         },
         {
           "name": "token_program",
+          "docs": [
+            "The token program."
+          ],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "from",
+          "docs": [
+            "The source token account owned by the signer."
+          ],
           "writable": true
         },
         {
           "name": "to",
+          "docs": [
+            "The destination token account owned by the PDA."
+          ],
           "writable": true
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -216,6 +288,15 @@
     },
     {
       "name": "deposit_spl_token_and_call",
+      "docs": [
+        "Deposits SPL tokens and calls a contract on ZetaChain zEVM.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `amount` - The amount of SPL tokens to deposit.",
+        "* `receiver` - The Ethereum address of the receiver on ZetaChain zEVM.",
+        "* `message` - The message passed to the contract."
+      ],
       "discriminator": [
         14,
         181,
@@ -229,11 +310,18 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer making the deposit."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -250,6 +338,9 @@
         },
         {
           "name": "whitelist_entry",
+          "docs": [
+            "The whitelist entry account for the SPL token."
+          ],
           "pda": {
             "seeds": [
               {
@@ -274,19 +365,38 @@
           }
         },
         {
-          "name": "mint_account"
+          "name": "mint_account",
+          "docs": [
+            "The mint account of the SPL token being deposited."
+          ]
         },
         {
           "name": "token_program",
+          "docs": [
+            "The token program."
+          ],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "from",
+          "docs": [
+            "The source token account owned by the signer."
+          ],
           "writable": true
         },
         {
           "name": "to",
+          "docs": [
+            "The destination token account owned by the PDA."
+          ],
           "writable": true
+        },
+        {
+          "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -311,6 +421,14 @@
     },
     {
       "name": "initialize",
+      "docs": [
+        "Initializes the gateway PDA.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `tss_address` - The Ethereum TSS address (20 bytes).",
+        "* `chain_id` - The chain ID associated with the PDA."
+      ],
       "discriminator": [
         175,
         175,
@@ -324,11 +442,17 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer initializing the program."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -346,6 +470,9 @@
         },
         {
           "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -366,55 +493,14 @@
       ]
     },
     {
-      "name": "initialize_rent_payer",
-      "discriminator": [
-        225,
-        73,
-        166,
-        180,
-        25,
-        245,
-        183,
-        96
-      ],
-      "accounts": [
-        {
-          "name": "rent_payer_pda",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  110,
-                  116,
-                  45,
-                  112,
-                  97,
-                  121,
-                  101,
-                  114
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "set_deposit_paused",
+      "docs": [
+        "Pauses or unpauses deposits. Caller is authority stored in PDA.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `deposit_paused` - Boolean flag to pause or unpause deposits."
+      ],
       "discriminator": [
         98,
         179,
@@ -427,7 +513,76 @@
       ],
       "accounts": [
         {
+          "name": "signer",
+          "docs": [
+            "The account of the signer performing the update."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "deposit_paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "unwhitelist_spl_mint",
+      "docs": [
+        "Unwhitelists an SPL token. Caller is TSS.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `signature` - The TSS signature.",
+        "* `recovery_id` - The recovery ID for signature verification.",
+        "* `nonce` - The current nonce value."
+      ],
+      "discriminator": [
+        73,
+        142,
+        63,
+        191,
+        233,
+        238,
+        170,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "The account of the authority performing the operation."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -444,33 +599,10 @@
           }
         },
         {
-          "name": "signer",
-          "writable": true,
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "deposit_paused",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "name": "unwhitelist_spl_mint",
-      "discriminator": [
-        73,
-        142,
-        63,
-        191,
-        233,
-        238,
-        170,
-        104
-      ],
-      "accounts": [
-        {
           "name": "whitelist_entry",
+          "docs": [
+            "The whitelist entry account being closed."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -496,33 +628,10 @@
           }
         },
         {
-          "name": "whitelist_candidate"
-        },
-        {
-          "name": "pda",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  101,
-                  116,
-                  97
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "whitelist_candidate",
+          "docs": [
+            "The mint account of the SPL token being unwhitelisted."
+          ]
         }
       ],
       "args": [
@@ -540,15 +649,6 @@
           "type": "u8"
         },
         {
-          "name": "message_hash",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
           "name": "nonce",
           "type": "u64"
         }
@@ -556,6 +656,13 @@
     },
     {
       "name": "update_authority",
+      "docs": [
+        "Updates the PDA authority. Caller is authority stored in PDA.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `new_authority_address` - The new authority's public key."
+      ],
       "discriminator": [
         32,
         46,
@@ -568,7 +675,18 @@
       ],
       "accounts": [
         {
+          "name": "signer",
+          "docs": [
+            "The account of the signer performing the update."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -583,11 +701,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "signer",
-          "writable": true,
-          "signer": true
         }
       ],
       "args": [
@@ -599,6 +712,13 @@
     },
     {
       "name": "update_tss",
+      "docs": [
+        "Updates the TSS address. Caller is authority stored in PDA.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `tss_address` - The new Ethereum TSS address (20 bytes)."
+      ],
       "discriminator": [
         227,
         136,
@@ -611,7 +731,18 @@
       ],
       "accounts": [
         {
+          "name": "signer",
+          "docs": [
+            "The account of the signer performing the update."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -626,11 +757,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "signer",
-          "writable": true,
-          "signer": true
         }
       ],
       "args": [
@@ -647,6 +773,15 @@
     },
     {
       "name": "whitelist_spl_mint",
+      "docs": [
+        "Whitelists a new SPL token. Caller is TSS.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `signature` - The TSS signature.",
+        "* `recovery_id` - The recovery ID for signature verification.",
+        "* `nonce` - The current nonce value."
+      ],
       "discriminator": [
         30,
         110,
@@ -659,7 +794,38 @@
       ],
       "accounts": [
         {
+          "name": "authority",
+          "docs": [
+            "The account of the authority performing the operation."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "whitelist_entry",
+          "docs": [
+            "The whitelist entry account being initialized."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -685,32 +851,16 @@
           }
         },
         {
-          "name": "whitelist_candidate"
-        },
-        {
-          "name": "pda",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  101,
-                  116,
-                  97
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
+          "name": "whitelist_candidate",
+          "docs": [
+            "The mint account of the SPL token being whitelisted."
+          ]
         },
         {
           "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -729,15 +879,6 @@
           "type": "u8"
         },
         {
-          "name": "message_hash",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
           "name": "nonce",
           "type": "u64"
         }
@@ -745,6 +886,16 @@
     },
     {
       "name": "withdraw",
+      "docs": [
+        "Withdraws SOL. Caller is TSS.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `amount` - The amount of SOL to withdraw.",
+        "* `signature` - The TSS signature.",
+        "* `recovery_id` - The recovery ID for signature verification.",
+        "* `nonce` - The current nonce value."
+      ],
       "discriminator": [
         183,
         18,
@@ -758,11 +909,17 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer making the withdrawal."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -779,7 +936,10 @@
           }
         },
         {
-          "name": "to",
+          "name": "recipient",
+          "docs": [
+            "The recipient account for the withdrawn SOL."
+          ],
           "writable": true
         }
       ],
@@ -802,15 +962,6 @@
           "type": "u8"
         },
         {
-          "name": "message_hash",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
           "name": "nonce",
           "type": "u64"
         }
@@ -818,6 +969,17 @@
     },
     {
       "name": "withdraw_spl_token",
+      "docs": [
+        "Withdraws SPL tokens. Caller is TSS.",
+        "",
+        "# Arguments",
+        "* `ctx` - The instruction context.",
+        "* `decimals` - Token decimals for precision.",
+        "* `amount` - The amount of tokens to withdraw.",
+        "* `signature` - The TSS signature.",
+        "* `recovery_id` - The recovery ID for signature verification.",
+        "* `nonce` - The current nonce value."
+      ],
       "discriminator": [
         219,
         156,
@@ -831,11 +993,17 @@
       "accounts": [
         {
           "name": "signer",
+          "docs": [
+            "The account of the signer making the withdrawal."
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "pda",
+          "docs": [
+            "Gateway PDA."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -853,54 +1021,49 @@
         },
         {
           "name": "pda_ata",
-          "writable": true
-        },
-        {
-          "name": "mint_account"
-        },
-        {
-          "name": "recipient"
-        },
-        {
-          "name": "recipient_ata",
           "docs": [
-            "the validation will be done in the instruction processor."
+            "The associated token account for the Gateway PDA."
           ],
           "writable": true
         },
         {
-          "name": "rent_payer_pda",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  101,
-                  110,
-                  116,
-                  45,
-                  112,
-                  97,
-                  121,
-                  101,
-                  114
-                ]
-              }
-            ]
-          }
+          "name": "mint_account",
+          "docs": [
+            "The mint account of the SPL token being withdrawn."
+          ]
+        },
+        {
+          "name": "recipient",
+          "docs": [
+            "The recipient account for the withdrawn tokens."
+          ]
+        },
+        {
+          "name": "recipient_ata",
+          "docs": [
+            "The recipient's associated token account."
+          ],
+          "writable": true
         },
         {
           "name": "token_program",
+          "docs": [
+            "The token program."
+          ],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "associated_token_program",
+          "docs": [
+            "The associated token program."
+          ],
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "system_program",
+          "docs": [
+            "The system program."
+          ],
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -927,15 +1090,6 @@
           "type": "u8"
         },
         {
-          "name": "message_hash",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
           "name": "nonce",
           "type": "u64"
         }
@@ -954,19 +1108,6 @@
         36,
         43,
         94
-      ]
-    },
-    {
-      "name": "RentPayerPda",
-      "discriminator": [
-        48,
-        247,
-        192,
-        150,
-        46,
-        218,
-        14,
-        121
       ]
     },
     {
@@ -991,62 +1132,66 @@
     },
     {
       "code": 6001,
-      "name": "InsufficientPoints",
-      "msg": "InsufficientPoints"
-    },
-    {
-      "code": 6002,
       "name": "NonceMismatch",
       "msg": "NonceMismatch"
     },
     {
-      "code": 6003,
+      "code": 6002,
       "name": "TSSAuthenticationFailed",
       "msg": "TSSAuthenticationFailed"
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "DepositToAddressMismatch",
       "msg": "DepositToAddressMismatch"
     },
     {
-      "code": 6005,
+      "code": 6004,
       "name": "MessageHashMismatch",
       "msg": "MessageHashMismatch"
     },
     {
-      "code": 6006,
+      "code": 6005,
       "name": "MemoLengthExceeded",
       "msg": "MemoLengthExceeded"
     },
     {
-      "code": 6007,
-      "name": "MemoLengthTooShort",
-      "msg": "MemoLengthTooShort"
-    },
-    {
-      "code": 6008,
+      "code": 6006,
       "name": "DepositPaused",
       "msg": "DepositPaused"
     },
     {
-      "code": 6009,
+      "code": 6007,
       "name": "SPLAtaAndMintAddressMismatch",
       "msg": "SPLAtaAndMintAddressMismatch"
+    },
+    {
+      "code": 6008,
+      "name": "EmptyReceiver",
+      "msg": "EmptyReceiver"
     }
   ],
   "types": [
     {
       "name": "Pda",
+      "docs": [
+        "PDA account storing program state and settings."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "nonce",
+            "docs": [
+              "The nonce to ensure each signature can only be used once."
+            ],
             "type": "u64"
           },
           {
             "name": "tss_address",
+            "docs": [
+              "The Ethereum TSS address (20 bytes)."
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1056,28 +1201,33 @@
           },
           {
             "name": "authority",
+            "docs": [
+              "The authority controlling the PDA."
+            ],
             "type": "pubkey"
           },
           {
             "name": "chain_id",
+            "docs": [
+              "The chain ID associated with the PDA."
+            ],
             "type": "u64"
           },
           {
             "name": "deposit_paused",
+            "docs": [
+              "Flag to indicate whether deposits are paused."
+            ],
             "type": "bool"
           }
         ]
       }
     },
     {
-      "name": "RentPayerPda",
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
       "name": "WhitelistEntry",
+      "docs": [
+        "Whitelist entry account for whitelisted SPL tokens."
+      ],
       "type": {
         "kind": "struct",
         "fields": []
