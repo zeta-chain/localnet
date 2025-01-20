@@ -140,28 +140,33 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                 );
                 console.log("Decoded Instruction:", decodedInstruction);
                 if (decodedInstruction) {
-                  const data = decodedInstruction.data as any;
-                  const amount = data.amount.toString();
-                  const receiver =
-                    "0x" +
-                    data.receiver
-                      .map((byte: any) => byte.toString(16).padStart(2, "0"))
-                      .join("");
-                  const sender = ethers.hexlify(
-                    ethers.toUtf8Bytes(
-                      transaction.transaction.message.accountKeys[0].toString()
-                    )
-                  );
-                  // const sender = ethers.ZeroAddress;
-                  const asset = ethers.ZeroAddress;
-                  let args = [sender, receiver, amount, asset];
-                  if (decodedInstruction.name === "deposit_and_call") {
-                    const message = data.message.toString();
-                    args.push(message);
-                    handlers.depositAndCall(args);
-                  } else if (decodedInstruction.name === "deposit") {
-                    const args = [sender, receiver, amount, asset];
-                    handlers.deposit(args);
+                  if (
+                    decodedInstruction.name === "deposit_and_call" ||
+                    decodedInstruction.name === "deposit"
+                  ) {
+                    const data = decodedInstruction.data as any;
+                    const amount = data.amount.toString();
+                    const receiver =
+                      "0x" +
+                      data.receiver
+                        .map((byte: any) => byte.toString(16).padStart(2, "0"))
+                        .join("");
+                    const sender = ethers.hexlify(
+                      ethers.toUtf8Bytes(
+                        transaction.transaction.message.accountKeys[0].toString()
+                      )
+                    );
+                    // const sender = ethers.ZeroAddress;
+                    const asset = ethers.ZeroAddress;
+                    let args = [sender, receiver, amount, asset];
+                    if (decodedInstruction.name === "deposit_and_call") {
+                      const message = data.message.toString();
+                      args.push(message);
+                      handlers.depositAndCall(args);
+                    } else if (decodedInstruction.name === "deposit") {
+                      const args = [sender, receiver, amount, asset];
+                      handlers.deposit(args);
+                    }
                   }
                 }
               }
@@ -169,9 +174,9 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
           }
         } catch (transactionError) {
           console.error(
-            `Error processing transaction ${signatureInfo.signature}:`,
-            transactionError
+            `Error processing transaction ${signatureInfo.signature}:`
           );
+          console.error(JSON.stringify(transactionError));
           // Continue to the next transaction even if an error occurs
           continue;
         }
