@@ -82,6 +82,7 @@ export const handleOnZEVMCalled = async ({
       deployOpts,
       exitOnError,
       sender,
+      chainID,
     });
   }
 };
