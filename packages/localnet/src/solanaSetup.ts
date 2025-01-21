@@ -21,12 +21,23 @@ const keypairFilePath =
 
 const ec = new EC("secp256k1");
 
-const tssKeyPair = ec.keyFromPrivate(
+export const tssKeyPair = ec.keyFromPrivate(
   "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8"
 );
 
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
+
+const PAYER_SECRET_KEY = [
+  241, 170, 134, 107, 198, 204, 4, 113, 117, 201, 246, 19, 196, 39, 229, 23, 73,
+  128, 156, 88, 136, 174, 226, 33, 12, 104, 73, 236, 103, 2, 169, 219, 224, 118,
+  30, 35, 71, 2, 161, 234, 85, 206, 192, 21, 80, 143, 103, 39, 142, 40, 128,
+  183, 210, 145, 62, 75, 10, 253, 218, 135, 228, 49, 125, 186,
+];
+
+export const payer: anchor.web3.Keypair = anchor.web3.Keypair.fromSecretKey(
+  new Uint8Array(PAYER_SECRET_KEY)
+);
 
 export const solanaSetup = async ({ handlers }: any) => {
   const gatewaySO = "./packages/localnet/src/solana/deploy/gateway.so";
@@ -37,30 +48,75 @@ export const solanaSetup = async ({ handlers }: any) => {
       throw new Error(`Keypair file not found: ${keypairFilePath}`);
     }
 
+    // Convert TSS public key to address
     const publicKeyBuffer = Buffer.from(
       tssKeyPair.getPublic(false, "hex").slice(2),
       "hex"
     );
-
     const addressBuffer = keccak256(publicKeyBuffer);
     const address = addressBuffer.slice(-20);
     const tssAddress = Array.from(address);
 
-    anchor.setProvider(anchor.AnchorProvider.local());
+    const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
+    const connection = gatewayProgram.provider.connection;
 
+    // Airdrop into the payer so it has enough SOL
+    const latestBlockhash = await connection.getLatestBlockhash();
+    const airdropSig = await connection.requestAirdrop(
+      payer.publicKey,
+      2_000_000_000 // 2 SOL
+    );
+    await connection.confirmTransaction(
+      {
+        signature: airdropSig,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      },
+      "confirmed"
+    );
+
+    // Set Anchor provider with our shared payer
+    const provider = new anchor.AnchorProvider(
+      connection,
+      new anchor.Wallet(payer),
+      {}
+    );
+    anchor.setProvider(provider);
+
+    // Deploy the program
     const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
     console.log(`Running command: ${deployCommand}`);
 
     const { stdout } = await execAsync(deployCommand);
     console.log(`Deployment output: ${stdout}`);
 
+    // Wait briefly after deployment
     await new Promise((r) => setTimeout(r, 1000));
 
-    const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
-
+    // Initialize the gateway program
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
 
+    // Optionally: fund the PDA once during setup
+    const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("meta", "utf-8")],
+      gatewayProgram.programId
+    );
+
+    const fundTx = new anchor.web3.Transaction().add(
+      anchor.web3.SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: pdaAccount,
+        lamports: 10_000_000, // 0.01 SOL
+      })
+    );
+    await anchor.web3.sendAndConfirmTransaction(connection, fundTx, [payer], {
+      commitment: "confirmed",
+    });
+
+    console.log("PDA funded successfully.");
+
+    // Start monitoring program transactions
     solanaMonitorTransactions({ handlers });
   } catch (error: any) {
     console.error(`Deployment error: ${error.message}`);
@@ -73,7 +129,6 @@ export const solanaSetup = async ({ handlers }: any) => {
 
 export const solanaMonitorTransactions = async ({ handlers }: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
-
   const connection = gatewayProgram.provider.connection;
 
   console.log(
@@ -121,7 +176,9 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
             for (const instruction of transaction.transaction.message
               .instructions) {
               const programIdIndex =
-                instruction.programIdIndex || (instruction as any).programId;
+                (instruction as any).programIdIndex !== undefined
+                  ? (instruction as any).programIdIndex
+                  : (instruction as any).programId;
               const programIdFromInstruction =
                 transaction.transaction.message.accountKeys[programIdIndex];
 
@@ -139,6 +196,7 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                   "base58"
                 );
                 console.log("Decoded Instruction:", decodedInstruction);
+
                 if (decodedInstruction) {
                   if (
                     decodedInstruction.name === "deposit_and_call" ||
@@ -156,7 +214,6 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                         transaction.transaction.message.accountKeys[0].toString()
                       )
                     );
-                    // const sender = ethers.ZeroAddress;
                     const asset = ethers.ZeroAddress;
                     let args = [sender, receiver, amount, asset];
                     if (decodedInstruction.name === "deposit_and_call") {
@@ -164,7 +221,6 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                       args.push(message);
                       handlers.depositAndCall(args);
                     } else if (decodedInstruction.name === "deposit") {
-                      const args = [sender, receiver, amount, asset];
                       handlers.deposit(args);
                     }
                   }
