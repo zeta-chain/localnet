@@ -1,8 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { keccak256 } from "ethereumjs-util";
 import Gateway_IDL from "./solana/idl/gateway.json";
-
-// Import the shared payer from solanaSetup
 import { payer, tssKeyPair } from "./solanaSetup";
 
 export async function solanaWithdraw() {
