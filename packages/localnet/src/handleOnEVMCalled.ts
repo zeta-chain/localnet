@@ -60,6 +60,7 @@ export const handleOnEVMCalled = async ({
       chainID,
       revertMessage: message,
       revertAddress: receiver,
+      outgoing: false,
     });
   }
 };

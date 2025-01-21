@@ -78,6 +78,7 @@ export const handleOnRevertZEVM = async ({
           chainID,
           revertMessage,
           revertAddress,
+          outgoing: true,
         });
       } catch (abortErr) {
         const abortError = `Gateway: onAbort call failed: ${abortErr}`;

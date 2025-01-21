@@ -10,12 +10,13 @@ export const handleOnAbort = async ({
   chainID,
   revertMessage,
   revertAddress,
+  outgoing,
 }: any) => {
   const abortContext = [
     ethers.toUtf8Bytes(sender),
     asset,
     amount,
-    true,
+    outgoing,
     chainID,
     revertMessage,
   ];
