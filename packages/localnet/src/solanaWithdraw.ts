@@ -16,11 +16,21 @@ export async function solanaWithdraw() {
   );
   const payer = anchor.web3.Keypair.generate();
 
+  const latestBlockhash = await connection.getLatestBlockhash();
+
   const airdropSig = await connection.requestAirdrop(
     payer.publicKey,
     2_000_000_000
   );
-  await connection.confirmTransaction(airdropSig, "confirmed");
+
+  await connection.confirmTransaction(
+    {
+      signature: airdropSig,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    },
+    "confirmed"
+  );
 
   const provider = new anchor.AnchorProvider(
     connection,
@@ -36,8 +46,23 @@ export async function solanaWithdraw() {
     gatewayProgram.programId
   );
 
+  const fundTx = new anchor.web3.Transaction().add(
+    anchor.web3.SystemProgram.transfer({
+      fromPubkey: payer.publicKey,
+      toPubkey: pdaAccount,
+      lamports: 10_000_000,
+    })
+  );
+
+  const fundTxSig = await anchor.web3.sendAndConfirmTransaction(
+    connection,
+    fundTx,
+    [payer],
+    { commitment: "confirmed" }
+  );
+
   const pdaAccountData = await gatewayProgram.account.pda.fetch(pdaAccount);
-  const chain_id_bn = new anchor.BN(pdaAccountData.chainId); // or .chain_id
+  const chain_id_bn = new anchor.BN(pdaAccountData.chainId);
   const nonce = pdaAccountData.nonce;
 
   const amount = new anchor.BN(1_000);
