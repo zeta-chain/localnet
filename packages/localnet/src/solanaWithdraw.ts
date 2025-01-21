@@ -1,61 +1,75 @@
-import Gateway_IDL from "./solana/idl/gateway.json";
 import * as anchor from "@coral-xyz/anchor";
-import { keccak256 } from "ethereumjs-util";
-import * as spl from "@solana/spl-token";
 import { ec as EC } from "elliptic";
+import { keccak256 } from "ethereumjs-util";
+import Gateway_IDL from "./solana/idl/gateway.json";
 
 const ec = new EC("secp256k1");
+const keyPair = ec.keyFromPrivate(
+  "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8",
+  "hex"
+);
 
-export const solanaWithdraw = async () => {
-  const keyPair = ec.keyFromPrivate(
-    "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8"
+export async function solanaWithdraw() {
+  const connection = new anchor.web3.Connection(
+    "http://127.0.0.1:8899",
+    "confirmed"
   );
-
-  const mint = anchor.web3.Keypair.generate();
   const payer = anchor.web3.Keypair.generate();
 
-  const chain_id = 111111;
-  const chain_id_bn = new anchor.BN(chain_id);
-  const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
-  const conn = anchor.getProvider().connection;
-  let pdaAccount: anchor.web3.PublicKey;
-  let seeds = [Buffer.from("meta", "utf-8")];
+  const airdropSig = await connection.requestAirdrop(
+    payer.publicKey,
+    2_000_000_000
+  );
+  await connection.confirmTransaction(airdropSig, "confirmed");
 
-  [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
-    seeds,
+  const provider = new anchor.AnchorProvider(
+    connection,
+    new anchor.Wallet(payer),
+    {}
+  );
+  anchor.setProvider(provider);
+
+  const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
+
+  const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("meta", "utf-8")],
     gatewayProgram.programId
   );
 
-  let bal1 = await conn.getBalance(pdaAccount);
-  // amount + deposit fee
   const pdaAccountData = await gatewayProgram.account.pda.fetch(pdaAccount);
-
+  const chain_id_bn = new anchor.BN(pdaAccountData.chainId); // or .chain_id
   const nonce = pdaAccountData.nonce;
-  const amount = new anchor.BN(1000);
-  const to = await spl.getAssociatedTokenAddress(
-    mint.publicKey,
-    payer.publicKey
-  );
+
+  const amount = new anchor.BN(1_000);
+
+  const recipient = payer.publicKey;
+
+  const instructionId = 0x01;
+
   const buffer = Buffer.concat([
     Buffer.from("ZETACHAIN", "utf-8"),
-    Buffer.from([0x01]),
+    Buffer.from([instructionId]),
     chain_id_bn.toArrayLike(Buffer, "be", 8),
-    nonce.toArrayLike(Buffer, "be", 8),
+    new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
     amount.toArrayLike(Buffer, "be", 8),
-    to.toBuffer(),
+    recipient.toBuffer(),
   ]);
-  const message_hash = keccak256(buffer);
-  const signature = keyPair.sign(message_hash, "hex");
-  const { r, s, recoveryParam } = signature;
+
+  const messageHash = keccak256(buffer);
+
+  const signatureObj = keyPair.sign(messageHash);
+  const { r, s, recoveryParam } = signatureObj;
+
   const signatureBuffer = Buffer.concat([
     r.toArrayLike(Buffer, "be", 32),
     s.toArrayLike(Buffer, "be", 32),
   ]);
 
-  await gatewayProgram.methods
+  const txSig = await gatewayProgram.methods
     .withdraw(amount, Array.from(signatureBuffer), Number(recoveryParam), nonce)
-    .accounts({
-      recipient: to,
-    })
+    .accounts({ recipient })
     .rpc();
-};
+
+  const balance = await connection.getBalance(recipient);
+  console.log("Recipient final balance (lamports) =", balance);
+}
