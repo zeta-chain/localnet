@@ -1,5 +1,6 @@
 import { ethers, NonceManager } from "ethers";
 import { logErr } from "./log";
+import { handleOnAbort } from "./handleOnAbort";
 
 export const handleOnRevertZEVM = async ({
   revertOptions,
@@ -68,34 +69,15 @@ export const handleOnRevertZEVM = async ({
       logErr("ZetaChain", error);
 
       try {
-        const abortContext = [
-          ethers.toUtf8Bytes(sender),
+        handleOnAbort({
+          fungibleModuleSigner,
+          provider,
+          sender,
           asset,
           amount,
-          true,
           chainID,
           revertMessage,
-        ];
-
-        const abortableContract = new ethers.Contract(
           revertAddress,
-          [
-            "function onAbort((bytes, address, uint256, bool, uint256, bytes) calldata abortContext) external",
-          ],
-          fungibleModuleSigner
-        );
-
-        log("ZetaChain", "Attempting to call onAbort after onRevert failed...");
-        const abortTx = await abortableContract.onAbort(abortContext);
-        await abortTx.wait();
-
-        log("ZetaChain", "Gateway: successfully called onAbort");
-        const logs = await provider.getLogs({
-          address: revertAddress,
-          fromBlock: "latest",
-        });
-        logs.forEach((data: any) => {
-          log("ZetaChain", `Event from onAbort: ${JSON.stringify(data)}`);
         });
       } catch (abortErr) {
         const abortError = `Gateway: onAbort call failed: ${abortErr}`;
