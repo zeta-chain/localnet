@@ -75,7 +75,6 @@ export const solanaSetup = async ({ handlers }: any) => {
       "confirmed"
     );
 
-    // Set Anchor provider with our shared payer
     const provider = new anchor.AnchorProvider(
       connection,
       new anchor.Wallet(payer),
@@ -83,21 +82,17 @@ export const solanaSetup = async ({ handlers }: any) => {
     );
     anchor.setProvider(provider);
 
-    // Deploy the program
     const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
     console.log(`Running command: ${deployCommand}`);
 
     const { stdout } = await execAsync(deployCommand);
     console.log(`Deployment output: ${stdout}`);
 
-    // Wait briefly after deployment
     await new Promise((r) => setTimeout(r, 1000));
 
-    // Initialize the gateway program
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
 
-    // Optionally: fund the PDA once during setup
     const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("meta", "utf-8")],
       gatewayProgram.programId
