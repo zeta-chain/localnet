@@ -9,7 +9,7 @@ export const handleOnAbort = async ({
   amount,
   chainID,
   revertMessage,
-  revertAddress,
+  abortAddress,
   outgoing,
 }: any) => {
   const abortContext = [
@@ -22,20 +22,20 @@ export const handleOnAbort = async ({
   ];
 
   const abortableContract = new ethers.Contract(
-    revertAddress,
+    abortAddress,
     [
       "function onAbort((bytes, address, uint256, bool, uint256, bytes) calldata abortContext) external",
     ],
     fungibleModuleSigner
   );
 
-  log("ZetaChain", "Attempting to call onAbort after onRevert failed...");
+  log("ZetaChain", "Attempting to call onAbort...");
   const abortTx = await abortableContract.onAbort(abortContext);
   await abortTx.wait();
 
   log("ZetaChain", "Gateway: successfully called onAbort");
   const logs = await provider.getLogs({
-    address: revertAddress,
+    address: abortAddress,
     fromBlock: "latest",
   });
   logs.forEach((data: any) => {

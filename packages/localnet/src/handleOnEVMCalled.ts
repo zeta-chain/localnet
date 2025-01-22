@@ -49,8 +49,10 @@ export const handleOnEVMCalled = async ({
     });
   } catch (err: any) {
     logErr("ZetaChain", `Error executing onCall: ${err}`);
-    const revertOptions = args[3];
     // No asset calls don't support reverts, so aborting
+    const revertOptions = args[5];
+    const abortAddress = revertOptions[2];
+    const revertMessage = revertOptions[3];
     return await handleOnAbort({
       fungibleModuleSigner,
       provider,
@@ -58,8 +60,8 @@ export const handleOnEVMCalled = async ({
       asset: ethers.ZeroAddress,
       amount: 0,
       chainID,
-      revertMessage: message,
-      revertAddress: receiver,
+      revertMessage: revertMessage,
+      abortAddress: abortAddress,
       outgoing: false,
     });
   }

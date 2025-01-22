@@ -31,9 +31,8 @@ export const handleOnRevertZEVM = async ({
   sender: string;
   chainID: number;
 }) => {
-  const callOnRevert = revertOptions[1];
-  const revertAddress = revertOptions[0];
-  const revertMessage = revertOptions[3];
+  const [revertAddress, callOnRevert, abortAddress, revertMessage] =
+    revertOptions;
   const revertContext = {
     asset,
     amount,
@@ -77,7 +76,7 @@ export const handleOnRevertZEVM = async ({
           amount,
           chainID,
           revertMessage,
-          revertAddress,
+          abortAddress: revertAddress,
           outgoing: true,
         });
       } catch (abortErr) {
