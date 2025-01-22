@@ -76,7 +76,7 @@ export const handleOnRevertZEVM = async ({
           amount,
           chainID,
           revertMessage,
-          abortAddress: revertAddress,
+          abortAddress,
           outgoing: true,
         });
       } catch (abortErr) {
