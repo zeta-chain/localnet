@@ -29,7 +29,7 @@ export const handleOnAbort = async ({
     fungibleModuleSigner
   );
 
-  log("ZetaChain", "Attempting to call onAbort...");
+  log("ZetaChain", "Executing onAbort");
   const abortTx = await abortableContract.onAbort(abortContext);
   await abortTx.wait();
   const logs = await provider.getLogs({
