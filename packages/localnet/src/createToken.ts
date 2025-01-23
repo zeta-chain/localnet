@@ -51,7 +51,7 @@ export const createToken = async (
       .setGasCoinZRC20(chainID, zrc20.target);
     (systemContract as any)
       .connect(fungibleModuleSigner)
-      .setGasPrice(chainID, 1);
+      .setGasPrice(chainID, 20000000000);
   } else {
     const erc20Factory = new ethers.ContractFactory(
       TestERC20.abi,
