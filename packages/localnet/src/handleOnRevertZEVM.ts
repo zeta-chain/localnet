@@ -1,6 +1,7 @@
 import { ethers, NonceManager } from "ethers";
 import { logErr } from "./log";
 import { handleOnAbort } from "./handleOnAbort";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
 export const handleOnRevertZEVM = async ({
   revertOptions,
@@ -43,19 +44,16 @@ export const handleOnRevertZEVM = async ({
   if (callOnRevert) {
     log("ZetaChain", "Gateway: calling executeRevert");
     try {
-      const assetContract = new ethers.Contract(
-        asset,
-        ["function transfer(address to, uint256 amount) public returns (bool)"],
-        fungibleModuleSigner
-      );
-      const transferTx = await assetContract.transfer(revertAddress, amount);
-      await transferTx.wait();
-      tss.reset();
       const tx = await gatewayZEVM
         .connect(fungibleModuleSigner)
-        .executeRevert(revertAddress, revertContext, deployOpts);
+        .depositAndRevert(
+          asset,
+          amount,
+          revertAddress,
+          revertContext,
+          deployOpts
+        );
       await tx.wait();
-      log("ZetaChain", "Gateway: successfully called onRevert");
       const logs = await provider.getLogs({
         address: revertAddress,
         fromBlock: "latest",
@@ -66,7 +64,15 @@ export const handleOnRevertZEVM = async ({
     } catch (err) {
       const error = `Gateway: Call onRevert failed: ${err}`;
       logErr("ZetaChain", error);
-
+      if (asset !== ethers.ZeroAddress) {
+        const assetContract = new ethers.Contract(
+          asset,
+          ZRC20.abi,
+          fungibleModuleSigner
+        );
+        const transferTx = await assetContract.transfer(abortAddress, amount);
+        await transferTx.wait();
+      }
       try {
         handleOnAbort({
           fungibleModuleSigner,

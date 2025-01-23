@@ -32,8 +32,6 @@ export const handleOnAbort = async ({
   log("ZetaChain", "Attempting to call onAbort...");
   const abortTx = await abortableContract.onAbort(abortContext);
   await abortTx.wait();
-
-  log("ZetaChain", "Gateway: successfully called onAbort");
   const logs = await provider.getLogs({
     address: abortAddress,
     fromBlock: "latest",
