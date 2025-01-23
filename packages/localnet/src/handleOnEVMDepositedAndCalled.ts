@@ -81,7 +81,7 @@ export const handleOnEVMDepositedAndCalled = async ({
       log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
     });
   } catch (err) {
-    logErr("ZetaChain", `Error depositing: ${err}`);
+    logErr("ZetaChain", `onCall failed: ${err}`);
     const revertOptions = args[5];
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
@@ -127,10 +127,14 @@ export const handleOnEVMDepositedAndCalled = async ({
         sender,
       });
     } else {
-      // If the deposited amount is not enough to cover withdrawal fee, run onAbort
+      log(
+        "ZetaChain",
+        `Cannot initiate a revert, deposited amount ${amount} is less than gas fee ${revertGasFee}`
+      );
       const revertOptions = args[5];
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
+      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
       deployer.reset();
       const transferTx = await zrc20Contract.transfer(abortAddress, amount);
       await transferTx.wait();

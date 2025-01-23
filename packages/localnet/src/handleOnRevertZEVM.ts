@@ -42,7 +42,7 @@ export const handleOnRevertZEVM = async ({
   if (callOnRevert) {
     log(
       "ZetaChain",
-      `Reverting, callOnRevert is true, executing depositAndRevert on revertAddress ${revertAddress}`
+      `callOnRevert is true, executing onRevert on revertAddress ${revertAddress}`
     );
     try {
       const tx = await gatewayZEVM
@@ -98,7 +98,7 @@ export const handleOnRevertZEVM = async ({
   } else {
     log(
       "ZetaChain",
-      `Reverting, callOnRevert is false, transferring tokens to revertAddress ${revertAddress}`
+      `callOnRevert is false, transferring tokens to revertAddress ${revertAddress}`
     );
     try {
       const assetContract = new ethers.Contract(

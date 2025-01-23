@@ -1,6 +1,7 @@
 import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
-import { NonceManager } from "ethers";
+import { ethers, NonceManager } from "ethers";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
 export const handleOnRevertEVM = async ({
   revertOptions,
@@ -65,7 +66,6 @@ export const handleOnRevertEVM = async ({
           );
       }
       await tx.wait();
-      log(chain, "Gateway: successfully called onRevert");
       const logs = await provider.getLogs({
         address: revertAddress,
         fromBlock: "latest",
@@ -75,12 +75,25 @@ export const handleOnRevertEVM = async ({
         log(chain, `Event from onRevert: ${JSON.stringify(data)}`);
       });
     } catch (err: any) {
-      logErr(chain, `Gateway: Call onRevert failed`, err);
+      logErr(chain, `onRevert failed:`, err);
       if (exitOnError) throw new Error(err);
     }
   } else {
-    const error = `Tx reverted without callOnRevert: ${err}`;
-    logErr(chain, error);
-    if (exitOnError) throw new Error(error);
+    const isGas = asset === ethers.ZeroAddress;
+    const gasOrAsset = isGas ? "gas" : asset;
+    log(
+      chain,
+      `callOnRevert is false, transferring amount ${amount} of ${gasOrAsset} tokens to revertAddress ${revertAddress}`
+    );
+    if (isGas) {
+      await tss.sendTransaction({
+        value: amount,
+        to: revertAddress,
+      });
+    } else {
+      const assetContract = new ethers.Contract(asset, ZRC20.abi, tss);
+      const transferTx = await assetContract.transfer(revertAddress, amount);
+      await transferTx.wait();
+    }
   }
 };
