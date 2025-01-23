@@ -33,7 +33,7 @@ export const handleOnEVMDepositedAndCalled = async ({
   gatewayEVM: any;
   custody: any;
 }) => {
-  log(chain, "Gateway: 'DepositedAndCalled' event emitted");
+  log(chain, "Gateway: DepositedAndCalled event emitted");
   const sender = args[0];
   const receiver = args[1];
   const amount = args[2];

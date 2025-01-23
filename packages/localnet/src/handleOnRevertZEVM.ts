@@ -42,7 +42,7 @@ export const handleOnRevertZEVM = async ({
   if (callOnRevert) {
     log(
       "ZetaChain",
-      "Reverting, callOnRevert is true, executing depositAndRevert"
+      `Reverting, callOnRevert is true, executing depositAndRevert on revertAddress ${revertAddress}`
     );
     try {
       const tx = await gatewayZEVM
@@ -65,7 +65,7 @@ export const handleOnRevertZEVM = async ({
     } catch (err) {
       const error = `onRevert failed: ${err}`;
       logErr("ZetaChain", error);
-      log("ZetaChain", "Transferring tokens to abortAddress");
+      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
       if (asset !== ethers.ZeroAddress) {
         const assetContract = new ethers.Contract(
           asset,
@@ -98,7 +98,7 @@ export const handleOnRevertZEVM = async ({
   } else {
     log(
       "ZetaChain",
-      "Reverting, callOnRevert is false, transferring tokens to revertAddress"
+      `Reverting, callOnRevert is false, transferring tokens to revertAddress ${revertAddress}`
     );
     try {
       const assetContract = new ethers.Contract(
@@ -109,9 +109,9 @@ export const handleOnRevertZEVM = async ({
       const transferTx = await assetContract.transfer(revertAddress, amount);
       await transferTx.wait();
     } catch (err) {
-      const error = `Token transfer to revertAddress failed: ${err}`;
+      const error = `Token transfer to revertAddress ${revertAddress} failed: ${err}`;
       logErr("ZetaChain", error);
-      log("ZetaChain", "Transferring tokens to abortAddress");
+      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
       const assetContract = new ethers.Contract(
         asset,
         ZRC20.abi,
