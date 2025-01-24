@@ -40,9 +40,9 @@ export const handleOnRevertEVM = async ({
     try {
       log(
         chain,
-        `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
+        `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
           revertContext
-        )})`
+        )}`
       );
       (tss as NonceManager).reset();
       let tx;

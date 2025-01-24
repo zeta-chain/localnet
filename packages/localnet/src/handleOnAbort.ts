@@ -12,7 +12,7 @@ export const handleOnAbort = async ({
   abortAddress,
   outgoing,
 }: any) => {
-  const abortContext = [
+  const context = [
     ethers.toUtf8Bytes(sender),
     asset,
     amount,
@@ -29,8 +29,13 @@ export const handleOnAbort = async ({
     fungibleModuleSigner
   );
 
-  log("ZetaChain", "Executing onAbort");
-  const abortTx = await abortableContract.onAbort(abortContext);
+  log(
+    "ZetaChain",
+    `Contract ${abortAddress} executing onAbort, context: ${JSON.stringify(
+      context
+    )}`
+  );
+  const abortTx = await abortableContract.onAbort(context);
   await abortTx.wait();
   const logs = await provider.getLogs({
     address: abortAddress,

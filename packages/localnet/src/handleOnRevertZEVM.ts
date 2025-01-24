@@ -42,18 +42,27 @@ export const handleOnRevertZEVM = async ({
   if (callOnRevert) {
     log(
       "ZetaChain",
-      `callOnRevert is true, executing onRevert on revertAddress ${revertAddress}`
+      `callOnRevert is true, executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
+        revertContext
+      )}`
     );
     try {
-      const tx = await gatewayZEVM
-        .connect(fungibleModuleSigner)
-        .depositAndRevert(
-          asset,
-          amount,
-          revertAddress,
-          revertContext,
-          deployOpts
-        );
+      let tx;
+      if (asset === ethers.ZeroAddress) {
+        tx = await gatewayZEVM
+          .connect(fungibleModuleSigner)
+          .executeRevert(revertAddress, revertContext, deployOpts);
+      } else {
+        tx = await gatewayZEVM
+          .connect(fungibleModuleSigner)
+          .depositAndRevert(
+            asset,
+            amount,
+            revertAddress,
+            revertContext,
+            deployOpts
+          );
+      }
       await tx.wait();
       const logs = await provider.getLogs({
         address: revertAddress,
