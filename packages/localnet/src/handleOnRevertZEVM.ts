@@ -12,7 +12,6 @@ export const handleOnRevertZEVM = async ({
   fungibleModuleSigner,
   gatewayZEVM,
   deployOpts,
-  exitOnError = false,
   sender,
   chainID,
 }: {
@@ -26,7 +25,6 @@ export const handleOnRevertZEVM = async ({
   log: (chain: string, ...messages: string[]) => void;
   gatewayZEVM: any;
   deployOpts: any;
-  exitOnError: boolean;
   sender: string;
   chainID: number;
 }) => {
@@ -99,10 +97,7 @@ export const handleOnRevertZEVM = async ({
       } catch (err) {
         const error = `onAbort failed: ${err}`;
         logErr("ZetaChain", error);
-        if (exitOnError) throw new Error(error);
       }
-
-      if (exitOnError) throw new Error(error);
     }
   } else {
     log(
@@ -143,9 +138,7 @@ export const handleOnRevertZEVM = async ({
       } catch (err) {
         const error = `onAbort failed: ${err}`;
         logErr("ZetaChain", error);
-        if (exitOnError) throw new Error(error);
       }
     }
-    if (exitOnError) throw new Error("Revert failed");
   }
 };

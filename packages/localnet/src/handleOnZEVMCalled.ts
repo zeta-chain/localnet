@@ -66,7 +66,10 @@ export const handleOnZEVMCalled = async ({
       log(chainID, `Event from contract: ${JSON.stringify(data)}`);
     });
     await executeTx.wait();
-  } catch (err) {
+  } catch (err: any) {
+    if (exitOnError) {
+      throw new Error(err);
+    }
     logErr(chainID, `Error executing a contract: ${err}`);
     const revertOptions = args[5];
     return await handleOnRevertZEVM({
@@ -80,7 +83,6 @@ export const handleOnZEVMCalled = async ({
       log,
       gatewayZEVM,
       deployOpts,
-      exitOnError,
       sender,
       chainID,
     });
