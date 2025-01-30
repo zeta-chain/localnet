@@ -436,18 +436,14 @@ export const initLocalnet = async ({
 
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await handleOnEVMCalled({
-      tss,
       provider,
       protocolContracts,
       args,
       deployer,
       fungibleModuleSigner,
       foreignCoins,
-      exitOnError,
       chainID: "97",
       chain: "bnb",
-      gatewayEVM: contractsBNB.gatewayEVM,
-      custody: contractsBNB.custody,
     });
   });
 

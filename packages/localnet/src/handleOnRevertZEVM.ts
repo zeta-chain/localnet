@@ -1,19 +1,20 @@
 import { ethers, NonceManager } from "ethers";
 import { logErr } from "./log";
+import { handleOnAbort } from "./handleOnAbort";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
 export const handleOnRevertZEVM = async ({
   revertOptions,
-  err,
   asset,
   amount,
   provider,
-  tss,
   log,
   fungibleModuleSigner,
   gatewayZEVM,
   deployOpts,
   exitOnError = false,
   sender,
+  chainID,
 }: {
   revertOptions: any;
   err: any;
@@ -27,10 +28,10 @@ export const handleOnRevertZEVM = async ({
   deployOpts: any;
   exitOnError: boolean;
   sender: string;
+  chainID: number;
 }) => {
-  const callOnRevert = revertOptions[1];
-  const revertAddress = revertOptions[0];
-  const revertMessage = revertOptions[3];
+  const [revertAddress, callOnRevert, abortAddress, revertMessage] =
+    revertOptions;
   const revertContext = {
     asset,
     amount,
@@ -39,37 +40,103 @@ export const handleOnRevertZEVM = async ({
   };
 
   if (callOnRevert) {
-    log("ZetaChain", "Gateway: calling executeRevert");
+    log(
+      "ZetaChain",
+      `callOnRevert is true, executing onRevert on revertAddress ${revertAddress}`
+    );
     try {
-      const assetContract = new ethers.Contract(
-        asset,
-        ["function transfer(address to, uint256 amount) public returns (bool)"],
-        fungibleModuleSigner
-      );
-      const transferTx = await assetContract.transfer(revertAddress, amount);
-      await transferTx.wait();
-      tss.reset();
       const tx = await gatewayZEVM
         .connect(fungibleModuleSigner)
-        .executeRevert(revertAddress, revertContext, deployOpts);
+        .depositAndRevert(
+          asset,
+          amount,
+          revertAddress,
+          revertContext,
+          deployOpts
+        );
       await tx.wait();
-      log("ZetaChain", "Gateway: successfully called onRevert");
       const logs = await provider.getLogs({
         address: revertAddress,
         fromBlock: "latest",
       });
-
       logs.forEach((data: any) => {
         log("ZetaChain", `Event from onRevert: ${JSON.stringify(data)}`);
       });
     } catch (err) {
-      const error = `Gateway: Call onRevert failed: ${err}`;
+      const error = `onRevert failed: ${err}`;
       logErr("ZetaChain", error);
+      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
+      if (asset !== ethers.ZeroAddress) {
+        const assetContract = new ethers.Contract(
+          asset,
+          ZRC20.abi,
+          fungibleModuleSigner
+        );
+        const transferTx = await assetContract.transfer(abortAddress, amount);
+        await transferTx.wait();
+      }
+      try {
+        handleOnAbort({
+          fungibleModuleSigner,
+          provider,
+          sender,
+          asset,
+          amount,
+          chainID,
+          revertMessage,
+          abortAddress,
+          outgoing: true,
+        });
+      } catch (err) {
+        const error = `onAbort failed: ${err}`;
+        logErr("ZetaChain", error);
+        if (exitOnError) throw new Error(error);
+      }
+
       if (exitOnError) throw new Error(error);
     }
   } else {
-    const error = `Tx reverted without callOnRevert: ${err}`;
-    logErr("ZetaChain", error);
-    if (exitOnError) throw new Error(error);
+    log(
+      "ZetaChain",
+      `callOnRevert is false, transferring tokens to revertAddress ${revertAddress}`
+    );
+    try {
+      const assetContract = new ethers.Contract(
+        asset,
+        ZRC20.abi,
+        fungibleModuleSigner
+      );
+      const transferTx = await assetContract.transfer(revertAddress, amount);
+      await transferTx.wait();
+    } catch (err) {
+      const error = `Token transfer to revertAddress ${revertAddress} failed: ${err}`;
+      logErr("ZetaChain", error);
+      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
+      const assetContract = new ethers.Contract(
+        asset,
+        ZRC20.abi,
+        fungibleModuleSigner
+      );
+      const transferTx = await assetContract.transfer(abortAddress, amount);
+      await transferTx.wait();
+      try {
+        handleOnAbort({
+          fungibleModuleSigner,
+          provider,
+          sender,
+          asset,
+          amount,
+          chainID,
+          revertMessage,
+          abortAddress,
+          outgoing: true,
+        });
+      } catch (err) {
+        const error = `onAbort failed: ${err}`;
+        logErr("ZetaChain", error);
+        if (exitOnError) throw new Error(error);
+      }
+    }
+    if (exitOnError) throw new Error("Revert failed");
   }
 };

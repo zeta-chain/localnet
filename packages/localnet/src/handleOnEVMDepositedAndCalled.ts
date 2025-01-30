@@ -4,6 +4,7 @@ import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
+import { handleOnAbort } from "./handleOnAbort";
 
 export const handleDepositAndCall = async ({
   provider,
@@ -93,7 +94,7 @@ export const handleOnEVMDepositedAndCalled = async ({
   gatewayEVM: any;
   custody: any;
 }) => {
-  log(chain, "Gateway: 'DepositedAndCalled' event emitted");
+  log(chain, "Gateway: DepositedAndCalled event emitted");
   const sender = args[0];
   const receiver = args[1];
   const amount = args[2];
@@ -115,16 +116,33 @@ export const handleOnEVMDepositedAndCalled = async ({
 
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
-    handleDepositAndCall({
-      provider,
-      protocolContracts,
-      args,
-      fungibleModuleSigner,
-      foreignCoins,
+    const context = {
+      origin: ethers.ZeroAddress,
+      sender,
       chainID,
+    };
+
+    log(
+      "ZetaChain",
+      `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
+        context
+      )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
+    );
+    const tx = await protocolContracts.gatewayZEVM
+      .connect(fungibleModuleSigner)
+      .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
+
+    await tx.wait();
+    const logs = await provider.getLogs({
+      address: receiver,
+      fromBlock: "latest",
+    });
+
+    logs.forEach((data) => {
+      log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
     });
   } catch (err) {
-    logErr("ZetaChain", `Error depositing: ${err}`);
+    logErr("ZetaChain", `onCall failed: ${err}`);
     const revertOptions = args[5];
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
@@ -153,21 +171,46 @@ export const handleOnEVMDepositedAndCalled = async ({
       );
     }
     revertAmount = amount - revertGasFee;
-    return await handleOnRevertEVM({
-      revertOptions,
-      asset,
-      amount: revertAmount,
-      err,
-      tss,
-      isGas,
-      token,
-      provider,
-      exitOnError,
-      chain,
-      gatewayEVM,
-      custody,
-      sender,
-    });
+    if (revertAmount > 0) {
+      return await handleOnRevertEVM({
+        revertOptions,
+        asset,
+        amount: revertAmount,
+        err,
+        tss,
+        isGas,
+        token,
+        provider,
+        exitOnError,
+        chain,
+        gatewayEVM,
+        custody,
+        sender,
+      });
+    } else {
+      log(
+        "ZetaChain",
+        `Cannot initiate a revert, deposited amount ${amount} is less than gas fee ${revertGasFee}`
+      );
+      const revertOptions = args[5];
+      const abortAddress = revertOptions[2];
+      const revertMessage = revertOptions[3];
+      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
+      deployer.reset();
+      const transferTx = await zrc20Contract.transfer(abortAddress, amount);
+      await transferTx.wait();
+      return await handleOnAbort({
+        fungibleModuleSigner,
+        provider,
+        sender,
+        asset: ethers.ZeroAddress,
+        amount: 0,
+        chainID,
+        revertMessage: revertMessage,
+        abortAddress: abortAddress,
+        outgoing: false,
+      });
+    }
   }
 };
 

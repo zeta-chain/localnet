@@ -4,6 +4,7 @@ import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
+import { handleOnAbort } from "./handleOnAbort";
 
 export const handleDeposit = async ({
   protocolContracts,
@@ -85,13 +86,11 @@ export const handleOnEVMDeposited = async ({
 
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
-    handleDeposit({
-      args,
-      protocolContracts,
-      fungibleModuleSigner,
-      foreignCoins,
-      chainID,
-    });
+    const tx = await protocolContracts.gatewayZEVM
+      .connect(fungibleModuleSigner)
+      .deposit(zrc20, amount, receiver, deployOpts);
+    await tx.wait();
+    log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
   } catch (err) {
     logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];
@@ -122,21 +121,44 @@ export const handleOnEVMDeposited = async ({
       );
     }
     revertAmount = amount - revertGasFee;
-    return await handleOnRevertEVM({
-      revertOptions,
-      asset,
-      amount: revertAmount,
-      err,
-      tss,
-      isGas,
-      token,
-      provider,
-      exitOnError,
-      chain,
-      gatewayEVM,
-      custody,
-      sender,
-    });
+    console.log("amount", amount);
+    console.log("revertGasFee", revertGasFee);
+    if (revertAmount > 0) {
+      return await handleOnRevertEVM({
+        revertOptions,
+        asset,
+        amount: revertAmount,
+        err,
+        tss,
+        isGas,
+        token,
+        provider,
+        exitOnError,
+        chain,
+        gatewayEVM,
+        custody,
+        sender,
+      });
+    } else {
+      // If the deposited amount is not enough to cover withdrawal fee, run onAbort
+      const revertOptions = args[5];
+      const abortAddress = revertOptions[2];
+      const revertMessage = revertOptions[3];
+      deployer.reset();
+      const transferTx = await zrc20Contract.transfer(abortAddress, amount);
+      await transferTx.wait();
+      return await handleOnAbort({
+        fungibleModuleSigner,
+        provider,
+        sender,
+        asset: ethers.ZeroAddress,
+        amount: 0,
+        chainID,
+        revertMessage: revertMessage,
+        abortAddress: abortAddress,
+        outgoing: false,
+      });
+    }
   }
 };
 
