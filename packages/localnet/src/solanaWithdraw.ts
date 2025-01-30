@@ -2,8 +2,10 @@ import * as anchor from "@coral-xyz/anchor";
 import { keccak256 } from "ethereumjs-util";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, tssKeyPair } from "./solanaSetup";
+import bs58 from "bs58";
+import { PublicKey } from "@solana/web3.js";
 
-export async function solanaWithdraw() {
+export const solanaWithdraw = async (recipient: string, amount: string) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   const connection = gatewayProgram.provider.connection;
@@ -30,9 +32,9 @@ export async function solanaWithdraw() {
   const chain_id_bn = new anchor.BN(pdaAccountData.chainId);
   const nonce = pdaAccountData.nonce;
 
-  const amount = new anchor.BN(1_000);
+  const val = new anchor.BN(amount);
 
-  const recipient = payer.publicKey;
+  // const recipient = payer.publicKey;
 
   const instructionId = 0x01;
 
@@ -41,8 +43,8 @@ export async function solanaWithdraw() {
     Buffer.from([instructionId]),
     chain_id_bn.toArrayLike(Buffer, "be", 8),
     new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
-    amount.toArrayLike(Buffer, "be", 8),
-    recipient.toBuffer(),
+    val.toArrayLike(Buffer, "be", 8),
+    Buffer.from(bs58.decode(recipient)),
   ]);
 
   const messageHash = keccak256(buffer);
@@ -54,9 +56,19 @@ export async function solanaWithdraw() {
     r.toArrayLike(Buffer, "be", 32),
     s.toArrayLike(Buffer, "be", 32),
   ]);
-
+  // console.log(
+  //   Buffer.from(bs58.decode("EnGmXjAuSd4j4ru3cSjUoBe2sT4gfNwKZ9jfoxjGs4ad"))
+  // );
+  // console.log("recipient", recipient);
+  // console.log("recipient.toBuffer()", recipient.toBuffer());
+  // console.log(
+  //   "pk",
+  //   new PublicKey("EnGmXjAuSd4j4ru3cSjUoBe2sT4gfNwKZ9jfoxjGs4ad")
+  // );
   const txSig = await gatewayProgram.methods
-    .withdraw(amount, Array.from(signatureBuffer), Number(recoveryParam), nonce)
-    .accounts({ recipient })
+    .withdraw(val, Array.from(signatureBuffer), Number(recoveryParam), nonce)
+    .accounts({
+      recipient: new PublicKey(recipient),
+    })
     .rpc();
-}
+};
