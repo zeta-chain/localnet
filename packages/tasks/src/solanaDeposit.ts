@@ -3,7 +3,7 @@ import Gateway_IDL from "../../localnet/src/solana/idl/gateway.json";
 import * as anchor from "@coral-xyz/anchor";
 import { ethers } from "ethers";
 
-const solanaDepositAndCall = async (args: any) => {
+const solanaDeposit = async (args: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   await gatewayProgram.methods
@@ -12,10 +12,10 @@ const solanaDepositAndCall = async (args: any) => {
     .rpc();
 };
 
-export const solanaDepositAndCallTask = task(
-  "solana-deposit",
+export const solanaDepositTask = task(
+  "localnet:solana-deposit",
   "Solana deposit and call",
-  solanaDepositAndCall
+  solanaDeposit
 )
   .addParam("receiver", "Address to deposit and call")
   .addParam("amount", "Amount to deposit and call");

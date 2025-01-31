@@ -6,7 +6,7 @@ const solanaWithdrawTask = async (args: any) => {
 };
 
 export const solanaDepositAndCallTask = task(
-  "solana-withdraw",
+  "localnet:solana-withdraw",
   "Solana withdraw",
   solanaWithdrawTask
 )

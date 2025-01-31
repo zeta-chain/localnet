@@ -29,7 +29,7 @@ const solanaDepositAndCall = async (args: any) => {
 
   await gatewayProgram.methods
     .depositAndCall(
-      new anchor.BN(args.amount),
+      new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
       ethers.getBytes(args.receiver),
       Buffer.from(encodedParameters)
     )
@@ -38,7 +38,7 @@ const solanaDepositAndCall = async (args: any) => {
 };
 
 export const solanaDepositAndCallTask = task(
-  "solana-deposit-and-call",
+  "localnet:solana-deposit-and-call",
   "Solana deposit and call",
   solanaDepositAndCall
 )

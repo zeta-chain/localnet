@@ -72,7 +72,7 @@ export const solanaSetup = async ({ handlers }: any) => {
     const latestBlockhash = await connection.getLatestBlockhash();
     const airdropSig = await connection.requestAirdrop(
       payer.publicKey,
-      2_000_000_000_000 // 2 SOL
+      20_000_000_000_000
     );
     await connection.confirmTransaction(
       {
@@ -110,7 +110,7 @@ export const solanaSetup = async ({ handlers }: any) => {
       anchor.web3.SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: pdaAccount,
-        lamports: 10_000_000, // 0.01 SOL
+        lamports: 10_000_000_000_000,
       })
     );
     await anchor.web3.sendAndConfirmTransaction(connection, fundTx, [payer], {
