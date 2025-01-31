@@ -6,7 +6,7 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import { handleOnAbort } from "./handleOnAbort";
 
-export const handleDeposit = async ({
+export const handleSolanaDeposit = async ({
   protocolContracts,
   fungibleModuleSigner,
   foreignCoins,

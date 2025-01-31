@@ -51,29 +51,34 @@ export const handleOnZEVMWithdrawn = async ({
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
     const isERC20orZETA = coinType === 2n;
-    if (isGasToken) {
-      const tx = await tss.sendTransaction({
-        to: receiver,
-        value: amount,
-        ...deployOpts,
-      });
-      await tx.wait();
-      log(
-        chainID,
-        `Transferred ${ethers.formatEther(
-          amount
-        )} native gas tokens from TSS to ${receiver}`
-      );
-    } else if (isERC20orZETA) {
-      const erc20 = getERC20ByZRC20(zrc20);
-      const tx = await evmContracts[chainID].custody
-        .connect(tss)
-        .withdraw(receiver, erc20, amount, deployOpts);
-      await tx.wait();
-      log(
-        chainID,
-        `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-      );
+
+    if (chainID === "901") {
+      console.log("solana!!!");
+    } else {
+      if (isGasToken) {
+        const tx = await tss.sendTransaction({
+          to: receiver,
+          value: amount,
+          ...deployOpts,
+        });
+        await tx.wait();
+        log(
+          chainID,
+          `Transferred ${ethers.formatEther(
+            amount
+          )} native gas tokens from TSS to ${receiver}`
+        );
+      } else if (isERC20orZETA) {
+        const erc20 = getERC20ByZRC20(zrc20);
+        const tx = await evmContracts[chainID].custody
+          .connect(tss)
+          .withdraw(receiver, erc20, amount, deployOpts);
+        await tx.wait();
+        log(
+          chainID,
+          `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+        );
+      }
     }
   } catch (err) {
     const revertOptions = args[9];

@@ -28,7 +28,9 @@ export const solanaWithdraw = async (recipient: string, amount: string) => {
   const pdaInitialBalance = await connection.getBalance(pdaAccount);
   console.log("PDA initial balance (lamports):", pdaInitialBalance);
 
-  const pdaAccountData = await gatewayProgram.account.pda.fetch(pdaAccount);
+  const pdaAccountData = await (gatewayProgram.account as any).pda.fetch(
+    pdaAccount
+  );
   const chain_id_bn = new anchor.BN(pdaAccountData.chainId);
   const nonce = pdaAccountData.nonce;
 

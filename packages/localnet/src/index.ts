@@ -12,13 +12,16 @@ import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router0
 import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
 import { handleOnEVMCalled } from "./handleOnEVMCalled";
 import { deployOpts } from "./deployOpts";
-import { handleOnEVMDeposited, handleDeposit } from "./handleOnEVMDeposited";
+import {
+  handleOnEVMDeposited,
+  handleSolanaDeposit,
+} from "./handleOnEVMDeposited";
 import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
 import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
 import {
   handleOnEVMDepositedAndCalled,
-  handleDepositAndCall,
+  handleSolanaDepositAndCall,
 } from "./handleOnEVMDepositedAndCalled";
 import { solanaSetup } from "./solanaSetup";
 
@@ -261,7 +264,7 @@ export const initLocalnet = async ({
   await solanaSetup({
     handlers: {
       depositAndCall: (args: any) =>
-        handleDepositAndCall({
+        handleSolanaDepositAndCall({
           provider,
           protocolContracts,
           args,
@@ -270,7 +273,7 @@ export const initLocalnet = async ({
           chainID: "901",
         }),
       deposit: (args: any) =>
-        handleDeposit({
+        handleSolanaDeposit({
           protocolContracts,
           fungibleModuleSigner,
           foreignCoins,
