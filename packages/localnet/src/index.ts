@@ -261,7 +261,7 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
-  await solanaSetup({
+  solanaSetup({
     handlers: {
       depositAndCall: (args: any) =>
         handleSolanaDepositAndCall({

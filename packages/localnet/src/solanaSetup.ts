@@ -72,7 +72,7 @@ export const solanaSetup = async ({ handlers }: any) => {
     const latestBlockhash = await connection.getLatestBlockhash();
     const airdropSig = await connection.requestAirdrop(
       payer.publicKey,
-      2_000_000_000 // 2 SOL
+      2_000_000_000_000 // 2 SOL
     );
     await connection.confirmTransaction(
       {
