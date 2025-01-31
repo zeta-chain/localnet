@@ -16,8 +16,8 @@ process.env.ANCHOR_WALLET = path.resolve(
 );
 process.env.ANCHOR_PROVIDER_URL = "http://localhost:8899";
 
-const keypairFilePath =
-  "./packages/localnet/src/solana/deploy/gateway-keypair.json";
+// const keypairFilePath =
+//   "./packages/localnet/src/solana/deploy/gateway-keypair.json";
 
 const ec = new EC("secp256k1");
 
@@ -40,12 +40,20 @@ export const payer: anchor.web3.Keypair = anchor.web3.Keypair.fromSecretKey(
 );
 
 export const solanaSetup = async ({ handlers }: any) => {
-  const gatewaySO = "./packages/localnet/src/solana/deploy/gateway.so";
-  console.log(`Deploying Solana program: ${gatewaySO}`);
+  const gatewaySoPath = require.resolve(
+    "@zetachain/localnet/solana/deploy/gateway.so"
+  );
+  const gatewayKeypairPath = require.resolve(
+    "@zetachain/localnet/solana/deploy/gateway-keypair.json"
+  );
+
+  console.log(`Deploying Solana program: ${gatewayKeypairPath}`);
+
+  console.log(`Deploying Solana program: ${gatewaySoPath}`);
 
   try {
-    if (!fs.existsSync(keypairFilePath)) {
-      throw new Error(`Keypair file not found: ${keypairFilePath}`);
+    if (!fs.existsSync(gatewayKeypairPath)) {
+      throw new Error(`Keypair file not found: ${gatewayKeypairPath}`);
     }
 
     // Convert TSS public key to address
@@ -82,7 +90,7 @@ export const solanaSetup = async ({ handlers }: any) => {
     );
     anchor.setProvider(provider);
 
-    const deployCommand = `solana program deploy --program-id ${keypairFilePath} ${gatewaySO} --url localhost`;
+    const deployCommand = `solana program deploy --program-id ${gatewayKeypairPath} ${gatewaySoPath} --url localhost`;
     console.log(`Running command: ${deployCommand}`);
 
     const { stdout } = await execAsync(deployCommand);

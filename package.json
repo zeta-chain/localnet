@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc",
+    "build": "del-cli dist && tsc && cp -R packages/localnet/src/solana/ dist/localnet/src/solana/",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -17,7 +17,9 @@
       "import": "./dist/localnet/src/index.js",
       "require": "./dist/localnet/src/index.js",
       "types": "./dist/localnet/src/index.d.ts"
-    }
+    },
+    "./solana/deploy/gateway.so": "./dist/localnet/src/solana/deploy/gateway.so",
+    "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json"
   },
   "keywords": [],
   "author": "ZetaChain",
