@@ -16,9 +16,6 @@ process.env.ANCHOR_WALLET = path.resolve(
 );
 process.env.ANCHOR_PROVIDER_URL = "http://localhost:8899";
 
-// const keypairFilePath =
-//   "./packages/localnet/src/solana/deploy/gateway-keypair.json";
-
 const ec = new EC("secp256k1");
 
 export const tssKeyPair = ec.keyFromPrivate(
@@ -40,16 +37,13 @@ export const payer: anchor.web3.Keypair = anchor.web3.Keypair.fromSecretKey(
 );
 
 export const solanaSetup = async ({ handlers }: any) => {
+  console.log("Setting up Solana...");
   const gatewaySoPath = require.resolve(
     "@zetachain/localnet/solana/deploy/gateway.so"
   );
   const gatewayKeypairPath = require.resolve(
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
   );
-
-  console.log(`Deploying Solana program: ${gatewayKeypairPath}`);
-
-  console.log(`Deploying Solana program: ${gatewaySoPath}`);
 
   try {
     if (!fs.existsSync(gatewayKeypairPath)) {
@@ -122,7 +116,7 @@ export const solanaSetup = async ({ handlers }: any) => {
     // Start monitoring program transactions
     solanaMonitorTransactions({ handlers });
   } catch (error: any) {
-    console.error(`Deployment error: ${error.message}`);
+    console.error(`Error setting up Solana: ${error.message}`);
     if (error.logs) {
       console.error("Logs:", error.logs);
     }

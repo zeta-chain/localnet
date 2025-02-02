@@ -24,6 +24,7 @@ import {
   handleSolanaDepositAndCall,
 } from "./handleOnEVMDepositedAndCalled";
 import { solanaSetup } from "./solanaSetup";
+import { execSync } from "child_process";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -254,6 +255,15 @@ const deployProtocolContracts = async (
   };
 };
 
+const isSolanaAvailable = (): boolean => {
+  try {
+    execSync("solana --version", { stdio: "ignore" });
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 export const initLocalnet = async ({
   port,
   exitOnError,
@@ -261,27 +271,31 @@ export const initLocalnet = async ({
   port: number;
   exitOnError: boolean;
 }) => {
-  solanaSetup({
-    handlers: {
-      depositAndCall: (args: any) =>
-        handleSolanaDepositAndCall({
-          provider,
-          protocolContracts,
-          args,
-          fungibleModuleSigner,
-          foreignCoins,
-          chainID: "901",
-        }),
-      deposit: (args: any) =>
-        handleSolanaDeposit({
-          protocolContracts,
-          fungibleModuleSigner,
-          foreignCoins,
-          args,
-          chainID: "901",
-        }),
-    },
-  });
+  if (isSolanaAvailable()) {
+    solanaSetup({
+      handlers: {
+        depositAndCall: (args: any) =>
+          handleSolanaDepositAndCall({
+            provider,
+            protocolContracts,
+            args,
+            fungibleModuleSigner,
+            foreignCoins,
+            chainID: "901",
+          }),
+        deposit: (args: any) =>
+          handleSolanaDeposit({
+            protocolContracts,
+            fungibleModuleSigner,
+            foreignCoins,
+            args,
+            chainID: "901",
+          }),
+      },
+    });
+  } else {
+    console.error("Solana CLI not available. Skipping setup.");
+  }
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
