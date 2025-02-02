@@ -4,6 +4,8 @@ import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, tssKeyPair } from "./solanaSetup";
 import bs58 from "bs58";
 import { PublicKey } from "@solana/web3.js";
+import ansis from "ansis";
+import { ethers } from "ethers";
 
 export const solanaWithdraw = async (recipient: string, amount: bigint) => {
   try {
@@ -20,17 +22,12 @@ export const solanaWithdraw = async (recipient: string, amount: bigint) => {
       [Buffer.from("meta", "utf-8")],
       gatewayProgram.programId
     );
-    // const payerInitialBalance = await connection.getBalance(payer.publicKey);
-    // console.log("Payer initial balance (lamports):", payerInitialBalance);
-    // const pdaInitialBalance = await connection.getBalance(pdaAccount);
-    // console.log("PDA initial balance (lamports):", pdaInitialBalance);
     const pdaAccountData = await (gatewayProgram.account as any).pda.fetch(
       pdaAccount
     );
     const chain_id_bn = new anchor.BN(pdaAccountData.chainId);
     const nonce = pdaAccountData.nonce;
     const val = new anchor.BN(amount.toString());
-    // const recipient = payer.publicKey;
     const instructionId = 0x01;
     const buffer = Buffer.concat([
       Buffer.from("ZETACHAIN", "utf-8"),
@@ -47,22 +44,27 @@ export const solanaWithdraw = async (recipient: string, amount: bigint) => {
       r.toArrayLike(Buffer, "be", 32),
       s.toArrayLike(Buffer, "be", 32),
     ]);
-    // console.log(
-    //   Buffer.from(bs58.decode("EnGmXjAuSd4j4ru3cSjUoBe2sT4gfNwKZ9jfoxjGs4ad"))
-    // );
-    // console.log("recipient", recipient);
-    // console.log("recipient.toBuffer()", recipient.toBuffer());
-    // console.log(
-    //   "pk",
-    //   new PublicKey("EnGmXjAuSd4j4ru3cSjUoBe2sT4gfNwKZ9jfoxjGs4ad")
-    // );
-    const txSig = await gatewayProgram.methods
+    await gatewayProgram.methods
       .withdraw(val, Array.from(signatureBuffer), Number(recoveryParam), nonce)
       .accounts({
         recipient: new PublicKey(recipient),
       })
       .rpc();
+    console.log(
+      ansis.magenta(
+        `[${ansis.bold(
+          "Solana"
+        )}]: Executing Gateway withdraw, sending ${ethers.formatUnits(
+          amount,
+          9
+        )} SOL to ${recipient}`
+      )
+    );
   } catch (err) {
-    console.error("Error in solanaWithdraw", err);
+    console.error(
+      ansis.red(
+        `[${ansis.bold("Solana")}]: Error executing Gateway withdraw, ${err}`
+      )
+    );
   }
 };

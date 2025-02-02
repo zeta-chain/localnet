@@ -5,6 +5,7 @@ import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import { handleOnAbort } from "./handleOnAbort";
+import ansis from "ansis";
 
 export const handleSolanaDepositAndCall = async ({
   provider,
@@ -15,6 +16,11 @@ export const handleSolanaDepositAndCall = async ({
   chainID,
 }: any) => {
   try {
+    console.log(
+      ansis.magenta(
+        `[${ansis.bold("Solana")}]: Gateway Deposit and call executed`
+      )
+    );
     const sender = args[0];
     const receiver = args[1];
     const amount = args[2];
