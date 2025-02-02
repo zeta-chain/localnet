@@ -4,8 +4,9 @@ import { exec, execSync } from "child_process";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
-import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
+
 import { initLocalnet } from "../../localnet/src";
+import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 

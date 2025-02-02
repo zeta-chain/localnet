@@ -10,12 +10,12 @@ import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers, NonceManager, Signer } from "ethers";
 
-import { isSolanaAvailable } from "./isSolanaAvailable";
 import { createToken } from "./createToken";
 import { deployOpts } from "./deployOpts";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";
+import { isSolanaAvailable } from "./isSolanaAvailable";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
