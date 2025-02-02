@@ -60,50 +60,49 @@ export const handleOnZEVMWithdrawn = async ({
         ethers.toUtf8String(receiver),
         amount / BigInt(10 ** 9)
       );
+    } else {
+      if (isGasToken) {
+        const tx = await tss.sendTransaction({
+          to: receiver,
+          value: amount,
+          ...deployOpts,
+        });
+        await tx.wait();
+        log(
+          chainID,
+          `Transferred ${ethers.formatEther(
+            amount
+          )} native gas tokens from TSS to ${receiver}`
+        );
+      } else if (isERC20orZETA) {
+        const erc20 = getERC20ByZRC20(zrc20);
+        const tx = await evmContracts[chainID].custody
+          .connect(tss)
+          .withdraw(receiver, erc20, amount, deployOpts);
+        await tx.wait();
+        log(
+          chainID,
+          `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+        );
+      }
     }
-    // else {
-    //   if (isGasToken) {
-    //     const tx = await tss.sendTransaction({
-    //       to: receiver,
-    //       value: amount,
-    //       ...deployOpts,
-    //     });
-    //     await tx.wait();
-    //     log(
-    //       chainID,
-    //       `Transferred ${ethers.formatEther(
-    //         amount
-    //       )} native gas tokens from TSS to ${receiver}`
-    //     );
-    //   } else if (isERC20orZETA) {
-    //     const erc20 = getERC20ByZRC20(zrc20);
-    //     const tx = await evmContracts[chainID].custody
-    //       .connect(tss)
-    //       .withdraw(receiver, erc20, amount, deployOpts);
-    //     await tx.wait();
-    //     log(
-    //       chainID,
-    //       `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-    //     );
-    //   }
-    // }
   } catch (err) {
     console.log("!!!", err);
-    // const revertOptions = args[9];
-    // return await handleOnRevertZEVM({
-    //   revertOptions,
-    //   err,
-    //   provider,
-    //   tss,
-    //   asset: zrc20,
-    //   amount,
-    //   log,
-    //   fungibleModuleSigner,
-    //   gatewayZEVM,
-    //   deployOpts,
-    //   exitOnError,
-    //   sender,
-    //   chainID,
-    // });
+    const revertOptions = args[9];
+    return await handleOnRevertZEVM({
+      revertOptions,
+      err,
+      provider,
+      tss,
+      asset: zrc20,
+      amount,
+      log,
+      fungibleModuleSigner,
+      gatewayZEVM,
+      deployOpts,
+      exitOnError,
+      sender,
+      chainID,
+    });
   }
 };
