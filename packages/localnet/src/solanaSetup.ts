@@ -51,6 +51,10 @@ export const solanaSetup = async ({ handlers }: any) => {
       throw new Error(`Keypair file not found: ${gatewayKeypairPath}`);
     }
 
+    if (!fs.existsSync(gatewaySoPath)) {
+      throw new Error(`gateway.so file not found: ${gatewaySoPath}`);
+    }
+
     // Convert TSS public key to address
     const publicKeyBuffer = Buffer.from(
       tssKeyPair.getPublic(false, "hex").slice(2),

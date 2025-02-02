@@ -4,7 +4,7 @@ import { exec, execSync } from "child_process";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
-
+import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { initLocalnet } from "../../localnet/src";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
@@ -77,9 +77,12 @@ const localnet = async (args: any) => {
     anvilProcess.stderr.pipe(process.stderr);
   }
 
-  const solanaTestValidator = exec(`solana-test-validator --reset`);
+  let solanaTestValidator: any;
+  if (await isSolanaAvailable()) {
+    solanaTestValidator = exec(`solana-test-validator --reset`);
+    await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+  }
 
-  await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
   await waitOn({ resources: [`tcp:127.0.0.1:${args.port}`] });
 
   const cleanup = () => {

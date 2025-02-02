@@ -8,9 +8,9 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
-import { execSync } from "child_process";
 import { ethers, NonceManager, Signer } from "ethers";
 
+import { isSolanaAvailable } from "./isSolanaAvailable";
 import { createToken } from "./createToken";
 import { deployOpts } from "./deployOpts";
 import { evmCall } from "./evmCall";
@@ -250,15 +250,6 @@ const deployProtocolContracts = async (
     uniswapRouterInstance,
     wzeta,
   };
-};
-
-const isSolanaAvailable = (): boolean => {
-  try {
-    execSync("solana --version", { stdio: "ignore" });
-    return true;
-  } catch (error) {
-    return false;
-  }
 };
 
 export const initLocalnet = async ({
