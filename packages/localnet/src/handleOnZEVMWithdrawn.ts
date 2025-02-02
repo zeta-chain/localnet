@@ -87,7 +87,6 @@ export const handleOnZEVMWithdrawn = async ({
       }
     }
   } catch (err) {
-    console.log("!!!", err);
     const revertOptions = args[9];
     return await handleOnRevertZEVM({
       revertOptions,
