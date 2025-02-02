@@ -12,7 +12,6 @@ export const handleOnRevertEVM = async ({
   tss,
   isGas,
   token,
-  exitOnError = false,
   chain,
   gatewayEVM,
   custody,
@@ -26,7 +25,6 @@ export const handleOnRevertEVM = async ({
   tss: any;
   isGas: boolean;
   token: string;
-  exitOnError: boolean;
   chain: string;
   gatewayEVM: any;
   custody: any;
@@ -40,9 +38,9 @@ export const handleOnRevertEVM = async ({
     try {
       log(
         chain,
-        `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
+        `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
           revertContext
-        )})`
+        )}`
       );
       (tss as NonceManager).reset();
       let tx;
@@ -76,7 +74,6 @@ export const handleOnRevertEVM = async ({
       });
     } catch (err: any) {
       logErr(chain, `onRevert failed:`, err);
-      if (exitOnError) throw new Error(err);
     }
   } else {
     const isGas = asset === ethers.ZeroAddress;

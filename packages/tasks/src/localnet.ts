@@ -160,4 +160,4 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
   )
   .addFlag("forceKill", "Force kill any process on the port without prompting")
   .addFlag("stopAfterInit", "Stop the localnet after successful initialization")
-  .addFlag("exitOnError", "Exit with an error if revert is not handled");
+  .addFlag("exitOnError", "Exit with an error if a call is reverted");

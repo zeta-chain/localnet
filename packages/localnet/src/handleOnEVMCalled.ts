@@ -12,6 +12,7 @@ export const handleOnEVMCalled = async ({
   foreignCoins,
   chainID,
   chain,
+  exitOnError = false,
 }: any) => {
   log(chain, "Gateway: 'Called' event emitted");
   const sender = args[0];
@@ -48,6 +49,9 @@ export const handleOnEVMCalled = async ({
       log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
     });
   } catch (err: any) {
+    if (exitOnError) {
+      throw new Error(err);
+    }
     logErr("ZetaChain", `Error executing onCall: ${err}`);
     // No asset calls don't support reverts, so aborting
     const revertOptions = args[5];

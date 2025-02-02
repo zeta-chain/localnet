@@ -86,7 +86,10 @@ export const handleOnZEVMWithdrawn = async ({
         );
       }
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (exitOnError) {
+      throw new Error(err);
+    }
     const revertOptions = args[9];
     return await handleOnRevertZEVM({
       revertOptions,
@@ -99,7 +102,6 @@ export const handleOnZEVMWithdrawn = async ({
       fungibleModuleSigner,
       gatewayZEVM,
       deployOpts,
-      exitOnError,
       sender,
       chainID,
     });

@@ -97,7 +97,10 @@ export const handleOnEVMDeposited = async ({
       .deposit(zrc20, amount, receiver, deployOpts);
     await tx.wait();
     log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
-  } catch (err) {
+  } catch (err: any) {
+    if (exitOnError) {
+      throw new Error(err);
+    }
     logErr("ZetaChain", `Error depositing: ${err}`);
     const revertOptions = args[5];
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
@@ -139,7 +142,6 @@ export const handleOnEVMDeposited = async ({
         isGas,
         token,
         provider,
-        exitOnError,
         chain,
         gatewayEVM,
         custody,
