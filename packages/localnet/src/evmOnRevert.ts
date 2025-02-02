@@ -3,7 +3,7 @@ import { deployOpts } from "./deployOpts";
 import { ethers, NonceManager } from "ethers";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
-export const handleOnRevertEVM = async ({
+export const evmOnRevert = async ({
   revertOptions,
   asset,
   amount,

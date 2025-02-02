@@ -1,10 +1,12 @@
 import { ethers, NonceManager } from "ethers";
-import { handleOnRevertZEVM } from "./handleOnRevertZEVM";
-import { log, logErr } from "./log";
+import { zetachainOnRevert } from "./zetachainOnRevert";
+import { log } from "./log";
 import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { evmExecute } from "./evmExecute";
+import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 
-export const handleOnZEVMWithdrawnAndCalled = async ({
+export const zetachainWithdrawAndCall = async ({
   evmContracts,
   tss,
   provider,
@@ -26,16 +28,6 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
   exitOnError: boolean;
 }) => {
   log("ZetaChain", "Gateway: 'WithdrawnAndCalled' event emitted");
-  const getERC20ByZRC20 = (zrc20: string) => {
-    const foreignCoin = foreignCoins.find(
-      (coin: any) => coin.zrc20_contract_address === zrc20
-    );
-    if (!foreignCoin) {
-      logErr(chainID, `Foreign coin not found for ZRC20 address: ${zrc20}`);
-      return;
-    }
-    return foreignCoin.asset;
-  };
   const sender = args[0];
 
   const zrc20 = args[3];
@@ -46,9 +38,6 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
   const amount = args[4];
   const callOptions = args[8];
   const isArbitraryCall = callOptions[1];
-  const messageContext = {
-    sender: isArbitraryCall ? ethers.ZeroAddress : sender,
-  };
   try {
     const receiver = args[2];
     const message = args[7];
@@ -67,28 +56,25 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
       }
     }
 
-    log(chainID, `Calling ${receiver} with message ${message}`);
     if (isGasToken) {
-      const executeTx = await evmContracts[chainID].gatewayEVM
-        .connect(tss)
-        .execute(messageContext, receiver, message, {
-          value: amount,
-          ...deployOpts,
-        });
-      await executeTx.wait();
+      await evmExecute({
+        evmContracts,
+        foreignCoins,
+        tss,
+        provider,
+        sender,
+        zrc20,
+        receiver,
+        message,
+        callOptions,
+      });
     } else {
-      const erc20 = getERC20ByZRC20(zrc20);
-      const executeTx = await evmContracts[chainID].custody
-        .connect(tss)
-        .withdrawAndCall(
-          messageContext,
-          receiver,
-          erc20,
-          amount,
-          message,
-          deployOpts
-        );
-      await executeTx.wait();
+      await evmCustodyWithdrawAndCall({
+        evmContracts,
+        tss,
+        args,
+        foreignCoins,
+      });
     }
     const logs = await provider.getLogs({
       address: receiver,
@@ -102,7 +88,7 @@ export const handleOnZEVMWithdrawnAndCalled = async ({
       throw new Error(err);
     }
     const revertOptions = args[9];
-    return await handleOnRevertZEVM({
+    return await zetachainOnRevert({
       revertOptions,
       err,
       provider,

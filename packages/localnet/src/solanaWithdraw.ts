@@ -9,7 +9,6 @@ import { ethers } from "ethers";
 
 export const solanaWithdraw = async (recipient: string, amount: bigint) => {
   try {
-    console.log("solanaWithdraw", recipient, amount);
     const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
     const connection = gatewayProgram.provider.connection;
     const provider = new anchor.AnchorProvider(

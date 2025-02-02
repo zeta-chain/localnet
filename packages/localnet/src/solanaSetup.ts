@@ -85,7 +85,6 @@ export const solanaSetup = async ({ handlers }: any) => {
     anchor.setProvider(provider);
 
     const deployCommand = `solana program deploy --program-id ${gatewayKeypairPath} ${gatewaySoPath} --url localhost`;
-    console.log(`Running command: ${deployCommand}`);
 
     const { stdout } = await execAsync(deployCommand);
     console.log(`Deployment output: ${stdout}`);

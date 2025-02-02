@@ -1,9 +1,9 @@
 import { ethers, NonceManager } from "ethers";
 import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
-import { handleOnAbort } from "./handleOnAbort";
+import { handleOnAbort } from "./zetachainOnAbort";
 
-export const handleOnEVMCalled = async ({
+export const zetachainExecute = async ({
   provider,
   protocolContracts,
   args,
@@ -13,7 +13,17 @@ export const handleOnEVMCalled = async ({
   chainID,
   chain,
   exitOnError = false,
-}: any) => {
+}: {
+  provider: any;
+  protocolContracts: any;
+  args: any;
+  deployer: any;
+  fungibleModuleSigner: any;
+  foreignCoins: any;
+  chainID: any;
+  chain: any;
+  exitOnError?: any;
+}) => {
   log(chain, "Gateway: 'Called' event emitted");
   const sender = args[0];
   const receiver = args[1];

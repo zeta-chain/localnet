@@ -1,9 +1,9 @@
 import { ethers, NonceManager } from "ethers";
 import { logErr } from "./log";
-import { handleOnAbort } from "./handleOnAbort";
+import { handleOnAbort } from "./zetachainOnAbort";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
-export const handleOnRevertZEVM = async ({
+export const zetachainOnRevert = async ({
   revertOptions,
   asset,
   amount,

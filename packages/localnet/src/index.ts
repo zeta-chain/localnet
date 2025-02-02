@@ -9,22 +9,18 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
-import { handleOnEVMCalled } from "./handleOnEVMCalled";
 import { deployOpts } from "./deployOpts";
-import {
-  handleOnEVMDeposited,
-  handleSolanaDeposit,
-} from "./handleOnEVMDeposited";
-import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
 import { createToken } from "./createToken";
-import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
-import {
-  handleOnEVMDepositedAndCalled,
-  handleSolanaDepositAndCall,
-} from "./handleOnEVMDepositedAndCalled";
-import { solanaSetup } from "./solanaSetup";
 import { execSync } from "child_process";
+import { zetachainCall } from "./zetachainCall";
+import { zetachainWithdraw } from "./zetachainWithdraw";
+import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
+import { evmCall } from "./evmCall";
+import { evmDeposit } from "./evmDeposit";
+import { evmDepositAndCall } from "./evmDepositAndCall";
+import { solanaDeposit } from "./solanaDeposit";
+import { solanaDepositAndCall } from "./solanaDepositAndCall";
+import { solanaSetup } from "./solanaSetup";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -275,7 +271,7 @@ export const initLocalnet = async ({
     solanaSetup({
       handlers: {
         depositAndCall: (args: any) =>
-          handleSolanaDepositAndCall({
+          solanaDepositAndCall({
             provider,
             protocolContracts,
             args,
@@ -284,7 +280,7 @@ export const initLocalnet = async ({
             chainID: "901",
           }),
         deposit: (args: any) =>
-          handleSolanaDeposit({
+          solanaDeposit({
             protocolContracts,
             fungibleModuleSigner,
             foreignCoins,
@@ -354,7 +350,7 @@ export const initLocalnet = async ({
   };
 
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    handleOnZEVMCalled({
+    zetachainCall({
       evmContracts,
       foreignCoins,
       tss,
@@ -367,7 +363,7 @@ export const initLocalnet = async ({
   });
 
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    handleOnZEVMWithdrawn({
+    zetachainWithdraw({
       evmContracts,
       foreignCoins,
       tss,
@@ -383,7 +379,7 @@ export const initLocalnet = async ({
   protocolContracts.gatewayZEVM.on(
     "WithdrawnAndCalled",
     async (...args: Array<any>) => {
-      handleOnZEVMWithdrawnAndCalled({
+      zetachainWithdrawAndCall({
         evmContracts,
         foreignCoins,
         tss,
@@ -398,8 +394,7 @@ export const initLocalnet = async ({
   );
 
   contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await handleOnEVMCalled({
-      tss,
+    return await evmCall({
       provider,
       protocolContracts,
       args,
@@ -409,13 +404,11 @@ export const initLocalnet = async ({
       exitOnError,
       chainID: "5",
       chain: "ethereum",
-      gatewayEVM: contractsEthereum.gatewayEVM,
-      custody: contractsEthereum.custody,
     });
   });
 
   contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    handleOnEVMDeposited({
+    evmDeposit({
       tss,
       provider,
       protocolContracts,
@@ -434,7 +427,7 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on(
     "DepositedAndCalled",
     async (...args: Array<any>) => {
-      handleOnEVMDepositedAndCalled({
+      evmDepositAndCall({
         tss,
         provider,
         protocolContracts,
@@ -452,7 +445,7 @@ export const initLocalnet = async ({
   );
 
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await handleOnEVMCalled({
+    return await evmCall({
       provider,
       protocolContracts,
       args,
@@ -465,7 +458,7 @@ export const initLocalnet = async ({
   });
 
   contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    handleOnEVMDeposited({
+    evmDeposit({
       tss,
       provider,
       protocolContracts,
@@ -484,7 +477,7 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on(
     "DepositedAndCalled",
     async (...args: Array<any>) => {
-      handleOnEVMDepositedAndCalled({
+      evmDepositAndCall({
         tss,
         provider,
         protocolContracts,
