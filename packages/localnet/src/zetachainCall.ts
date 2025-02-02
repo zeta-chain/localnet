@@ -1,8 +1,9 @@
 import { ethers } from "ethers";
-import { zetachainOnRevert } from "./zetachainOnRevert";
-import { log, logErr } from "./log";
+
 import { deployOpts } from "./deployOpts";
 import { evmExecute } from "./evmExecute";
+import { log, logErr } from "./log";
+import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainCall = async ({
   evmContracts,
@@ -14,14 +15,14 @@ export const zetachainCall = async ({
   fungibleModuleSigner,
   exitOnError = false,
 }: {
-  evmContracts: any;
-  foreignCoins: any[];
-  tss: any;
-  provider: ethers.JsonRpcProvider;
-  gatewayZEVM: any;
   args: any;
-  fungibleModuleSigner: any;
+  evmContracts: any;
   exitOnError: boolean;
+  foreignCoins: any[];
+  fungibleModuleSigner: any;
+  gatewayZEVM: any;
+  provider: ethers.JsonRpcProvider;
+  tss: any;
 }) => {
   log("ZetaChain", "Gateway: 'Called' event emitted");
   const sender = args[0];
@@ -38,15 +39,15 @@ export const zetachainCall = async ({
     const callOptions = args[4];
     const message = args[3];
     await evmExecute({
+      callOptions,
       evmContracts,
       foreignCoins,
-      tss,
-      provider,
-      sender,
-      zrc20,
-      receiver,
       message,
-      callOptions,
+      provider,
+      receiver,
+      sender,
+      tss,
+      zrc20,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -55,18 +56,18 @@ export const zetachainCall = async ({
     logErr(chainID, `Error executing a contract: ${err}`);
     const revertOptions = args[5];
     return await zetachainOnRevert({
-      revertOptions,
-      err,
       amount: 0,
       asset: ethers.ZeroAddress,
-      provider,
-      fungibleModuleSigner,
-      tss,
-      log,
-      gatewayZEVM,
-      deployOpts,
-      sender,
       chainID,
+      deployOpts,
+      err,
+      fungibleModuleSigner,
+      gatewayZEVM,
+      log,
+      provider,
+      revertOptions,
+      sender,
+      tss,
     });
   }
 };

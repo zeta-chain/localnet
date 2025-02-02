@@ -1,15 +1,16 @@
 import { ethers } from "ethers";
-import { log } from "./log";
+
 import { deployOpts } from "./deployOpts";
+import { log } from "./log";
 
 export const evmTSSTransfer = async ({
   tss,
   args,
   foreignCoins,
 }: {
-  tss: any;
   args: any;
   foreignCoins: any[];
+  tss: any;
 }) => {
   const receiver = args[2];
   const zrc20 = args[3];

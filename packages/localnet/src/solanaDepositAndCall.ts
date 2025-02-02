@@ -1,6 +1,7 @@
-import { ethers } from "ethers";
-import { logErr } from "./log";
 import ansis from "ansis";
+import { ethers } from "ethers";
+
+import { logErr } from "./log";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 
 export const solanaDepositAndCall = async ({
@@ -37,12 +38,12 @@ export const solanaDepositAndCall = async ({
       return;
     }
     await zetachainDepositAndCall({
-      provider,
-      protocolContracts,
       args,
-      fungibleModuleSigner,
-      foreignCoins,
       chainID,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
+      provider,
     });
   } catch (e) {
     if (chainID !== "901") {

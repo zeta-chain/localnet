@@ -1,7 +1,8 @@
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
+
 import { logErr } from "./log";
 import { handleOnAbort } from "./zetachainOnAbort";
-import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 
 export const zetachainOnRevert = async ({
   revertOptions,
@@ -15,24 +16,24 @@ export const zetachainOnRevert = async ({
   sender,
   chainID,
 }: {
-  revertOptions: any;
-  err: any;
-  asset: any;
   amount: any;
-  provider: any;
-  fungibleModuleSigner: any;
-  tss: NonceManager;
-  log: (chain: string, ...messages: string[]) => void;
-  gatewayZEVM: any;
-  deployOpts: any;
-  sender: string;
+  asset: any;
   chainID: number;
+  deployOpts: any;
+  err: any;
+  fungibleModuleSigner: any;
+  gatewayZEVM: any;
+  log: (chain: string, ...messages: string[]) => void;
+  provider: any;
+  revertOptions: any;
+  sender: string;
+  tss: NonceManager;
 }) => {
   const [revertAddress, callOnRevert, abortAddress, revertMessage] =
     revertOptions;
   const revertContext = {
-    asset,
     amount,
+    asset,
     revertMessage,
     sender,
   };
@@ -84,15 +85,15 @@ export const zetachainOnRevert = async ({
       }
       try {
         handleOnAbort({
-          fungibleModuleSigner,
-          provider,
-          sender,
-          asset,
-          amount,
-          chainID,
-          revertMessage,
           abortAddress,
+          amount,
+          asset,
+          chainID,
+          fungibleModuleSigner,
           outgoing: true,
+          provider,
+          revertMessage,
+          sender,
         });
       } catch (err) {
         const error = `onAbort failed: ${err}`;
@@ -125,15 +126,15 @@ export const zetachainOnRevert = async ({
       await transferTx.wait();
       try {
         handleOnAbort({
-          fungibleModuleSigner,
-          provider,
-          sender,
-          asset,
-          amount,
-          chainID,
-          revertMessage,
           abortAddress,
+          amount,
+          asset,
+          chainID,
+          fungibleModuleSigner,
           outgoing: true,
+          provider,
+          revertMessage,
+          sender,
         });
       } catch (err) {
         const error = `onAbort failed: ${err}`;

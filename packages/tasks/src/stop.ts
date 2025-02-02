@@ -1,6 +1,6 @@
-import { task } from "hardhat/config";
-import fs from "fs";
 import ansis from "ansis";
+import fs from "fs";
+import { task } from "hardhat/config";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 

@@ -1,12 +1,13 @@
-import { exec } from "child_process";
-import util from "util";
 import * as anchor from "@coral-xyz/anchor";
-import Gateway_IDL from "./solana/idl/gateway.json";
-import * as fs from "fs";
-import { keccak256 } from "ethereumjs-util";
+import { exec } from "child_process";
 import { ec as EC } from "elliptic";
-import path from "path";
+import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
+import * as fs from "fs";
+import path from "path";
+import util from "util";
+
+import Gateway_IDL from "./solana/idl/gateway.json";
 
 const execAsync = util.promisify(exec);
 
@@ -70,9 +71,9 @@ export const solanaSetup = async ({ handlers }: any) => {
     );
     await connection.confirmTransaction(
       {
-        signature: airdropSig,
         blockhash: latestBlockhash.blockhash,
         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: airdropSig,
       },
       "confirmed"
     );
@@ -102,8 +103,8 @@ export const solanaSetup = async ({ handlers }: any) => {
     const fundTx = new anchor.web3.Transaction().add(
       anchor.web3.SystemProgram.transfer({
         fromPubkey: payer.publicKey,
-        toPubkey: pdaAccount,
         lamports: 10_000_000_000_000,
+        toPubkey: pdaAccount,
       })
     );
     await anchor.web3.sendAndConfirmTransaction(connection, fundTx, [payer], {

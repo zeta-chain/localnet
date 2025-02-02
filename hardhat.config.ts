@@ -1,5 +1,6 @@
-import { HardhatUserConfig } from "hardhat/config";
 import "./packages/tasks/src";
+
+import { HardhatUserConfig } from "hardhat/config";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.26",

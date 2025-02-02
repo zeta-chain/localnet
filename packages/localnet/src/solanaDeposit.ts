@@ -1,6 +1,7 @@
-import { ethers } from "ethers";
-import { logErr } from "./log";
 import ansis from "ansis";
+import { ethers } from "ethers";
+
+import { logErr } from "./log";
 import { zetachainDeposit } from "./zetachainDeposit";
 
 export const solanaDeposit = async ({
@@ -32,10 +33,10 @@ export const solanaDeposit = async ({
   }
 
   await zetachainDeposit({
-    protocolContracts,
-    fungibleModuleSigner,
-    foreignCoins,
     args,
     chainID,
+    foreignCoins,
+    fungibleModuleSigner,
+    protocolContracts,
   });
 };

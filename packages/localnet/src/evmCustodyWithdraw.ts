@@ -1,5 +1,5 @@
-import { log, logErr } from "./log";
 import { deployOpts } from "./deployOpts";
+import { log, logErr } from "./log";
 
 export const evmCustodyWithdraw = async ({
   evmContracts,
@@ -7,10 +7,10 @@ export const evmCustodyWithdraw = async ({
   args,
   foreignCoins,
 }: {
-  evmContracts: any;
-  tss: any;
   args: any;
+  evmContracts: any;
   foreignCoins: any[];
+  tss: any;
 }) => {
   const zrc20 = args[3];
   const chainID = foreignCoins.find(

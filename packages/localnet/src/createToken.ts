@@ -1,7 +1,8 @@
-import { ethers } from "ethers";
-import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { deployOpts } from "./deployOpts";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { ethers } from "ethers";
+
+import { deployOpts } from "./deployOpts";
 
 export const createToken = async (
   addresses: any,
@@ -93,16 +94,16 @@ export const createToken = async (
   }
 
   foreignCoins.push({
-    zrc20_contract_address: zrc20.target,
     asset: isGasToken ? "" : (erc20 as any).target,
-    foreign_chain_id: chainID,
-    decimals: 18,
-    name: `ZRC-20 ${symbol} on ${chainID}`,
-    symbol: `${symbol}`,
     coin_type: isGasToken ? "Gas" : "ERC20",
+    decimals: 18,
+    foreign_chain_id: chainID,
     gas_limit: null,
-    paused: null,
     liquidity_cap: null,
+    name: `ZRC-20 ${symbol} on ${chainID}`,
+    paused: null,
+    symbol: `${symbol}`,
+    zrc20_contract_address: zrc20.target,
   });
 
   (zrc20 as any).deposit(

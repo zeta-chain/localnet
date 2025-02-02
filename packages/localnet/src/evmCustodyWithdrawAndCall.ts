@@ -1,6 +1,7 @@
-import { logErr } from "./log";
-import { deployOpts } from "./deployOpts";
 import { ethers } from "ethers";
+
+import { deployOpts } from "./deployOpts";
+import { logErr } from "./log";
 
 export const evmCustodyWithdrawAndCall = async ({
   evmContracts,
@@ -8,10 +9,10 @@ export const evmCustodyWithdrawAndCall = async ({
   args,
   foreignCoins,
 }: {
-  evmContracts: any;
-  tss: any;
   args: any;
+  evmContracts: any;
   foreignCoins: any[];
+  tss: any;
 }) => {
   const sender = args[0];
   const callOptions = args[8];

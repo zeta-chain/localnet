@@ -1,10 +1,11 @@
-import { ethers, NonceManager } from "ethers";
-import { zetachainOnRevert } from "./zetachainOnRevert";
-import { log } from "./log";
-import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { evmExecute } from "./evmExecute";
+import { ethers, NonceManager } from "ethers";
+
+import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
+import { evmExecute } from "./evmExecute";
+import { log } from "./log";
+import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdrawAndCall = async ({
   evmContracts,
@@ -17,15 +18,15 @@ export const zetachainWithdrawAndCall = async ({
   foreignCoins,
   exitOnError = false,
 }: {
-  evmContracts: any;
-  tss: any;
-  provider: ethers.JsonRpcProvider;
-  gatewayZEVM: any;
   args: any;
-  fungibleModuleSigner: any;
   deployer: any;
-  foreignCoins: any[];
+  evmContracts: any;
   exitOnError: boolean;
+  foreignCoins: any[];
+  fungibleModuleSigner: any;
+  gatewayZEVM: any;
+  provider: ethers.JsonRpcProvider;
+  tss: any;
 }) => {
   log("ZetaChain", "Gateway: 'WithdrawnAndCalled' event emitted");
   const sender = args[0];
@@ -58,22 +59,22 @@ export const zetachainWithdrawAndCall = async ({
 
     if (isGasToken) {
       await evmExecute({
+        callOptions,
         evmContracts,
         foreignCoins,
-        tss,
-        provider,
-        sender,
-        zrc20,
-        receiver,
         message,
-        callOptions,
+        provider,
+        receiver,
+        sender,
+        tss,
+        zrc20,
       });
     } else {
       await evmCustodyWithdrawAndCall({
-        evmContracts,
-        tss,
         args,
+        evmContracts,
         foreignCoins,
+        tss,
       });
     }
     const logs = await provider.getLogs({
@@ -89,18 +90,18 @@ export const zetachainWithdrawAndCall = async ({
     }
     const revertOptions = args[9];
     return await zetachainOnRevert({
-      revertOptions,
-      err,
-      provider,
-      tss,
-      asset: zrc20,
       amount,
-      log,
+      asset: zrc20,
+      chainID,
+      deployOpts,
+      err,
       fungibleModuleSigner,
       gatewayZEVM,
-      deployOpts,
+      log,
+      provider,
+      revertOptions,
       sender,
-      chainID,
+      tss,
     });
   }
 };

@@ -1,8 +1,9 @@
 import { ethers, NonceManager } from "ethers";
-import { log, logErr } from "./log";
+
 import { deployOpts } from "./deployOpts";
-import { handleOnAbort } from "./zetachainOnAbort";
+import { log, logErr } from "./log";
 import { zetachainExecute } from "./zetachainExecute";
+import { handleOnAbort } from "./zetachainOnAbort";
 
 export const evmCall = async ({
   provider,
@@ -15,28 +16,28 @@ export const evmCall = async ({
   exitOnError = false,
   deployer,
 }: {
-  provider: any;
-  protocolContracts: any;
   args: any;
-  fungibleModuleSigner: any;
-  foreignCoins: any;
-  chainID: any;
   chain: any;
+  chainID: any;
   deployer: any;
   exitOnError?: any;
+  foreignCoins: any;
+  fungibleModuleSigner: any;
+  protocolContracts: any;
+  provider: any;
 }) => {
   log(chain, "Gateway: 'Called' event emitted");
   const sender = args[0];
   try {
     zetachainExecute({
-      provider,
-      protocolContracts,
       args,
-      deployer,
-      fungibleModuleSigner,
-      foreignCoins,
-      chainID,
       chain,
+      chainID,
+      deployer,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
+      provider,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -48,15 +49,15 @@ export const evmCall = async ({
     const abortAddress = revertOptions[2];
     const revertMessage = revertOptions[3];
     return await handleOnAbort({
-      fungibleModuleSigner,
-      provider,
-      sender,
-      asset: ethers.ZeroAddress,
-      amount: 0,
-      chainID,
-      revertMessage: revertMessage,
       abortAddress: abortAddress,
+      amount: 0,
+      asset: ethers.ZeroAddress,
+      chainID,
+      fungibleModuleSigner,
       outgoing: false,
+      provider,
+      revertMessage: revertMessage,
+      sender,
     });
   }
 };

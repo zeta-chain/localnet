@@ -1,10 +1,11 @@
+import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
+import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
+
 import { evmOnRevert } from "./evmOnRevert";
 import { log, logErr } from "./log";
-import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import { handleOnAbort } from "./zetachainOnAbort";
 import { zetachainDeposit } from "./zetachainDeposit";
+import { handleOnAbort } from "./zetachainOnAbort";
 
 export const evmDeposit = async ({
   tss,
@@ -20,18 +21,18 @@ export const evmDeposit = async ({
   gatewayEVM,
   custody,
 }: {
-  tss: any;
-  provider: ethers.JsonRpcProvider;
-  protocolContracts: any;
   args: any;
-  deployer: any;
-  fungibleModuleSigner: any;
-  foreignCoins: any[];
-  exitOnError?: boolean;
-  chainID: string;
   chain: string;
-  gatewayEVM: any;
+  chainID: string;
   custody: any;
+  deployer: any;
+  exitOnError?: boolean;
+  foreignCoins: any[];
+  fungibleModuleSigner: any;
+  gatewayEVM: any;
+  protocolContracts: any;
+  provider: ethers.JsonRpcProvider;
+  tss: any;
 }) => {
   log(chain, "Gateway: 'Deposited' event emitted");
   const sender = args[0];
@@ -52,11 +53,11 @@ export const evmDeposit = async ({
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
     await zetachainDeposit({
-      protocolContracts,
-      fungibleModuleSigner,
-      foreignCoins,
       args,
       chainID,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -93,18 +94,18 @@ export const evmDeposit = async ({
     revertAmount = amount - revertGasFee;
     if (revertAmount > 0) {
       return await evmOnRevert({
-        revertOptions,
-        asset,
         amount: revertAmount,
-        err,
-        tss,
-        isGas,
-        token,
-        provider,
+        asset,
         chain,
-        gatewayEVM,
         custody,
+        err,
+        gatewayEVM,
+        isGas,
+        provider,
+        revertOptions,
         sender,
+        token,
+        tss,
       });
     } else {
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort
@@ -115,15 +116,15 @@ export const evmDeposit = async ({
       const transferTx = await zrc20Contract.transfer(abortAddress, amount);
       await transferTx.wait();
       return await handleOnAbort({
-        fungibleModuleSigner,
-        provider,
-        sender,
-        asset: ethers.ZeroAddress,
-        amount: 0,
-        chainID,
-        revertMessage: revertMessage,
         abortAddress: abortAddress,
+        amount: 0,
+        asset: ethers.ZeroAddress,
+        chainID,
+        fungibleModuleSigner,
         outgoing: false,
+        provider,
+        revertMessage: revertMessage,
+        sender,
       });
     }
   }

@@ -1,11 +1,12 @@
-import { ethers, NonceManager } from "ethers";
-import { zetachainOnRevert } from "./zetachainOnRevert";
-import { log } from "./log";
-import { deployOpts } from "./deployOpts";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { solanaWithdraw } from "./solanaWithdraw";
-import { evmTSSTransfer } from "./evmTSSTransfer";
+import { ethers, NonceManager } from "ethers";
+
+import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
+import { evmTSSTransfer } from "./evmTSSTransfer";
+import { log } from "./log";
+import { solanaWithdraw } from "./solanaWithdraw";
+import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdraw = async ({
   evmContracts,
@@ -18,15 +19,15 @@ export const zetachainWithdraw = async ({
   foreignCoins,
   exitOnError = false,
 }: {
-  evmContracts: any;
-  tss: any;
-  provider: ethers.JsonRpcProvider;
-  gatewayZEVM: any;
   args: any;
-  fungibleModuleSigner: any;
   deployer: any;
-  foreignCoins: any[];
+  evmContracts: any;
   exitOnError: boolean;
+  foreignCoins: any[];
+  fungibleModuleSigner: any;
+  gatewayZEVM: any;
+  provider: ethers.JsonRpcProvider;
+  tss: any;
 }) => {
   log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
   const sender = args[0];
@@ -50,9 +51,9 @@ export const zetachainWithdraw = async ({
       await solanaWithdraw(receiver, amountFormatted);
     } else {
       if (isGasToken) {
-        await evmTSSTransfer({ tss, args, foreignCoins });
+        await evmTSSTransfer({ args, foreignCoins, tss });
       } else if (isERC20orZETA) {
-        await evmCustodyWithdraw({ evmContracts, tss, args, foreignCoins });
+        await evmCustodyWithdraw({ args, evmContracts, foreignCoins, tss });
       }
     }
   } catch (err: any) {
@@ -61,18 +62,18 @@ export const zetachainWithdraw = async ({
     }
     const revertOptions = args[9];
     return await zetachainOnRevert({
-      revertOptions,
-      err,
-      provider,
-      tss,
-      asset: zrc20,
       amount,
-      log,
+      asset: zrc20,
+      chainID,
+      deployOpts,
+      err,
       fungibleModuleSigner,
       gatewayZEVM,
-      deployOpts,
+      log,
+      provider,
+      revertOptions,
       sender,
-      chainID,
+      tss,
     });
   }
 };

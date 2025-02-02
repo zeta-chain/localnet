@@ -1,11 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
-import { keccak256 } from "ethereumjs-util";
-import Gateway_IDL from "./solana/idl/gateway.json";
-import { payer, tssKeyPair } from "./solanaSetup";
-import bs58 from "bs58";
 import { PublicKey } from "@solana/web3.js";
 import ansis from "ansis";
+import bs58 from "bs58";
+import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
+
+import Gateway_IDL from "./solana/idl/gateway.json";
+import { payer, tssKeyPair } from "./solanaSetup";
 
 export const solanaWithdraw = async (recipient: string, amount: bigint) => {
   try {

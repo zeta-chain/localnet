@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
-import { log, logErr } from "./log";
+
 import { deployOpts } from "./deployOpts";
+import { log, logErr } from "./log";
 
 export const zetachainDepositAndCall = async ({
   provider,
@@ -33,9 +34,9 @@ export const zetachainDepositAndCall = async ({
     const zrc20 = foreignCoin.zrc20_contract_address;
 
     const context = {
+      chainID,
       origin: chainID === "901" ? sender : ethers.ZeroAddress,
       sender: chainID === "901" ? ethers.ZeroAddress : sender,
-      chainID,
     };
     log(
       "ZetaChain",

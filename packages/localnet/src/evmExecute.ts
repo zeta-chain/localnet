@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
-import { log } from "./log";
+
 import { deployOpts } from "./deployOpts";
+import { log } from "./log";
 
 export const evmExecute = async ({
   evmContracts,
@@ -13,15 +14,15 @@ export const evmExecute = async ({
   message,
   callOptions,
 }: {
+  callOptions: any;
   evmContracts: any;
   foreignCoins: any[];
-  tss: any;
-  provider: ethers.JsonRpcProvider;
-  sender: any;
-  zrc20: any;
-  receiver: any;
   message: any;
-  callOptions: any;
+  provider: ethers.JsonRpcProvider;
+  receiver: any;
+  sender: any;
+  tss: any;
+  zrc20: any;
 }) => {
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20

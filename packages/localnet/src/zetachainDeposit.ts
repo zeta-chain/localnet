@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
-import { log, logErr } from "./log";
+
 import { deployOpts } from "./deployOpts";
+import { log, logErr } from "./log";
 
 export const zetachainDeposit = async ({
   protocolContracts,

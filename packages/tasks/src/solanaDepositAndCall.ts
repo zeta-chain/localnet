@@ -1,7 +1,8 @@
-import { task } from "hardhat/config";
-import Gateway_IDL from "../../localnet/src/solana/idl/gateway.json";
 import * as anchor from "@coral-xyz/anchor";
 import { AbiCoder, ethers } from "ethers";
+import { task } from "hardhat/config";
+
+import Gateway_IDL from "../../localnet/src/solana/idl/gateway.json";
 
 const solanaDepositAndCall = async (args: any) => {
   const valuesArray = args.values.map((value: any, index: any) => {

@@ -1,10 +1,11 @@
-import { task, types } from "hardhat/config";
-import { initLocalnet } from "../../localnet/src";
-import { exec, execSync } from "child_process";
-import waitOn from "wait-on";
-import ansis from "ansis";
-import fs from "fs";
 import { confirm } from "@inquirer/prompts";
+import ansis from "ansis";
+import { exec, execSync } from "child_process";
+import fs from "fs";
+import { task, types } from "hardhat/config";
+import waitOn from "wait-on";
+
+import { initLocalnet } from "../../localnet/src";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -28,8 +29,8 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
         }
       } else {
         const answer = await confirm({
-          message: `Do you want to kill all processes running on port ${port}?`,
           default: true,
+          message: `Do you want to kill all processes running on port ${port}?`,
         });
 
         if (answer) {
@@ -96,8 +97,8 @@ const localnet = async (args: any) => {
 
   try {
     const addresses = await initLocalnet({
-      port: args.port,
       exitOnError: args.exitOnError,
+      port: args.port,
     });
 
     // Get unique chains
@@ -119,7 +120,7 @@ const localnet = async (args: any) => {
     // Write PID to localnet.json in JSON format
     fs.writeFileSync(
       LOCALNET_JSON_FILE,
-      JSON.stringify({ pid: process.pid, addresses }, null, 2),
+      JSON.stringify({ addresses, pid: process.pid }, null, 2),
       "utf-8"
     );
   } catch (error: any) {
