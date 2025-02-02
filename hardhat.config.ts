@@ -1,10 +1,5 @@
-import "./packages/tasks/src/localnet";
-import "./packages/tasks/src/stop";
-import "./packages/tasks/src/check";
-import "./packages/tasks/src/solanaDeposit";
-import "./packages/tasks/src/solanaDepositAndCall";
-
 import { HardhatUserConfig } from "hardhat/config";
+import "./packages/tasks/src";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.26",
