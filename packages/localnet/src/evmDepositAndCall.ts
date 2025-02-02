@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import { evmOnRevert } from "./evmOnRevert";
 import { log, logErr } from "./log";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
-import { handleOnAbort } from "./zetachainOnAbort";
+import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const evmDepositAndCall = async ({
   tss,
@@ -122,7 +122,7 @@ export const evmDepositAndCall = async ({
       deployer.reset();
       const transferTx = await zrc20Contract.transfer(abortAddress, amount);
       await transferTx.wait();
-      return await handleOnAbort({
+      return await zetachainOnAbort({
         abortAddress: abortAddress,
         amount: 0,
         asset: ethers.ZeroAddress,

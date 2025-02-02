@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 import { log } from "./log";
 
-export const handleOnAbort = async ({
+export const zetachainOnAbort = async ({
   fungibleModuleSigner,
   provider,
   sender,

@@ -1,9 +1,8 @@
 import { ethers, NonceManager } from "ethers";
 
-import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
 import { zetachainExecute } from "./zetachainExecute";
-import { handleOnAbort } from "./zetachainOnAbort";
+import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const evmCall = async ({
   provider,
@@ -48,7 +47,7 @@ export const evmCall = async ({
     const revertOptions = args[5];
     const abortAddress = revertOptions[2];
     const revertMessage = revertOptions[3];
-    return await handleOnAbort({
+    return await zetachainOnAbort({
       abortAddress: abortAddress,
       amount: 0,
       asset: ethers.ZeroAddress,

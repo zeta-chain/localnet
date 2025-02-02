@@ -2,7 +2,7 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
 import { logErr } from "./log";
-import { handleOnAbort } from "./zetachainOnAbort";
+import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainOnRevert = async ({
   revertOptions,
@@ -84,7 +84,7 @@ export const zetachainOnRevert = async ({
         await transferTx.wait();
       }
       try {
-        handleOnAbort({
+        zetachainOnAbort({
           abortAddress,
           amount,
           asset,
@@ -125,7 +125,7 @@ export const zetachainOnRevert = async ({
       const transferTx = await assetContract.transfer(abortAddress, amount);
       await transferTx.wait();
       try {
-        handleOnAbort({
+        zetachainOnAbort({
           abortAddress,
           amount,
           asset,
