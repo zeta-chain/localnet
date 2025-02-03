@@ -15,7 +15,6 @@ export const solanaDeposit = async ({
   chainID,
   deployer,
 }: any) => {
-  console.log(args);
   const sender = args[0];
   const amount = args[2];
   const asset = args[3];
