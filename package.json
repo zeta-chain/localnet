@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cp -R packages/localnet/src/solana/. dist/localnet/src/solana/",
+    "build": "del-cli dist && tsc && cpx 'packages/localnet/src/solana/**/*' dist/localnet/src/solana/",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts ."
   },
@@ -30,6 +30,7 @@
     "@types/wait-on": "^5.3.4",
     "@typescript-eslint/eslint-plugin": "^5.59.9",
     "@typescript-eslint/parser": "^5.59.9",
+    "cpx": "^1.5.0",
     "del-cli": "^5.1.0",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^8.8.0",
