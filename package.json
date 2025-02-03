@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cp -R packages/localnet/src/solana/ dist/localnet/src/solana/",
+    "build": "del-cli dist && tsc && cp -R packages/localnet/src/solana/. dist/localnet/src/solana/",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts ."
   },
