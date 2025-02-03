@@ -77,13 +77,6 @@ export const zetachainWithdrawAndCall = async ({
         tss,
       });
     }
-    const logs = await provider.getLogs({
-      address: receiver,
-      fromBlock: "latest",
-    });
-    logs.forEach((data) => {
-      log(chainID, `Event from contract: ${JSON.stringify(data)}`);
-    });
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);

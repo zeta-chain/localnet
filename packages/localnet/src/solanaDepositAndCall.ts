@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 
 import { logErr } from "./log";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
+import { solanaWithdraw } from "./solanaWithdraw";
+import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const solanaDepositAndCall = async ({
   provider,
@@ -11,18 +13,18 @@ export const solanaDepositAndCall = async ({
   fungibleModuleSigner,
   foreignCoins,
   chainID,
+  deployer,
 }: any) => {
+  console.log(args);
+  const sender = args[0];
+  const amount = args[2];
+  const asset = args[3];
   try {
     console.log(
       ansis.magenta(
         `[${ansis.bold("Solana")}]: Gateway Deposit and call executed`
       )
     );
-    const sender = args[0];
-    const receiver = args[1];
-    const amount = args[2];
-    const asset = args[3];
-    const message = args[4];
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find(
@@ -46,10 +48,21 @@ export const solanaDepositAndCall = async ({
       provider,
     });
   } catch (e) {
-    if (chainID !== "901") {
-      throw new Error(`Error depositing: ${e}`);
-    } else {
-      logErr("ZetaChain", `Error depositing: ${e}`);
-    }
+    const { revertGasFee } = await zetachainSwapToCoverGas({
+      foreignCoins,
+      amount,
+      asset,
+      chainID,
+      deployer,
+      fungibleModuleSigner,
+      provider,
+      protocolContracts,
+      gasLimit: 200000,
+    });
+
+    const revertAmount = BigInt(amount) - revertGasFee;
+
+    const receiver = ethers.toUtf8String(sender);
+    await solanaWithdraw(receiver, revertAmount);
   }
 };

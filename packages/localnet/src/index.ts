@@ -269,6 +269,8 @@ export const initLocalnet = async ({
             foreignCoins,
             fungibleModuleSigner,
             protocolContracts,
+            provider,
+            deployer,
           }),
         depositAndCall: (args: any) =>
           solanaDepositAndCall({
@@ -278,6 +280,7 @@ export const initLocalnet = async ({
             fungibleModuleSigner,
             protocolContracts,
             provider,
+            deployer,
           }),
       },
     });

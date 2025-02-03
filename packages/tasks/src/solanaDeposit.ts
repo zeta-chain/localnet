@@ -8,7 +8,10 @@ const solanaDeposit = async (args: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   await gatewayProgram.methods
-    .deposit(new anchor.BN(args.amount), ethers.getBytes(args.receiver))
+    .deposit(
+      new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
+      ethers.getBytes(args.receiver)
+    )
     .accounts({})
     .rpc();
 };
