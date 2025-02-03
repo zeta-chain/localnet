@@ -2,8 +2,8 @@ import ansis from "ansis";
 import { ethers } from "ethers";
 
 import { logErr } from "./log";
-import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { solanaWithdraw } from "./solanaWithdraw";
+import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const solanaDepositAndCall = async ({
@@ -49,15 +49,15 @@ export const solanaDepositAndCall = async ({
     });
   } catch (e) {
     const { revertGasFee } = await zetachainSwapToCoverGas({
-      foreignCoins,
       amount,
       asset,
       chainID,
       deployer,
+      foreignCoins,
       fungibleModuleSigner,
-      provider,
-      protocolContracts,
       gasLimit: 200000,
+      protocolContracts,
+      provider,
     });
 
     const revertAmount = BigInt(amount) - revertGasFee;

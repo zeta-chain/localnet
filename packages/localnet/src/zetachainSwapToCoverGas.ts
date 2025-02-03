@@ -1,7 +1,8 @@
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import { ethers } from "ethers";
-import { logErr } from "./log";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { ethers } from "ethers";
+
+import { logErr } from "./log";
 
 export const zetachainSwapToCoverGas = async ({
   foreignCoins,
@@ -26,7 +27,7 @@ export const zetachainSwapToCoverGas = async ({
 
   if (!foreignCoin) {
     logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
-    return { revertGasFee: 0, isGas: false, token: null };
+    return { isGas: false, revertGasFee: 0, token: null };
   }
 
   const zrc20 = foreignCoin.zrc20_contract_address;
@@ -55,7 +56,7 @@ export const zetachainSwapToCoverGas = async ({
       protocolContracts.uniswapRouterInstance.target
     );
   }
-  return { revertGasFee, isGas, token, zrc20 };
+  return { isGas, revertGasFee, token, zrc20 };
 };
 
 export const swapToCoverGas = async (

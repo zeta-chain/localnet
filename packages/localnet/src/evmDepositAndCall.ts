@@ -70,15 +70,15 @@ export const evmDepositAndCall = async ({
     const gasLimit = revertOptions[4];
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
       {
-        foreignCoins,
         amount,
         asset,
         chainID,
         deployer,
+        foreignCoins,
         fungibleModuleSigner,
-        provider,
-        protocolContracts,
         gasLimit,
+        protocolContracts,
+        provider,
       }
     );
     const revertAmount = amount - revertGasFee;

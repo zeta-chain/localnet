@@ -266,21 +266,21 @@ export const initLocalnet = async ({
           solanaDeposit({
             args,
             chainID: "901",
+            deployer,
             foreignCoins,
             fungibleModuleSigner,
             protocolContracts,
             provider,
-            deployer,
           }),
         depositAndCall: (args: any) =>
           solanaDepositAndCall({
             args,
             chainID: "901",
+            deployer,
             foreignCoins,
             fungibleModuleSigner,
             protocolContracts,
             provider,
-            deployer,
           }),
       },
     });
