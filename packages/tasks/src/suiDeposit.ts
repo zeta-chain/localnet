@@ -15,7 +15,6 @@ const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
   const hdKey = HDKey.fromMasterSeed(seed);
   const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
   const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
-  console.log("!!!keypair", keypair);
   return keypair;
 };
 
@@ -58,7 +57,7 @@ const depositSuiToGateway = async (
   // Prepare Deposit Transaction
   const tx = new Transaction();
   tx.setGasBudget(GAS_BUDGET);
-
+  console.log("!!!", ethers.getBytes(receiverEthAddress));
   tx.moveCall({
     target: `${moduleId}::gateway::deposit`,
     typeArguments: ["0x2::sui::SUI"],
@@ -100,7 +99,7 @@ const suiDeposit = async (args: any) => {
   const gatewayObjectId = args.gateway;
   const moduleId = args.module;
   const receiverEthAddress = args.receiver;
-  const depositAmount = 1_000; // Amount in SUI's smallest unit
+  const depositAmount = 1_000;
 
   try {
     await depositSuiToGateway(
