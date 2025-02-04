@@ -23,6 +23,7 @@ import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
+import { suiDeposit } from "./suiDeposit";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -289,7 +290,23 @@ export const initLocalnet = async ({
     console.error("Solana CLI not available. Skipping setup.");
   }
 
-  await suiSetup();
+  await suiSetup({
+    handlers: {
+      deposit: (amount: string, receiver: string) => {
+        suiDeposit({
+          amount,
+          receiver,
+          chainID: "103",
+          deployer,
+          foreignCoins,
+          fungibleModuleSigner,
+          protocolContracts,
+          provider,
+          asset: ethers.ZeroAddress,
+        });
+      },
+    },
+  });
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
@@ -341,6 +358,7 @@ export const initLocalnet = async ({
   await createToken(addresses, contractsBNB.custody, "BNB", true, "97");
   await createToken(addresses, contractsBNB.custody, "USDC", false, "97");
   await createToken(addresses, null, "SOL", true, "901");
+  await createToken(addresses, null, "SUI", true, "103");
 
   const evmContracts = {
     5: contractsEthereum,

@@ -1,9 +1,4 @@
-import {
-  EventId,
-  SuiClient,
-  SuiEvent,
-  SuiEventFilter,
-} from "@mysten/sui/client";
+import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
@@ -23,7 +18,7 @@ const generateAccount = () => {
   return { keypair, mnemonic };
 };
 
-export const suiSetup = async () => {
+export const suiSetup = async ({ handlers }: any) => {
   const client = new SuiClient({ url: "http://127.0.0.1:9000" });
 
   const user = generateAccount();
@@ -95,7 +90,7 @@ export const suiSetup = async () => {
       console.log("Gateway Object ID:", gatewayObjectId);
 
       await registerVault(client, keypair, moduleId, gatewayObjectId);
-      pollDepositEvents(client, moduleId);
+      pollEvents(client, moduleId, handlers);
     } else {
       console.log("No module or gateway object found.");
     }
@@ -213,7 +208,11 @@ const waitForConfirmation = async (
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
 
-const pollDepositEvents = async (client: SuiClient, packageId: string) => {
+const pollEvents = async (
+  client: SuiClient,
+  packageId: string,
+  handlers: any
+) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
   const DEPOSIT_EVENT_TYPE = `${packageId}::gateway::DepositEvent`;
@@ -229,20 +228,17 @@ const pollDepositEvents = async (client: SuiClient, packageId: string) => {
         },
       });
 
-      console.log(data);
-
       if (data.length > 0) {
         console.log(`Received ${data.length} new DepositEvent(s).`);
         for (const event of data) {
           console.log("Event:", event);
+          const { amount, receiver } = event.parsedJson as any;
+          handlers.deposit(amount, receiver);
         }
 
         if (nextCursor) {
-          console.log("Updating cursor:", nextCursor);
           currentCursor = nextCursor;
         }
-      } else {
-        console.log("No new events found.");
       }
 
       if (!hasNextPage) {
