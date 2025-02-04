@@ -126,11 +126,7 @@ const registerVault = async (
   console.log("Vault registered successfully!", registerResult);
 };
 
-const findOwnedObject = async (
-  client: SuiClient,
-  keypair: Ed25519Keypair,
-  typeName: string
-) => {
+const findOwnedObject = async (client: SuiClient, keypair: Ed25519Keypair) => {
   const objects = await client.getOwnedObjects({
     owner: keypair.toSuiAddress(),
     options: { showType: true, showContent: true, showOwner: true },
