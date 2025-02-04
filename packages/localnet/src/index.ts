@@ -19,10 +19,10 @@ import { isSolanaAvailable } from "./isSolanaAvailable";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
+import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
-import { suiSetup } from "./suiSetup";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 

@@ -1,8 +1,8 @@
 import { SuiClient } from "@mysten/sui/client";
+import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import * as fs from "fs";
-import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 
 export const suiSetup = async () => {
   const keypair = new Ed25519Keypair();
@@ -23,22 +23,22 @@ export const suiSetup = async () => {
   tx.setGasBudget(5_000_000_000);
 
   const [upgradeCap] = tx.publish({
-    modules,
     dependencies,
+    modules,
   });
 
   tx.transferObjects([upgradeCap], keypair.toSuiAddress());
 
   try {
     const result = await client.signAndExecuteTransaction({
-      signer: keypair,
-      transaction: tx,
       options: {
         showEffects: true,
         showEvents: true,
         showObjectChanges: true,
       },
       requestType: "WaitForLocalExecution",
+      signer: keypair,
+      transaction: tx,
     });
 
     console.log("Deployment Result:", result);
