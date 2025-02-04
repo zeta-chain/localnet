@@ -4,6 +4,8 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import * as fs from "fs";
 
+const GAS_BUDGET = 5_000_000_000;
+
 export const suiSetup = async () => {
   const keypair = new Ed25519Keypair();
   await requestSuiFromFaucetV0({
@@ -20,7 +22,7 @@ export const suiSetup = async () => {
   const { modules, dependencies } = gateway;
 
   const tx = new Transaction();
-  tx.setGasBudget(5_000_000_000);
+  tx.setGasBudget(GAS_BUDGET);
 
   const [upgradeCap] = tx.publish({
     dependencies,
@@ -47,26 +49,39 @@ export const suiSetup = async () => {
       (change) => change.type === "published"
     );
 
-    if (publishedModule) {
+    const gatewayObject = result.objectChanges?.find(
+      (change) =>
+        change.type === "created" &&
+        change.objectType.includes("gateway::Gateway")
+    );
+
+    if (publishedModule && gatewayObject) {
       const moduleId = publishedModule.packageId;
+      const gatewayObjectId = gatewayObject.objectId;
+
       console.log("Published Module ID:", moduleId);
-      await registerVault(client, keypair, moduleId);
+      console.log("Gateway Object ID:", gatewayObjectId);
+
+      await registerVault(client, keypair, moduleId, gatewayObjectId);
     } else {
-      console.log("No module published.");
+      console.log("No module or gateway object found.");
     }
   } catch (error) {
     console.error("Deployment failed:", error);
   }
 };
+
 const registerVault = async (
   client: SuiClient,
   keypair: Ed25519Keypair,
-  moduleId: string
+  moduleId: string,
+  gatewayObjectId: string
 ) => {
   console.log("Registering Vault...");
 
-  const adminCapId = await findOwnedObject(client, keypair);
-  const gatewayObjectId = await findOwnedObject(client, keypair);
+  const adminCapType = `${moduleId}::gateway::AdminCap`;
+
+  const adminCapId = await findOwnedObject(client, keypair, adminCapType);
 
   if (!adminCapId || !gatewayObjectId) {
     console.error(`Missing AdminCap or Gateway Object`);
@@ -84,9 +99,8 @@ const registerVault = async (
 
   console.log("Transferring AdminCap to second signer...");
 
-  // Transfer AdminCap to second signer
   const transferTx = new Transaction();
-  transferTx.setGasBudget(5_000_000_000);
+  transferTx.setGasBudget(GAS_BUDGET);
   transferTx.transferObjects(
     [transferTx.object(adminCapId)],
     secondKeypair.toSuiAddress()
@@ -102,9 +116,8 @@ const registerVault = async (
 
   console.log("Registering vault with second signer...");
 
-  // Register the vault using both gateway and adminCap
   const registerTx = new Transaction();
-  registerTx.setGasBudget(5_000_000_000);
+  registerTx.setGasBudget(GAS_BUDGET);
   registerTx.moveCall({
     arguments: [
       registerTx.object(gatewayObjectId),
@@ -123,14 +136,18 @@ const registerVault = async (
   console.log("Vault registered successfully!", registerResult);
 };
 
-const findOwnedObject = async (client: SuiClient, keypair: Ed25519Keypair) => {
+const findOwnedObject = async (
+  client: SuiClient,
+  keypair: Ed25519Keypair,
+  typeName: string
+) => {
   const objects = await client.getOwnedObjects({
     options: { showContent: true, showOwner: true, showType: true },
     owner: keypair.toSuiAddress(),
   });
 
   const matchingObject: any = objects.data.find(
-    (obj) => obj.data?.type && obj.data.type.includes("AdminCap")
+    (obj) => obj.data?.type === typeName
   );
 
   return matchingObject ? matchingObject.data.objectId : null;
