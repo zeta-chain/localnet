@@ -65,11 +65,8 @@ const registerVault = async (
 ) => {
   console.log("Registering Vault...");
 
-  const adminCapType = `${moduleId}::gateway::AdminCap`;
-  const gatewayType = `${moduleId}::gateway::Gateway`;
-
-  const adminCapId = await findOwnedObject(client, keypair, adminCapType);
-  const gatewayObjectId = await findOwnedObject(client, keypair, gatewayType);
+  const adminCapId = await findOwnedObject(client, keypair);
+  const gatewayObjectId = await findOwnedObject(client, keypair);
 
   if (!adminCapId || !gatewayObjectId) {
     console.error(`Missing AdminCap or Gateway Object`);
