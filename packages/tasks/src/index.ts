@@ -3,5 +3,5 @@ export { localnetTask } from "./localnet";
 export { solanaDepositTask } from "./solanaDeposit";
 export { solanaDepositAndCallTask } from "./solanaDepositAndCall";
 export { localnetStopTask } from "./stop";
-export { suiDepositTask } from "./suiDeposit";
 export { suiBalanceTask } from "./suiBalance";
+export { suiDepositTask } from "./suiDeposit";

@@ -1,6 +1,6 @@
 import {
-  SuiClient,
   EventId,
+  SuiClient,
   SuiEvent,
   SuiEventFilter,
 } from "@mysten/sui/client";
@@ -213,7 +213,7 @@ const waitForConfirmation = async (
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
 
-async function pollDepositEvents(client: SuiClient, packageId: string) {
+const pollDepositEvents = async (client: SuiClient, packageId: string) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
   const DEPOSIT_EVENT_TYPE = `${packageId}::gateway::DepositEvent`;
@@ -221,12 +221,12 @@ async function pollDepositEvents(client: SuiClient, packageId: string) {
   while (true) {
     try {
       const { data, hasNextPage, nextCursor } = await client.queryEvents({
+        cursor: currentCursor || null,
+        limit: 50,
+        order: "ascending",
         query: {
           MoveEventType: DEPOSIT_EVENT_TYPE,
         },
-        cursor: currentCursor || null,
-        order: "ascending",
-        limit: 50,
       });
 
       console.log(data);
@@ -256,4 +256,4 @@ async function pollDepositEvents(client: SuiClient, packageId: string) {
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
   }
-}
+};
