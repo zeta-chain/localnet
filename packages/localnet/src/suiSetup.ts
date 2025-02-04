@@ -96,9 +96,9 @@ const registerVault = async (
   );
 
   await client.signAndExecuteTransaction({
+    requestType: "WaitForLocalExecution",
     signer: keypair,
     transaction: transferTx,
-    requestType: "WaitForLocalExecution",
   });
 
   console.log("AdminCap transferred successfully.");
@@ -109,18 +109,18 @@ const registerVault = async (
   const registerTx = new Transaction();
   registerTx.setGasBudget(5_000_000_000);
   registerTx.moveCall({
-    target: `${moduleId}::gateway::register_vault`,
     arguments: [
       registerTx.object(gatewayObjectId),
       registerTx.object(adminCapId),
     ],
+    target: `${moduleId}::gateway::register_vault`,
     typeArguments: ["0x2::sui::SUI"],
   });
 
   const registerResult = await client.signAndExecuteTransaction({
+    requestType: "WaitForLocalExecution",
     signer: secondKeypair,
     transaction: registerTx,
-    requestType: "WaitForLocalExecution",
   });
 
   console.log("Vault registered successfully!", registerResult);
@@ -128,8 +128,8 @@ const registerVault = async (
 
 const findOwnedObject = async (client: SuiClient, keypair: Ed25519Keypair) => {
   const objects = await client.getOwnedObjects({
+    options: { showContent: true, showOwner: true, showType: true },
     owner: keypair.toSuiAddress(),
-    options: { showType: true, showContent: true, showOwner: true },
   });
 
   const matchingObject: any = objects.data.find(
