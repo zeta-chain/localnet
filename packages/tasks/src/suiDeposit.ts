@@ -9,7 +9,6 @@ import { Transaction } from "@mysten/sui/transactions";
 
 const GAS_BUDGET = 5_000_000_000;
 
-// === 1. Generate Keypair from Mnemonic ===
 const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
   const seed = mnemonicToSeedSync(mnemonic);
   const hdKey = HDKey.fromMasterSeed(seed);
@@ -18,7 +17,6 @@ const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
   return keypair;
 };
 
-// === 2. Fetch Owned SUI Coins ===
 const getOwnedSuiCoin = async (client: SuiClient, address: string) => {
   const ownedObjects = await client.getOwnedObjects({
     owner: address,
@@ -36,7 +34,6 @@ const getOwnedSuiCoin = async (client: SuiClient, address: string) => {
   return coinObject.data!.objectId;
 };
 
-// === 3. Deposit SUI to Gateway ===
 const depositSuiToGateway = async (
   mnemonic: string,
   gatewayObjectId: string,
@@ -50,25 +47,22 @@ const depositSuiToGateway = async (
 
   console.log(`Using Address: ${address}`);
 
-  // Fetch SUI Coin
   const coinObjectId = await getOwnedSuiCoin(client, address);
   console.log(`Using SUI Coin: ${coinObjectId}`);
 
-  // Prepare Deposit Transaction
   const tx = new Transaction();
   tx.setGasBudget(GAS_BUDGET);
-  console.log("!!!", ethers.getBytes(receiverEthAddress));
+
   tx.moveCall({
     target: `${moduleId}::gateway::deposit`,
     typeArguments: ["0x2::sui::SUI"],
     arguments: [
       tx.object(gatewayObjectId), // &mut Gateway
       tx.object(coinObjectId), // Coin<SUI>
-      tx.pure(ethers.getBytes(receiverEthAddress)), // 42-char ETH hex address
+      tx.pure.string(receiverEthAddress),
     ],
   });
 
-  // Execute Transaction
   const result = await client.signAndExecuteTransaction({
     signer: keypair,
     transaction: tx,
@@ -82,7 +76,6 @@ const depositSuiToGateway = async (
 
   console.log("Deposit Result:", result);
 
-  // Check Events for Confirmation
   const depositEvent = result.events?.find((event) =>
     event.type.includes("gateway::DepositEvent")
   );
