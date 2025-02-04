@@ -49,7 +49,7 @@ export const suiSetup = async () => {
       (change) => change.type === "published"
     );
 
-    const gatewayObject = result.objectChanges?.find(
+    const gatewayObject: any = result.objectChanges?.find(
       (change) =>
         change.type === "created" &&
         change.objectType.includes("gateway::Gateway")
