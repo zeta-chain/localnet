@@ -160,34 +160,24 @@ const findOwnedObject = async (
 };
 
 const waitForConfirmation = async (
-  client: any,
-  txDigest: any,
-  timeout = 30000
+  client: SuiClient,
+  digest: string,
+  timeout = 60000
 ) => {
   const start = Date.now();
-  let confirmed = false;
-
-  while (!confirmed) {
+  while (Date.now() - start < timeout) {
     const status = await client.getTransactionBlock({
-      digest: txDigest,
-      options: { showEffects: true },
+      digest,
+      options: { showEffects: true, showEvents: true },
     });
 
-    if (
-      status.effects?.status.status === "success" &&
-      status.confirmedLocalExecution
-    ) {
-      console.log("✅ Transaction confirmed locally:", txDigest);
-      confirmed = true;
+    if (status.effects?.status?.status === "success") {
+      console.log("Transaction fully confirmed:", status);
       return status;
     }
 
-    if (Date.now() - start > timeout) {
-      throw new Error(
-        `⏱️ Timeout waiting for transaction confirmation: ${txDigest}`
-      );
-    }
-
+    console.log("Waiting for confirmation...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
+  throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
