@@ -10,21 +10,13 @@ import * as fs from "fs";
 const GAS_BUDGET = 5_000_000_000;
 
 const generateAccount = () => {
-  const mnemonic = bip39.generateMnemonic();
+  const mnemonic =
+    "grape subway rack mean march bubble carry avoid muffin consider thing street";
   const seed = mnemonicToSeedSync(mnemonic);
   const hdKey = HDKey.fromMasterSeed(seed);
   const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
   const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
-  console.log("!!!keypair", keypair);
   return { keypair, mnemonic };
-};
-
-const checkBalance = async (client: SuiClient, address: string) => {
-  const balance = await client.getBalance({
-    coinType: "0x2::sui::SUI",
-    owner: address,
-  });
-  return balance.totalBalance;
 };
 
 export const suiSetup = async () => {
