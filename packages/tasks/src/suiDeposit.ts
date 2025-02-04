@@ -1,11 +1,10 @@
-import { ethers } from "ethers";
-import { task } from "hardhat/config";
-
 import { SuiClient } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
-import { Transaction } from "@mysten/sui/transactions";
+import { ethers } from "ethers";
+import { task } from "hardhat/config";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -19,8 +18,8 @@ const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
 
 const getOwnedSuiCoin = async (client: SuiClient, address: string) => {
   const ownedObjects = await client.getOwnedObjects({
-    owner: address,
     options: { showContent: true, showType: true },
+    owner: address,
   });
 
   const coinObject = ownedObjects.data.find(
@@ -53,25 +52,31 @@ const depositSuiToGateway = async (
   const tx = new Transaction();
   tx.setGasBudget(GAS_BUDGET);
 
-  tx.moveCall({
-    target: `${moduleId}::gateway::deposit`,
+  const splittedCoin = tx.moveCall({
+    arguments: [tx.object(coinObjectId), tx.pure.u64(BigInt(depositAmount))],
+    target: "0x2::coin::split",
     typeArguments: ["0x2::sui::SUI"],
+  });
+
+  tx.moveCall({
     arguments: [
-      tx.object(gatewayObjectId), // &mut Gateway
-      tx.object(coinObjectId), // Coin<SUI>
+      tx.object(gatewayObjectId),
+      splittedCoin,
       tx.pure.string(receiverEthAddress),
     ],
+    target: `${moduleId}::gateway::deposit`,
+    typeArguments: ["0x2::sui::SUI"],
   });
 
   const result = await client.signAndExecuteTransaction({
-    signer: keypair,
-    transaction: tx,
-    requestType: "WaitForLocalExecution",
     options: {
       showEffects: true,
       showEvents: true,
       showObjectChanges: true,
     },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: tx,
   });
 
   console.log("Deposit Result:", result);
@@ -92,7 +97,7 @@ const suiDeposit = async (args: any) => {
   const gatewayObjectId = args.gateway;
   const moduleId = args.module;
   const receiverEthAddress = args.receiver;
-  const depositAmount = 1_000;
+  const depositAmount = parseInt(args.amount, 10);
 
   try {
     await depositSuiToGateway(
@@ -109,7 +114,7 @@ const suiDeposit = async (args: any) => {
 
 export const suiDepositTask = task(
   "localnet:sui-deposit",
-  "Solana deposit and call",
+  "Sui deposit and call",
   suiDeposit
 )
   .addParam("mnemonic", "")

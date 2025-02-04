@@ -1,11 +1,11 @@
 import { SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { mnemonicToSeedSync } from "bip39";
-import { HDKey } from "ethereum-cryptography/hdkey";
 import { Transaction } from "@mysten/sui/transactions";
-import * as fs from "fs";
+import { mnemonicToSeedSync } from "bip39";
 import * as bip39 from "bip39";
+import { HDKey } from "ethereum-cryptography/hdkey";
+import * as fs from "fs";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -16,13 +16,13 @@ const generateAccount = () => {
   const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
   const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
   console.log("!!!keypair", keypair);
-  return { mnemonic, keypair };
+  return { keypair, mnemonic };
 };
 
 const checkBalance = async (client: SuiClient, address: string) => {
   const balance = await client.getBalance({
-    owner: address,
     coinType: "0x2::sui::SUI",
+    owner: address,
   });
   return balance.totalBalance;
 };
