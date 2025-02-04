@@ -1,9 +1,13 @@
-import { SuiClient } from "@mysten/sui/client";
+import {
+  SuiClient,
+  EventId,
+  SuiEvent,
+  SuiEventFilter,
+} from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
-import * as bip39 from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 
@@ -91,6 +95,7 @@ export const suiSetup = async () => {
       console.log("Gateway Object ID:", gatewayObjectId);
 
       await registerVault(client, keypair, moduleId, gatewayObjectId);
+      pollDepositEvents(client, moduleId);
     } else {
       console.log("No module or gateway object found.");
     }
@@ -207,3 +212,48 @@ const waitForConfirmation = async (
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
+
+async function pollDepositEvents(client: SuiClient, packageId: string) {
+  let currentCursor: EventId | null | undefined = null;
+  const POLLING_INTERVAL_MS = 3000;
+  const DEPOSIT_EVENT_TYPE = `${packageId}::gateway::DepositEvent`;
+
+  while (true) {
+    try {
+      const { data, hasNextPage, nextCursor } = await client.queryEvents({
+        query: {
+          MoveEventType: DEPOSIT_EVENT_TYPE,
+        },
+        cursor: currentCursor || null,
+        order: "ascending",
+        limit: 50,
+      });
+
+      console.log(data);
+
+      if (data.length > 0) {
+        console.log(`Received ${data.length} new DepositEvent(s).`);
+        for (const event of data) {
+          console.log("Event:", event);
+        }
+
+        if (nextCursor) {
+          console.log("Updating cursor:", nextCursor);
+          currentCursor = nextCursor;
+        }
+      } else {
+        console.log("No new events found.");
+      }
+
+      if (!hasNextPage) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, POLLING_INTERVAL_MS)
+        );
+      }
+    } catch (err) {
+      console.error("Error polling deposit events:", err);
+      console.log(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
+    }
+  }
+}

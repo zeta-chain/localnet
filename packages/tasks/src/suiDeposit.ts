@@ -114,7 +114,7 @@ const suiDeposit = async (args: any) => {
 
 export const suiDepositTask = task(
   "localnet:sui-deposit",
-  "Sui deposit and call",
+  "Sui deposit",
   suiDeposit
 )
   .addParam("mnemonic", "")
