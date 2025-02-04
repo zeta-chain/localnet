@@ -43,6 +43,8 @@ export const suiSetup = async () => {
       transaction: tx,
     });
 
+    await waitForConfirmation(client, result.digest);
+
     console.log("Deployment Result:", result);
 
     const publishedModule = result.objectChanges?.find(
@@ -106,11 +108,13 @@ const registerVault = async (
     secondKeypair.toSuiAddress()
   );
 
-  await client.signAndExecuteTransaction({
+  const result = await client.signAndExecuteTransaction({
     requestType: "WaitForLocalExecution",
     signer: keypair,
     transaction: transferTx,
   });
+
+  await waitForConfirmation(client, result.digest);
 
   console.log("AdminCap transferred successfully.");
 
@@ -133,6 +137,8 @@ const registerVault = async (
     transaction: registerTx,
   });
 
+  await waitForConfirmation(client, registerResult.digest);
+
   console.log("Vault registered successfully!", registerResult);
 };
 
@@ -151,4 +157,37 @@ const findOwnedObject = async (
   );
 
   return matchingObject ? matchingObject.data.objectId : null;
+};
+
+const waitForConfirmation = async (
+  client: any,
+  txDigest: any,
+  timeout = 30000
+) => {
+  const start = Date.now();
+  let confirmed = false;
+
+  while (!confirmed) {
+    const status = await client.getTransactionBlock({
+      digest: txDigest,
+      options: { showEffects: true },
+    });
+
+    if (
+      status.effects?.status.status === "success" &&
+      status.confirmedLocalExecution
+    ) {
+      console.log("✅ Transaction confirmed locally:", txDigest);
+      confirmed = true;
+      return status;
+    }
+
+    if (Date.now() - start > timeout) {
+      throw new Error(
+        `⏱️ Timeout waiting for transaction confirmation: ${txDigest}`
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
 };
