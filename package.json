@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cpx 'packages/localnet/src/solana/**/*' dist/localnet/src/solana/",
+    "build": "del-cli dist && tsc && cpx 'packages/localnet/src/solana/**/*' dist/localnet/src/solana/ && cpx 'packages/localnet/src/sui/**/*' dist/localnet/src/sui/",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts ."
   },
@@ -19,7 +19,9 @@
       "types": "./dist/localnet/src/index.d.ts"
     },
     "./solana/deploy/gateway.so": "./dist/localnet/src/solana/deploy/gateway.so",
-    "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json"
+    "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json",
+    "./sui/gateway.mv": "./dist/localnet/src/sui/gateway.mv",
+    "./sui/gateway.json": "./dist/localnet/src/sui/gateway.json"
   },
   "keywords": [],
   "author": "ZetaChain",
@@ -49,6 +51,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
     "@inquirer/prompts": "^5.5.0",
+    "@mysten/sui": "^0.0.0-experimental-20250131013137",
     "@solana/web3.js": "^1.95.4",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",

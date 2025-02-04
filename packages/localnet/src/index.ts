@@ -22,6 +22,7 @@ import { solanaSetup } from "./solanaSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
+import { suiSetup } from "./suiSetup";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -287,6 +288,8 @@ export const initLocalnet = async ({
   } else {
     console.error("Solana CLI not available. Skipping setup.");
   }
+
+  await suiSetup();
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;

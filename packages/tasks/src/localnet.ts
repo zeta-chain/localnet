@@ -7,6 +7,7 @@ import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
+import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -82,6 +83,14 @@ const localnet = async (args: any) => {
   if (await isSolanaAvailable()) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
     await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+  }
+
+  if (await isSuiAvailable()) {
+    console.log("Starting Sui...");
+    exec(
+      `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
+    );
+    await waitOn({ resources: [`tcp:127.0.0.1:9000`] });
   }
 
   await waitOn({ resources: [`tcp:127.0.0.1:${args.port}`] });
