@@ -48,11 +48,97 @@ export const suiSetup = async () => {
     );
 
     if (publishedModule) {
-      console.log("Published Module ID:", publishedModule.packageId);
+      const moduleId = publishedModule.packageId;
+      console.log("Published Module ID:", moduleId);
+      await registerVault(client, keypair, moduleId);
     } else {
       console.log("No module published.");
     }
   } catch (error) {
     console.error("Deployment failed:", error);
   }
+};
+const registerVault = async (
+  client: SuiClient,
+  keypair: Ed25519Keypair,
+  moduleId: string
+) => {
+  console.log("Registering Vault...");
+
+  const adminCapType = `${moduleId}::gateway::AdminCap`;
+  const gatewayType = `${moduleId}::gateway::Gateway`;
+
+  const adminCapId = await findOwnedObject(client, keypair, adminCapType);
+  const gatewayObjectId = await findOwnedObject(client, keypair, gatewayType);
+
+  if (!adminCapId || !gatewayObjectId) {
+    console.error(`Missing AdminCap or Gateway Object`);
+    throw new Error("AdminCap or Gateway not found!");
+  }
+
+  console.log(`AdminCap Found: ${adminCapId}`);
+  console.log(`Gateway Found: ${gatewayObjectId}`);
+
+  const secondKeypair = new Ed25519Keypair();
+  await requestSuiFromFaucetV0({
+    host: "http://127.0.0.1:9123",
+    recipient: secondKeypair.toSuiAddress(),
+  });
+
+  console.log("Transferring AdminCap to second signer...");
+
+  // Transfer AdminCap to second signer
+  const transferTx = new Transaction();
+  transferTx.setGasBudget(5_000_000_000);
+  transferTx.transferObjects(
+    [transferTx.object(adminCapId)],
+    secondKeypair.toSuiAddress()
+  );
+
+  await client.signAndExecuteTransaction({
+    signer: keypair,
+    transaction: transferTx,
+    requestType: "WaitForLocalExecution",
+  });
+
+  console.log("AdminCap transferred successfully.");
+
+  console.log("Registering vault with second signer...");
+
+  // Register the vault using both gateway and adminCap
+  const registerTx = new Transaction();
+  registerTx.setGasBudget(5_000_000_000);
+  registerTx.moveCall({
+    target: `${moduleId}::gateway::register_vault`,
+    arguments: [
+      registerTx.object(gatewayObjectId),
+      registerTx.object(adminCapId),
+    ],
+    typeArguments: ["0x2::sui::SUI"],
+  });
+
+  const registerResult = await client.signAndExecuteTransaction({
+    signer: secondKeypair,
+    transaction: registerTx,
+    requestType: "WaitForLocalExecution",
+  });
+
+  console.log("Vault registered successfully!", registerResult);
+};
+
+const findOwnedObject = async (
+  client: SuiClient,
+  keypair: Ed25519Keypair,
+  typeName: string
+) => {
+  const objects = await client.getOwnedObjects({
+    owner: keypair.toSuiAddress(),
+    options: { showType: true, showContent: true, showOwner: true },
+  });
+
+  const matchingObject: any = objects.data.find(
+    (obj) => obj.data?.type && obj.data.type.includes("AdminCap")
+  );
+
+  return matchingObject ? matchingObject.data.objectId : null;
 };
