@@ -19,11 +19,11 @@ import { isSolanaAvailable } from "./isSolanaAvailable";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
+import { suiDeposit } from "./suiDeposit";
 import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
-import { suiDeposit } from "./suiDeposit";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -295,14 +295,14 @@ export const initLocalnet = async ({
       deposit: (amount: string, receiver: string) => {
         suiDeposit({
           amount,
-          receiver,
+          asset: ethers.ZeroAddress,
           chainID: "103",
           deployer,
           foreignCoins,
           fungibleModuleSigner,
           protocolContracts,
           provider,
-          asset: ethers.ZeroAddress,
+          receiver,
         });
       },
     },
