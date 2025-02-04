@@ -1,12 +1,48 @@
 import { SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { mnemonicToSeedSync } from "bip39";
+import { HDKey } from "ethereum-cryptography/hdkey";
 import { Transaction } from "@mysten/sui/transactions";
 import * as fs from "fs";
+import * as bip39 from "bip39";
 
 const GAS_BUDGET = 5_000_000_000;
 
+const generateAccount = () => {
+  const mnemonic = bip39.generateMnemonic();
+  const seed = mnemonicToSeedSync(mnemonic);
+  const hdKey = HDKey.fromMasterSeed(seed);
+  const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
+  const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
+  console.log("!!!keypair", keypair);
+  return { mnemonic, keypair };
+};
+
+const checkBalance = async (client: SuiClient, address: string) => {
+  const balance = await client.getBalance({
+    owner: address,
+    coinType: "0x2::sui::SUI",
+  });
+  return balance.totalBalance;
+};
+
 export const suiSetup = async () => {
+  const client = new SuiClient({ url: "http://127.0.0.1:9000" });
+
+  const user = generateAccount();
+  const address = user.keypair.toSuiAddress();
+
+  console.log("Generated new Sui account:");
+  console.log("Mnemonic:", user.mnemonic);
+  console.log("Address:", address);
+
+  console.log("Requesting SUI from faucet...");
+  await requestSuiFromFaucetV0({
+    host: "http://127.0.0.1:9123",
+    recipient: address,
+  });
+
   const keypair = new Ed25519Keypair();
   await requestSuiFromFaucetV0({
     host: "http://127.0.0.1:9123",
@@ -14,8 +50,6 @@ export const suiSetup = async () => {
   });
 
   const gatewayPath = require.resolve("@zetachain/localnet/sui/gateway.json");
-
-  const client = new SuiClient({ url: "http://127.0.0.1:9000" });
 
   const gateway = JSON.parse(fs.readFileSync(gatewayPath).toString());
 

@@ -25,3 +25,5 @@ tsconfig.tsbuildinfo
 localnet.pid
 
 test-ledger
+
+localnet.json
