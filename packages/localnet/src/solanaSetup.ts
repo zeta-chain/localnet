@@ -136,7 +136,7 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
     `Monitoring new transactions for program: ${gatewayProgram.programId.toBase58()}`
   );
 
-  let lastSignature: string | undefined = undefined;
+  let lastSignature: string;
 
   setInterval(async () => {
     let signatures;
