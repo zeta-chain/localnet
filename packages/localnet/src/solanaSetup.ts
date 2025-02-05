@@ -169,11 +169,6 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
           );
 
           if (transaction) {
-            // console.log(
-            //   "New Transaction Details:",
-            //   JSON.stringify(transaction, null, 2)
-            // );
-
             for (const instruction of transaction.transaction.message
               .instructions) {
               const programIdIndex =
@@ -187,8 +182,6 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                 programIdFromInstruction &&
                 programIdFromInstruction.equals(gatewayProgram.programId)
               ) {
-                // console.log("Instruction for program detected:", instruction);
-
                 let coder = new anchor.BorshInstructionCoder(
                   Gateway_IDL as anchor.Idl
                 );
@@ -196,7 +189,6 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                   instruction.data,
                   "base58"
                 );
-                // console.log("Decoded Instruction:", decodedInstruction);
 
                 if (decodedInstruction) {
                   if (
