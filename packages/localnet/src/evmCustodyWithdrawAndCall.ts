@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 
 import { deployOpts } from "./deployOpts";
-import { logErr } from "./log";
 
 export const evmCustodyWithdrawAndCall = async ({
   evmContracts,

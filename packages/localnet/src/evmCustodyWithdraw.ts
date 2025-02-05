@@ -1,5 +1,5 @@
 import { deployOpts } from "./deployOpts";
-import { log, logErr } from "./log";
+import { log } from "./log";
 
 export const evmCustodyWithdraw = async ({
   evmContracts,
