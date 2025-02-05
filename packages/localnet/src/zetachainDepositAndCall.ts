@@ -11,11 +11,7 @@ export const zetachainDepositAndCall = async ({
   foreignCoins,
   chainID,
 }: any) => {
-  const sender = args[0];
-  const receiver = args[1];
-  const amount = args[2];
-  const asset = args[3];
-  const message = args[4];
+  const [sender, receiver, amount, asset, message] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(

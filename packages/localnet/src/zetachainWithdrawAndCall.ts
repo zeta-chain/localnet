@@ -29,19 +29,25 @@ export const zetachainWithdrawAndCall = async ({
   tss: any;
 }) => {
   log("ZetaChain", "Gateway: 'WithdrawnAndCalled' event emitted");
-  const sender = args[0];
+  const [
+    sender,
+    ,
+    receiver,
+    zrc20,
+    amount,
+    ,
+    ,
+    message,
+    callOptions,
+    revertOptions,
+  ] = args;
+  const isArbitraryCall = callOptions[1];
 
-  const zrc20 = args[3];
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
 
-  const amount = args[4];
-  const callOptions = args[8];
-  const isArbitraryCall = callOptions[1];
   try {
-    const receiver = args[2];
-    const message = args[7];
     (tss as NonceManager).reset();
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const coinType = await zrc20Contract.COIN_TYPE();
@@ -81,7 +87,6 @@ export const zetachainWithdrawAndCall = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    const revertOptions = args[9];
     return await zetachainOnRevert({
       amount,
       asset: zrc20,

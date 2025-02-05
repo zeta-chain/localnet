@@ -31,9 +31,7 @@ export const evmOnRevert = async ({
   token: string;
   tss: any;
 }) => {
-  const callOnRevert = revertOptions[1];
-  const revertAddress = revertOptions[0];
-  const revertMessage = revertOptions[3];
+  const [revertAddress, callOnRevert, , revertMessage] = revertOptions;
   const revertContext = { amount, asset, revertMessage, sender };
   if (callOnRevert) {
     try {

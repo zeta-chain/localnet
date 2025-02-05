@@ -35,9 +35,8 @@ export const evmDepositAndCall = async ({
   tss: any;
 }) => {
   log(chain, "Gateway: DepositedAndCalled event emitted");
-  const sender = args[0];
-  const amount = args[2];
-  const asset = args[3];
+  const [sender, , amount, asset, , revertOptions] = args;
+
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
@@ -66,7 +65,6 @@ export const evmDepositAndCall = async ({
       throw new Error(err);
     }
     logErr("ZetaChain", `onCall failed: ${err}`);
-    const revertOptions = args[5];
     const gasLimit = revertOptions[4];
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
       {
@@ -102,7 +100,6 @@ export const evmDepositAndCall = async ({
         "ZetaChain",
         `Cannot initiate a revert, deposited amount ${amount} is less than gas fee ${revertGasFee}`
       );
-      const revertOptions = args[5];
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);

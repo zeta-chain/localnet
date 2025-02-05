@@ -26,9 +26,8 @@ export const zetachainExecute = async ({
   provider: any;
 }) => {
   log(chain, "Gateway: 'Called' event emitted");
-  const sender = args[0];
-  const receiver = args[1];
-  const message = args[2];
+  const [sender, receiver, message, revertOptions] = args;
+  const [, , abortAddress, revertMessage] = revertOptions;
   try {
     (deployer as NonceManager).reset();
     const context = {
@@ -65,9 +64,6 @@ export const zetachainExecute = async ({
     }
     logErr("ZetaChain", `Error executing onCall: ${err}`);
     // No asset calls don't support reverts, so aborting
-    const revertOptions = args[5];
-    const abortAddress = revertOptions[2];
-    const revertMessage = revertOptions[3];
     return await zetachainOnAbort({
       abortAddress: abortAddress,
       amount: 0,

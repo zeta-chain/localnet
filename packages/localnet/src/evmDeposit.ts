@@ -35,9 +35,7 @@ export const evmDeposit = async ({
   tss: any;
 }) => {
   log(chain, "Gateway: 'Deposited' event emitted");
-  const sender = args[0];
-  const amount = args[2];
-  const asset = args[3];
+  const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
@@ -64,7 +62,6 @@ export const evmDeposit = async ({
       throw new Error(err);
     }
     logErr("ZetaChain", `Error depositing: ${err}`);
-    const revertOptions = args[5];
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
       revertOptions[4]
@@ -109,7 +106,6 @@ export const evmDeposit = async ({
       });
     } else {
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort
-      const revertOptions = args[5];
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       deployer.reset();

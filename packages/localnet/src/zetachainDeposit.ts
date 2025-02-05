@@ -10,9 +10,7 @@ export const zetachainDeposit = async ({
   args,
   chainID,
 }: any) => {
-  const receiver = args[1];
-  const amount = args[2];
-  const asset = args[3];
+  const [, receiver, amount, asset] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
