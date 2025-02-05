@@ -250,20 +250,19 @@ const pollEvents = async (
       });
 
       if (data.length > 0) {
-        console.log(`Received ${data.length} new DepositEvent(s).`);
         for (const event of data) {
-          console.log("Event:", event);
-          const { amount, receiver, depositor } = event.parsedJson as any;
-          handlers.deposit(
+          const { amount, receiver, sender } = event.parsedJson as any;
+          handlers.deposit({
+            event: event.parsedJson,
             amount,
             receiver,
-            depositor,
+            sender,
             client,
             keypair,
             moduleId,
             gatewayObjectId,
-            withdrawCapObjectId
-          );
+            withdrawCapObjectId,
+          });
         }
 
         if (nextCursor) {

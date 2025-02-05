@@ -1,11 +1,10 @@
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
+import ansis from "ansis";
+import { ethers } from "ethers";
 
 export const suiWithdraw = async ({
-  coinType,
   amount,
-  recipient,
+  sender,
   client,
   keypair,
   moduleId,
@@ -14,26 +13,33 @@ export const suiWithdraw = async ({
 }: any) => {
   const nonce = await fetchGatewayNonce(client, gatewayObjectId);
   const tx = new Transaction();
-  console.log([gatewayObjectId, amount, nonce, recipient, withdrawCapObjectId]);
+  const coinType =
+    "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
   tx.moveCall({
     target: `${moduleId}::gateway::withdraw`,
     typeArguments: [coinType],
     arguments: [
-      tx.object(gatewayObjectId), // 0xc884d31591855ef9d9dc0cb5f85541ba7acd9988db5462e87c07459490166ab0
-      tx.pure.u64(amount), // 800000n
-      tx.pure.u64(nonce), // 0
-      tx.pure.address(recipient), // 0x2fec3fafe08d2928a6b8d9a6a77590856c458d984ae090ccbd4177ac13729e65
-      tx.object(withdrawCapObjectId), // 0x84d226dd6dfc4aad68b56d9b71ed76be10a0c8f606b98ec0be0ee77a57459411
+      tx.object(gatewayObjectId),
+      tx.pure.u64(amount),
+      tx.pure.u64(nonce),
+      tx.pure.address(sender),
+      tx.object(withdrawCapObjectId),
     ],
   });
 
-  // Sign and execute the transaction
-  const result = await client.signAndExecuteTransaction({
+  await client.signAndExecuteTransaction({
     signer: keypair,
     transaction: tx,
   });
 
-  console.log(result);
+  console.log(
+    ansis.blue(
+      `[${ansis.bold("Sui")}]: Withdrawing ${ethers.formatUnits(
+        amount,
+        9
+      )} SUI tokens from the Gateway to ${sender}`
+    )
+  );
 };
 
 async function fetchGatewayNonce(client: any, gatewayId: string) {
@@ -46,8 +52,6 @@ async function fetchGatewayNonce(client: any, gatewayId: string) {
     throw new Error("Not a valid Move object");
   }
 
-  // The exact path to fields can vary, but typically:
-  // resp.data.content.fields => { id, vaults, nonce, ... }
   const fields = (resp.data.content as any).fields;
   const nonceValue = fields.nonce;
 

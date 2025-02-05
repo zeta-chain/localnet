@@ -3,7 +3,6 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
-import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 const GAS_BUDGET = 5_000_000_000;

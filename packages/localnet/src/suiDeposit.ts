@@ -4,32 +4,25 @@ import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 import { suiWithdraw } from "./suiWithdraw";
 
 export const suiDeposit = async ({
-  protocolContracts,
-  provider,
-  fungibleModuleSigner,
-  foreignCoins,
+  asset,
   chainID,
   deployer,
-  amount,
-  receiver,
-  asset,
-  sender,
-  client,
-  keypair,
-  moduleId,
-  gatewayObjectId,
-  withdrawCapObjectId,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+  args,
 }: any) => {
   try {
     console.log(
       ansis.blue(
-        `[${ansis.bold(
-          "Sui"
-        )}]: Gateway Deposit executed, ${amount} ${receiver}`
+        `[${ansis.bold("Sui")}]: Gateway deposit event, ${JSON.stringify(
+          args.event
+        )}`
       )
     );
     await zetachainDeposit({
-      args: [null, receiver, amount, asset],
+      args: [null, args.receiver, args.amount, asset],
       chainID,
       foreignCoins,
       fungibleModuleSigner,
@@ -37,7 +30,7 @@ export const suiDeposit = async ({
     });
   } catch (e) {
     const { revertGasFee } = await zetachainSwapToCoverGas({
-      amount,
+      amount: args.amount,
       asset,
       chainID,
       deployer,
@@ -47,20 +40,21 @@ export const suiDeposit = async ({
       protocolContracts,
       provider,
     });
-    const revertAmount = BigInt(amount) - revertGasFee;
-    // const receiver = ethers.toUtf8String(sender);
+    const revertAmount = BigInt(args.amount) - revertGasFee;
     if (revertAmount > 0) {
       await suiWithdraw({
-        recipient: sender,
+        sender: args.sender,
         amount: revertAmount,
-        client,
-        keypair,
-        moduleId,
-        gatewayObjectId,
-        withdrawCapObjectId,
+        client: args.client,
+        keypair: args.keypair,
+        moduleId: args.moduleId,
+        gatewayObjectId: args.gatewayObjectId,
+        withdrawCapObjectId: args.withdrawCapObjectId,
       });
     } else {
-      console.error("Amount is not enough to make a revert back to Sui");
+      console.error(
+        "Transaction aborted, amount is not enough to make a revert back to Sui"
+      );
     }
   }
 };
