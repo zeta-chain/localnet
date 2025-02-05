@@ -1,10 +1,7 @@
 import ansis from "ansis";
-import { ethers } from "ethers";
-
-import { logErr } from "./log";
-import { solanaWithdraw } from "./solanaWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
+import { suiWithdraw } from "./suiWithdraw";
 
 export const suiDeposit = async ({
   protocolContracts,
@@ -16,6 +13,12 @@ export const suiDeposit = async ({
   amount,
   receiver,
   asset,
+  sender,
+  client,
+  keypair,
+  moduleId,
+  gatewayObjectId,
+  withdrawCapObjectId,
 }: any) => {
   try {
     console.log(
@@ -32,5 +35,32 @@ export const suiDeposit = async ({
       fungibleModuleSigner,
       protocolContracts,
     });
-  } catch (e) {}
+  } catch (e) {
+    const { revertGasFee } = await zetachainSwapToCoverGas({
+      amount,
+      asset,
+      chainID,
+      deployer,
+      foreignCoins,
+      fungibleModuleSigner,
+      gasLimit: 200000,
+      protocolContracts,
+      provider,
+    });
+    const revertAmount = BigInt(amount) - revertGasFee;
+    // const receiver = ethers.toUtf8String(sender);
+    if (revertAmount > 0) {
+      await suiWithdraw({
+        recipient: sender,
+        amount: revertAmount,
+        client,
+        keypair,
+        moduleId,
+        gatewayObjectId,
+        withdrawCapObjectId,
+      });
+    } else {
+      console.error("Amount is not enough to make a revert back to Sui");
+    }
+  }
 };

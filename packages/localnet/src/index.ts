@@ -292,7 +292,16 @@ export const initLocalnet = async ({
 
   await suiSetup({
     handlers: {
-      deposit: (amount: string, receiver: string) => {
+      deposit: (
+        amount: string,
+        receiver: string,
+        sender: string,
+        client: any,
+        keypair: any,
+        moduleId: string,
+        gatewayObjectId: string,
+        withdrawCapObjectId: string
+      ) => {
         suiDeposit({
           amount,
           asset: ethers.ZeroAddress,
@@ -303,6 +312,12 @@ export const initLocalnet = async ({
           protocolContracts,
           provider,
           receiver,
+          sender,
+          client,
+          keypair,
+          moduleId,
+          gatewayObjectId,
+          withdrawCapObjectId,
         });
       },
     },

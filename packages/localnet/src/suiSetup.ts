@@ -29,7 +29,8 @@ export const suiSetup = async ({ handlers }: any) => {
   console.log("Address:", address);
 
   console.log("Requesting SUI from faucet...");
-  await requestSuiFromFaucetV0({
+  // don't await, because this is a user account
+  requestSuiFromFaucetV0({
     host: "http://127.0.0.1:9123",
     recipient: address,
   });
@@ -82,15 +83,31 @@ export const suiSetup = async ({ handlers }: any) => {
         change.objectType.includes("gateway::Gateway")
     );
 
+    const withdrawCapObject: any = result.objectChanges?.find(
+      (change) =>
+        change.type === "created" &&
+        change.objectType.includes("gateway::WithdrawCap")
+    );
+
     if (publishedModule && gatewayObject) {
       const moduleId = publishedModule.packageId;
       const gatewayObjectId = gatewayObject.objectId;
+      const withdrawCapObjectId = withdrawCapObject.objectId;
 
       console.log("Published Module ID:", moduleId);
       console.log("Gateway Object ID:", gatewayObjectId);
+      console.log("Withdraw Cap Object ID:", withdrawCapObject.objectId);
 
       await registerVault(client, keypair, moduleId, gatewayObjectId);
-      pollEvents(client, moduleId, handlers);
+      pollEvents(
+        client,
+        moduleId,
+        handlers,
+        keypair,
+        moduleId,
+        gatewayObjectId,
+        withdrawCapObjectId
+      );
     } else {
       console.log("No module or gateway object found.");
     }
@@ -211,7 +228,11 @@ const waitForConfirmation = async (
 const pollEvents = async (
   client: SuiClient,
   packageId: string,
-  handlers: any
+  handlers: any,
+  keypair: Ed25519Keypair,
+  moduleId: string,
+  gatewayObjectId: string,
+  withdrawCapObjectId: string
 ) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
@@ -232,8 +253,17 @@ const pollEvents = async (
         console.log(`Received ${data.length} new DepositEvent(s).`);
         for (const event of data) {
           console.log("Event:", event);
-          const { amount, receiver } = event.parsedJson as any;
-          handlers.deposit(amount, receiver);
+          const { amount, receiver, depositor } = event.parsedJson as any;
+          handlers.deposit(
+            amount,
+            receiver,
+            depositor,
+            client,
+            keypair,
+            moduleId,
+            gatewayObjectId,
+            withdrawCapObjectId
+          );
         }
 
         if (nextCursor) {
