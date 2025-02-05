@@ -31,7 +31,6 @@ export const suiWithdraw = async ({
     signer: keypair,
     transaction: tx,
   });
-
   console.log(
     ansis.blue(
       `[${ansis.bold("Sui")}]: Withdrawing ${ethers.formatUnits(
