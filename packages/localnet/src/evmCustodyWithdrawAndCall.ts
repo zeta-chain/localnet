@@ -26,6 +26,10 @@ export const evmCustodyWithdrawAndCall = async ({
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
+  if (!chainID) {
+    logErr(chainID, `Chain ID not found for ZRC20 address: ${zrc20}`);
+    return;
+  }
   const getERC20ByZRC20 = (zrc20: string) => {
     const foreignCoin = foreignCoins.find(
       (coin: any) => coin.zrc20_contract_address === zrc20
