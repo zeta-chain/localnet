@@ -215,6 +215,7 @@ const pollEvents = async (
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
   const DEPOSIT_EVENT_TYPE = `${packageId}::gateway::DepositEvent`;
+  const DEPOSIT_AND_CALL_EVENT_TYPE = `${packageId}::gateway::DepositAndCallEvent`;
 
   while (true) {
     try {
@@ -234,17 +235,32 @@ const pollEvents = async (
         for (const event of data) {
           const { amount, receiver, sender } = event.parsedJson as any;
           console.log(event);
-          handlers.deposit({
-            event: event.parsedJson,
-            amount,
-            receiver,
-            sender,
-            client,
-            keypair,
-            moduleId,
-            gatewayObjectId,
-            withdrawCapObjectId,
-          });
+
+          if (event.type === DEPOSIT_EVENT_TYPE) {
+            handlers.deposit({
+              event: event.parsedJson,
+              amount,
+              receiver,
+              sender,
+              client,
+              keypair,
+              moduleId,
+              gatewayObjectId,
+              withdrawCapObjectId,
+            });
+          } else if (event.type === DEPOSIT_AND_CALL_EVENT_TYPE) {
+            handlers.depositAndCall({
+              event: event.parsedJson,
+              amount,
+              receiver,
+              sender,
+              client,
+              keypair,
+              moduleId,
+              gatewayObjectId,
+              withdrawCapObjectId,
+            });
+          }
         }
 
         if (nextCursor) {
