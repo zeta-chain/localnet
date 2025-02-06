@@ -17,12 +17,10 @@ export const evmDepositAndCall = async ({
   foreignCoins,
   exitOnError = false,
   chainID,
-  chain,
   gatewayEVM,
   custody,
 }: {
   args: any;
-  chain: string;
   chainID: string;
   custody: any;
   deployer: any;
@@ -34,7 +32,7 @@ export const evmDepositAndCall = async ({
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
-  log(chain, "Gateway: DepositedAndCalled event emitted");
+  log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
 
   let foreignCoin;
@@ -47,7 +45,7 @@ export const evmDepositAndCall = async ({
   }
 
   if (!foreignCoin) {
-    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
 
@@ -64,7 +62,7 @@ export const evmDepositAndCall = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("ZetaChain", `onCall failed: ${err}`);
+    logErr("7001", `onCall failed: ${err}`);
     const gasLimit = revertOptions[4];
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
       {
@@ -84,7 +82,7 @@ export const evmDepositAndCall = async ({
       return await evmOnRevert({
         amount: revertAmount,
         asset,
-        chain,
+        chainID,
         custody,
         err,
         gatewayEVM,
@@ -97,12 +95,12 @@ export const evmDepositAndCall = async ({
       });
     } else {
       log(
-        "ZetaChain",
+        "7001",
         `Cannot initiate a revert, deposited amount ${amount} is less than gas fee ${revertGasFee}`
       );
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
-      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
+      log("7001", `Transferring tokens to abortAddress ${abortAddress}`);
       deployer.reset();
       const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
       const transferTx = await zrc20Contract.transfer(abortAddress, amount);

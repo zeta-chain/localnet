@@ -24,7 +24,7 @@ export const zetachainCall = async ({
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
-  log("ZetaChain", "Gateway: 'Called' event emitted");
+  log("7001", "Gateway: 'Called' event emitted");
   const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
@@ -55,7 +55,6 @@ export const zetachainCall = async ({
       err,
       fungibleModuleSigner,
       gatewayZEVM,
-      log,
       provider,
       revertOptions,
       sender,

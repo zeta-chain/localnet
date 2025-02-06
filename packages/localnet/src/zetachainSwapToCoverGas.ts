@@ -26,7 +26,7 @@ export const zetachainSwapToCoverGas = async ({
   }
 
   if (!foreignCoin) {
-    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return { isGas: false, revertGasFee: 0, token: null };
   }
 
@@ -134,7 +134,7 @@ export const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logErr("ZetaChain", `Error performing swap on Uniswap: ${swapError}`);
+    logErr("7001", `Error performing swap on Uniswap: ${swapError}`);
   }
 
   const amountInZeta = await getAmounts(

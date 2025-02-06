@@ -29,7 +29,7 @@ export const zetachainWithdraw = async ({
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
-  log("ZetaChain", "Gateway: 'Withdrawn' event emitted");
+  log("7001", "Gateway: 'Withdrawn' event emitted");
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
@@ -66,7 +66,6 @@ export const zetachainWithdraw = async ({
       err,
       fungibleModuleSigner,
       gatewayZEVM,
-      log,
       provider,
       revertOptions,
       sender,

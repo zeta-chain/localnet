@@ -28,7 +28,7 @@ export const zetachainWithdrawAndCall = async ({
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
-  log("ZetaChain", "Gateway: 'WithdrawnAndCalled' event emitted");
+  log("7001", "Gateway: 'WithdrawnAndCalled' event emitted");
   const [
     sender,
     ,
@@ -95,7 +95,6 @@ export const zetachainWithdrawAndCall = async ({
       err,
       fungibleModuleSigner,
       gatewayZEVM,
-      log,
       provider,
       revertOptions,
       sender,

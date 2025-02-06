@@ -391,7 +391,6 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      chain: "ethereum",
       chainID: "5",
       deployer,
       exitOnError,
@@ -405,7 +404,6 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
-      chain: "ethereum",
       chainID: "5",
       custody: contractsEthereum.custody,
       deployer,
@@ -424,7 +422,6 @@ export const initLocalnet = async ({
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
-        chain: "ethereum",
         chainID: "5",
         custody: contractsEthereum.custody,
         deployer,
@@ -442,7 +439,6 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      chain: "bnb",
       chainID: "97",
       deployer,
       foreignCoins,
@@ -455,7 +451,6 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
-      chain: "bnb",
       chainID: "97",
       custody: contractsBNB.custody,
       deployer,
@@ -474,7 +469,6 @@ export const initLocalnet = async ({
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
-        chain: "bnb",
         chainID: "97",
         custody: contractsBNB.custody,
         deployer,

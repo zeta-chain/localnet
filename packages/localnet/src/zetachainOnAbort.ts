@@ -31,7 +31,7 @@ export const zetachainOnAbort = async ({
   );
 
   log(
-    "ZetaChain",
+    "7001",
     `Contract ${abortAddress} executing onAbort, context: ${JSON.stringify(
       context
     )}`
@@ -43,6 +43,6 @@ export const zetachainOnAbort = async ({
     fromBlock: "latest",
   });
   logs.forEach((data: any) => {
-    log("ZetaChain", `Event from onAbort: ${JSON.stringify(data)}`);
+    log("7001", `Event from onAbort: ${JSON.stringify(data)}`);
   });
 };

@@ -17,12 +17,10 @@ export const evmDeposit = async ({
   foreignCoins,
   exitOnError = false,
   chainID,
-  chain,
   gatewayEVM,
   custody,
 }: {
   args: any;
-  chain: string;
   chainID: string;
   custody: any;
   deployer: any;
@@ -34,7 +32,7 @@ export const evmDeposit = async ({
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
-  log(chain, "Gateway: 'Deposited' event emitted");
+  log(chainID, "Gateway: 'Deposited' event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
@@ -44,7 +42,7 @@ export const evmDeposit = async ({
   }
 
   if (!foreignCoin) {
-    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
 
@@ -61,7 +59,7 @@ export const evmDeposit = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("ZetaChain", `Error depositing: ${err}`);
+    logErr("7001", `Error depositing: ${err}`);
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
       revertOptions[4]
@@ -93,7 +91,7 @@ export const evmDeposit = async ({
       return await evmOnRevert({
         amount: revertAmount,
         asset,
-        chain,
+        chainID,
         custody,
         err,
         gatewayEVM,
@@ -201,7 +199,7 @@ const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logErr("ZetaChain", `Error performing swap on Uniswap: ${swapError}`);
+    logErr("7001", `Error performing swap on Uniswap: ${swapError}`);
   }
 
   const amountInZeta = await getAmounts(

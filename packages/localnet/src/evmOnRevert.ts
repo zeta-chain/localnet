@@ -13,14 +13,14 @@ export const evmOnRevert = async ({
   tss,
   isGas,
   token,
-  chain,
+  chainID,
   gatewayEVM,
   custody,
   sender,
 }: {
   amount: any;
   asset: any;
-  chain: string;
+  chainID: string;
   custody: any;
   err: any;
   gatewayEVM: any;
@@ -36,7 +36,7 @@ export const evmOnRevert = async ({
   if (callOnRevert) {
     try {
       log(
-        chain,
+        chainID,
         `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
           revertContext
         )}`
@@ -69,16 +69,16 @@ export const evmOnRevert = async ({
       });
 
       logs.forEach((data: any) => {
-        log(chain, `Event from onRevert: ${JSON.stringify(data)}`);
+        log(chainID, `Event from onRevert: ${JSON.stringify(data)}`);
       });
     } catch (err: any) {
-      logErr(chain, `onRevert failed:`, err);
+      logErr(chainID, `onRevert failed:`, err);
     }
   } else {
     const isGas = asset === ethers.ZeroAddress;
     const gasOrAsset = isGas ? "gas" : asset;
     log(
-      chain,
+      chainID,
       `callOnRevert is false, transferring amount ${amount} of ${gasOrAsset} tokens to revertAddress ${revertAddress}`
     );
     if (isGas) {

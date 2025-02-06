@@ -12,11 +12,9 @@ export const zetachainExecute = async ({
   fungibleModuleSigner,
   foreignCoins,
   chainID,
-  chain,
   exitOnError = false,
 }: {
   args: any;
-  chain: any;
   chainID: any;
   deployer: any;
   exitOnError?: any;
@@ -25,7 +23,6 @@ export const zetachainExecute = async ({
   protocolContracts: any;
   provider: any;
 }) => {
-  log(chain, "Gateway: 'Called' event emitted");
   const [sender, receiver, message, revertOptions] = args;
   const [, , abortAddress, revertMessage] = revertOptions;
   try {
@@ -41,7 +38,7 @@ export const zetachainExecute = async ({
     )?.zrc20_contract_address;
 
     log(
-      "ZetaChain",
+      "7001",
       `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
         context
       )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
@@ -56,13 +53,13 @@ export const zetachainExecute = async ({
     });
 
     logs.forEach((data: any) => {
-      log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
+      log("7001", `Event from onCall: ${JSON.stringify(data)}`);
     });
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("ZetaChain", `Error executing onCall: ${err}`);
+    logErr("7001", `Error executing onCall: ${err}`);
     // No asset calls don't support reverts, so aborting
     return await zetachainOnAbort({
       abortAddress: abortAddress,
