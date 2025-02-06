@@ -1,7 +1,8 @@
 import { ethers } from "ethers";
+
 import { log } from "./log";
 
-export const handleOnAbort = async ({
+export const zetachainOnAbort = async ({
   fungibleModuleSigner,
   provider,
   sender,
@@ -12,7 +13,7 @@ export const handleOnAbort = async ({
   abortAddress,
   outgoing,
 }: any) => {
-  const abortContext = [
+  const context = [
     ethers.toUtf8Bytes(sender),
     asset,
     amount,
@@ -29,14 +30,19 @@ export const handleOnAbort = async ({
     fungibleModuleSigner
   );
 
-  log("ZetaChain", "Executing onAbort");
-  const abortTx = await abortableContract.onAbort(abortContext);
+  log(
+    "7001",
+    `Contract ${abortAddress} executing onAbort, context: ${JSON.stringify(
+      context
+    )}`
+  );
+  const abortTx = await abortableContract.onAbort(context);
   await abortTx.wait();
   const logs = await provider.getLogs({
     address: abortAddress,
     fromBlock: "latest",
   });
   logs.forEach((data: any) => {
-    log("ZetaChain", `Event from onAbort: ${JSON.stringify(data)}`);
+    log("7001", `Event from onAbort: ${JSON.stringify(data)}`);
   });
 };

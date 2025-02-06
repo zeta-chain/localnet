@@ -1,22 +1,27 @@
-import { ethers, NonceManager, Signer } from "ethers";
-import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
-import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
-import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
-import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
-import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
-import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
-import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
-import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import { handleOnZEVMCalled } from "./handleOnZEVMCalled";
-import { handleOnEVMCalled } from "./handleOnEVMCalled";
-import { deployOpts } from "./deployOpts";
-import { handleOnEVMDeposited } from "./handleOnEVMDeposited";
-import { handleOnZEVMWithdrawn } from "./handleOnZEVMWithdrawn";
+import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
+import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
+import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
+import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
+import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
+import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
+import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
+import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
+import { ethers, NonceManager, Signer } from "ethers";
+
 import { createToken } from "./createToken";
-import { handleOnZEVMWithdrawnAndCalled } from "./handleOnZEVMWithdrawnAndCalled";
-import { handleOnEVMDepositedAndCalled } from "./handleOnEVMDepositedAndCalled";
+import { deployOpts } from "./deployOpts";
+import { evmCall } from "./evmCall";
+import { evmDeposit } from "./evmDeposit";
+import { evmDepositAndCall } from "./evmDepositAndCall";
+import { isSolanaAvailable } from "./isSolanaAvailable";
+import { solanaDeposit } from "./solanaDeposit";
+import { solanaDepositAndCall } from "./solanaDepositAndCall";
+import { solanaSetup } from "./solanaSetup";
+import { zetachainCall } from "./zetachainCall";
+import { zetachainWithdraw } from "./zetachainWithdraw";
+import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
 
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -102,7 +107,7 @@ const prepareZetaChain = async (
     GatewayZEVM.abi,
     deployer
   );
-  return { systemContract, gatewayZEVM };
+  return { gatewayZEVM, systemContract };
 };
 
 const prepareEVM = async (deployer: Signer, tss: Signer) => {
@@ -196,10 +201,10 @@ const prepareEVM = async (deployer: Signer, tss: Signer) => {
     .setConnector(zetaConnectorImpl.target, deployOpts);
 
   return {
-    zetaConnector: zetaConnectorProxy,
-    gatewayEVM,
     custody: custodyProxy,
+    gatewayEVM,
     testEVMZeta,
+    zetaConnector: zetaConnectorProxy,
   };
 };
 
@@ -240,10 +245,10 @@ const deployProtocolContracts = async (
   return {
     gatewayZEVM,
     systemContract,
-    wzeta,
     tss,
     uniswapFactoryInstance,
     uniswapRouterInstance,
+    wzeta,
   };
 };
 
@@ -251,9 +256,38 @@ export const initLocalnet = async ({
   port,
   exitOnError,
 }: {
-  port: number;
   exitOnError: boolean;
+  port: number;
 }) => {
+  if (isSolanaAvailable()) {
+    solanaSetup({
+      handlers: {
+        deposit: (args: any) =>
+          solanaDeposit({
+            args,
+            chainID: "901",
+            deployer,
+            foreignCoins,
+            fungibleModuleSigner,
+            protocolContracts,
+            provider,
+          }),
+        depositAndCall: (args: any) =>
+          solanaDepositAndCall({
+            args,
+            chainID: "901",
+            deployer,
+            foreignCoins,
+            fungibleModuleSigner,
+            protocolContracts,
+            provider,
+          }),
+      },
+    });
+  } else {
+    console.error("Solana CLI not available. Skipping setup.");
+  }
+
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
@@ -292,10 +326,10 @@ export const initLocalnet = async ({
 
   const addresses = {
     ...protocolContracts,
-    fungibleModuleSigner,
     deployer,
-    protocolContracts,
     foreignCoins,
+    fungibleModuleSigner,
+    protocolContracts,
     tss,
   };
 
@@ -303,6 +337,7 @@ export const initLocalnet = async ({
   await createToken(addresses, contractsEthereum.custody, "USDC", false, "5");
   await createToken(addresses, contractsBNB.custody, "BNB", true, "97");
   await createToken(addresses, contractsBNB.custody, "USDC", false, "97");
+  await createToken(addresses, null, "SOL", true, "901");
 
   const evmContracts = {
     5: contractsEthereum,
@@ -310,149 +345,140 @@ export const initLocalnet = async ({
   };
 
   protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    handleOnZEVMCalled({
+    zetachainCall({
+      args,
       evmContracts,
+      exitOnError,
       foreignCoins,
-      tss,
-      provider,
       fungibleModuleSigner,
       gatewayZEVM: protocolContracts.gatewayZEVM,
-      args,
-      exitOnError,
+      provider,
+      tss,
     });
   });
 
   protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    handleOnZEVMWithdrawn({
-      evmContracts,
-      foreignCoins,
-      tss,
-      provider,
-      gatewayZEVM: protocolContracts.gatewayZEVM,
+    zetachainWithdraw({
       args,
       deployer,
-      fungibleModuleSigner,
+      evmContracts,
       exitOnError,
+      foreignCoins,
+      fungibleModuleSigner,
+      gatewayZEVM: protocolContracts.gatewayZEVM,
+      provider,
+      tss,
     });
   });
 
   protocolContracts.gatewayZEVM.on(
     "WithdrawnAndCalled",
     async (...args: Array<any>) => {
-      handleOnZEVMWithdrawnAndCalled({
-        evmContracts,
-        foreignCoins,
-        tss,
-        provider,
-        gatewayZEVM: protocolContracts.gatewayZEVM,
+      zetachainWithdrawAndCall({
         args,
         deployer,
-        fungibleModuleSigner,
+        evmContracts,
         exitOnError,
+        foreignCoins,
+        fungibleModuleSigner,
+        gatewayZEVM: protocolContracts.gatewayZEVM,
+        provider,
+        tss,
       });
     }
   );
 
   contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await handleOnEVMCalled({
-      tss,
-      provider,
-      protocolContracts,
+    return await evmCall({
       args,
-      deployer,
-      fungibleModuleSigner,
-      foreignCoins,
-      exitOnError,
       chainID: "5",
-      chain: "ethereum",
-      gatewayEVM: contractsEthereum.gatewayEVM,
-      custody: contractsEthereum.custody,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
+      provider,
     });
   });
 
   contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    handleOnEVMDeposited({
-      tss,
-      provider,
-      protocolContracts,
+    evmDeposit({
       args,
-      deployer,
-      fungibleModuleSigner,
-      foreignCoins,
-      exitOnError,
       chainID: "5",
-      chain: "ethereum",
-      gatewayEVM: contractsEthereum.gatewayEVM,
       custody: contractsEthereum.custody,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      fungibleModuleSigner,
+      gatewayEVM: contractsEthereum.gatewayEVM,
+      protocolContracts,
+      provider,
+      tss,
     });
   });
 
   contractsEthereum.gatewayEVM.on(
     "DepositedAndCalled",
     async (...args: Array<any>) => {
-      handleOnEVMDepositedAndCalled({
-        tss,
-        provider,
-        protocolContracts,
+      evmDepositAndCall({
         args,
-        deployer,
-        fungibleModuleSigner,
-        foreignCoins,
-        exitOnError,
         chainID: "5",
-        chain: "ethereum",
-        gatewayEVM: contractsEthereum.gatewayEVM,
         custody: contractsEthereum.custody,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        fungibleModuleSigner,
+        gatewayEVM: contractsEthereum.gatewayEVM,
+        protocolContracts,
+        provider,
+        tss,
       });
     }
   );
 
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await handleOnEVMCalled({
-      provider,
-      protocolContracts,
+    return await evmCall({
       args,
-      deployer,
-      fungibleModuleSigner,
-      foreignCoins,
       chainID: "97",
-      chain: "bnb",
+      deployer,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
+      provider,
     });
   });
 
   contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    handleOnEVMDeposited({
-      tss,
-      provider,
-      protocolContracts,
+    evmDeposit({
       args,
-      deployer,
-      fungibleModuleSigner,
-      foreignCoins,
-      exitOnError,
       chainID: "97",
-      chain: "bnb",
-      gatewayEVM: contractsBNB.gatewayEVM,
       custody: contractsBNB.custody,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      fungibleModuleSigner,
+      gatewayEVM: contractsBNB.gatewayEVM,
+      protocolContracts,
+      provider,
+      tss,
     });
   });
 
   contractsBNB.gatewayEVM.on(
     "DepositedAndCalled",
     async (...args: Array<any>) => {
-      handleOnEVMDepositedAndCalled({
-        tss,
-        provider,
-        protocolContracts,
+      evmDepositAndCall({
         args,
-        deployer,
-        fungibleModuleSigner,
-        foreignCoins,
-        exitOnError,
         chainID: "97",
-        chain: "bnb",
-        gatewayEVM: contractsBNB.gatewayEVM,
         custody: contractsBNB.custody,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        fungibleModuleSigner,
+        gatewayEVM: contractsBNB.gatewayEVM,
+        protocolContracts,
+        provider,
+        tss,
       });
     }
   );
@@ -462,46 +488,46 @@ export const initLocalnet = async ({
       .filter(([_, value]) => value.target !== undefined)
       .map(([key, value]) => {
         return {
+          address: value.target,
           chain: "zetachain",
           type: key,
-          address: value.target,
         };
       }),
     ...Object.entries(foreignCoins).map(([key, value]) => {
       return {
+        address: value.zrc20_contract_address,
         chain: "zetachain",
         type: value.name,
-        address: value.zrc20_contract_address,
       };
     }),
     ...Object.entries(foreignCoins)
       .map(([key, value]) => {
         if (value.asset) {
           return {
+            address: value.asset,
             chain: value.foreign_chain_id === "5" ? "ethereum" : "bnb",
             type: `ERC-20 ${value.symbol}`,
-            address: value.asset,
           };
         }
       })
       .filter(Boolean),
     {
+      address: await protocolContracts.tss.getAddress(),
       chain: "zetachain",
       type: "tss",
-      address: await protocolContracts.tss.getAddress(),
     },
     ...Object.entries(contractsEthereum).map(([key, value]) => {
       return {
+        address: value.target,
         chain: "ethereum",
         type: key,
-        address: value.target,
       };
     }),
     ...Object.entries(contractsBNB).map(([key, value]) => {
       return {
+        address: value.target,
         chain: "bnb",
         type: key,
-        address: value.target,
       };
     }),
   ];

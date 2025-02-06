@@ -1,9 +1,10 @@
-import { log, logErr } from "./log";
-import { deployOpts } from "./deployOpts";
-import { ethers, NonceManager } from "ethers";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { ethers, NonceManager } from "ethers";
 
-export const handleOnRevertEVM = async ({
+import { deployOpts } from "./deployOpts";
+import { log, logErr } from "./log";
+
+export const evmOnRevert = async ({
   revertOptions,
   asset,
   amount,
@@ -12,37 +13,33 @@ export const handleOnRevertEVM = async ({
   tss,
   isGas,
   token,
-  exitOnError = false,
-  chain,
+  chainID,
   gatewayEVM,
   custody,
   sender,
 }: {
-  revertOptions: any;
-  err: any;
-  asset: any;
   amount: any;
-  provider: any;
-  tss: any;
-  isGas: boolean;
-  token: string;
-  exitOnError: boolean;
-  chain: string;
-  gatewayEVM: any;
+  asset: any;
+  chainID: string;
   custody: any;
+  err: any;
+  gatewayEVM: any;
+  isGas: boolean;
+  provider: any;
+  revertOptions: any;
   sender: string;
+  token: string;
+  tss: any;
 }) => {
-  const callOnRevert = revertOptions[1];
-  const revertAddress = revertOptions[0];
-  const revertMessage = revertOptions[3];
-  const revertContext = { asset, amount, revertMessage, sender };
+  const [revertAddress, callOnRevert, , revertMessage] = revertOptions;
+  const revertContext = { amount, asset, revertMessage, sender };
   if (callOnRevert) {
     try {
       log(
-        chain,
-        `Contract ${revertAddress} executing onRevert (context: ${JSON.stringify(
+        chainID,
+        `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
           revertContext
-        )})`
+        )}`
       );
       (tss as NonceManager).reset();
       let tx;
@@ -50,8 +47,8 @@ export const handleOnRevertEVM = async ({
         tx = await gatewayEVM
           .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, {
-            value: amount,
             deployOpts,
+            value: amount,
           });
       } else {
         tx = await custody
@@ -72,23 +69,22 @@ export const handleOnRevertEVM = async ({
       });
 
       logs.forEach((data: any) => {
-        log(chain, `Event from onRevert: ${JSON.stringify(data)}`);
+        log(chainID, `Event from onRevert: ${JSON.stringify(data)}`);
       });
     } catch (err: any) {
-      logErr(chain, `onRevert failed:`, err);
-      if (exitOnError) throw new Error(err);
+      logErr(chainID, `onRevert failed:`, err);
     }
   } else {
     const isGas = asset === ethers.ZeroAddress;
     const gasOrAsset = isGas ? "gas" : asset;
     log(
-      chain,
+      chainID,
       `callOnRevert is false, transferring amount ${amount} of ${gasOrAsset} tokens to revertAddress ${revertAddress}`
     );
     if (isGas) {
       await tss.sendTransaction({
-        value: amount,
         to: revertAddress,
+        value: amount,
       });
     } else {
       const assetContract = new ethers.Contract(asset, ZRC20.abi, tss);
