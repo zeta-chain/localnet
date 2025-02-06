@@ -1,7 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
-import { log } from "./log";
 
+import { log } from "./log";
 import { logErr } from "./log";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 

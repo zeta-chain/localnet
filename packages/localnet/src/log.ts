@@ -1,11 +1,11 @@
 import ansis from "ansis";
 
-const chains: Record<string, { name: string; color: any }> = {
-  "7001": { name: "ZetaChain", color: ansis.green },
-  "5": { name: "Ethereum", color: ansis.cyan },
-  "97": { name: "BNB", color: ansis.yellow },
-  "901": { name: "Solana", color: ansis.magenta },
-  "102": { name: "Sui", color: ansis.blue },
+const chains: Record<string, { color: any; name: string }> = {
+  "102": { color: ansis.blue, name: "Sui" },
+  "5": { color: ansis.cyan, name: "Ethereum" },
+  "7001": { color: ansis.green, name: "ZetaChain" },
+  "901": { color: ansis.magenta, name: "Solana" },
+  "97": { color: ansis.yellow, name: "BNB" },
 };
 
 export const log = (chainId: string, ...messages: string[]) => {
