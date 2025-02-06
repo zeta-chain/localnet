@@ -223,13 +223,17 @@ const pollEvents = async (
         limit: 50,
         order: "ascending",
         query: {
-          MoveEventType: DEPOSIT_EVENT_TYPE,
+          MoveEventModule: {
+            module: "gateway",
+            package: packageId,
+          },
         },
       });
 
       if (data.length > 0) {
         for (const event of data) {
           const { amount, receiver, sender } = event.parsedJson as any;
+          console.log(event);
           handlers.deposit({
             event: event.parsedJson,
             amount,

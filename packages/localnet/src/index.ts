@@ -20,6 +20,7 @@ import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
 import { suiDeposit } from "./suiDeposit";
+import { suiDepositAndCall } from "./suiDepositAndCall";
 import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
@@ -294,6 +295,18 @@ export const initLocalnet = async ({
     handlers: {
       deposit: (args: any) => {
         suiDeposit({
+          asset: ethers.ZeroAddress,
+          chainID: "103",
+          deployer,
+          foreignCoins,
+          fungibleModuleSigner,
+          protocolContracts,
+          provider,
+          args,
+        });
+      },
+      depositAndCall: (args: any) => {
+        suiDepositAndCall({
           asset: ethers.ZeroAddress,
           chainID: "103",
           deployer,
