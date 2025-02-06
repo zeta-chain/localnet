@@ -4,7 +4,7 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import { ethers } from "ethers";
+import { AbiCoder, ethers } from "ethers";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -35,8 +35,33 @@ async function depositSuiToGateway(
   moduleId: string,
   receiverEthAddress: string,
   depositAmount: number,
-  message: string
+  message: string,
+  values: any,
+  types: any
 ) {
+  const valuesArray = values.map((value: any, index: any) => {
+    const type = JSON.parse(types)[index];
+
+    if (type === "bool") {
+      try {
+        return JSON.parse(value.toLowerCase());
+      } catch (e) {
+        throw new Error(`Invalid boolean value: ${value}`);
+      }
+    } else if (type.startsWith("uint") || type.startsWith("int")) {
+      return BigInt(value);
+    } else {
+      return value;
+    }
+  });
+
+  const encodedParameters = AbiCoder.defaultAbiCoder().encode(
+    JSON.parse(types),
+    valuesArray
+  );
+
+  const payload = ethers.getBytes(encodedParameters);
+
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
   const keypair = getKeypairFromMnemonic(mnemonic);
@@ -48,7 +73,6 @@ async function depositSuiToGateway(
 
   const tx = new Transaction();
   const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [depositAmount]);
-
   tx.moveCall({
     target: `${moduleId}::gateway::deposit_and_call`,
     typeArguments: ["0x2::sui::SUI"],
@@ -56,7 +80,7 @@ async function depositSuiToGateway(
       tx.object(gatewayObjectId),
       splittedCoin,
       tx.pure.string(receiverEthAddress),
-      tx.pure.string(message),
+      tx.pure.vector("u8", payload),
     ],
   });
 
@@ -74,12 +98,12 @@ async function depositSuiToGateway(
   });
 
   const depositEvent = result.events?.find((evt) =>
-    evt.type.includes("gateway::DepositEvent")
+    evt.type.includes("gateway::DepositAndCallEvent")
   );
   if (depositEvent) {
-    console.log("Deposit Event:", depositEvent.parsedJson);
+    console.log("Event:", depositEvent.parsedJson);
   } else {
-    console.log("No Deposit Event found.");
+    console.log("No Event found.");
   }
 }
 
@@ -87,8 +111,16 @@ export const suiDepositAndCallTask = task(
   "localnet:sui-deposit-and-call",
   "Sui deposit and call",
   async (args) => {
-    const { mnemonic, gateway, module, receiver, amount, message } =
-      args as any;
+    const {
+      mnemonic,
+      gateway,
+      module,
+      receiver,
+      amount,
+      message,
+      types,
+      values,
+    } = args as any;
     try {
       await depositSuiToGateway(
         mnemonic,
@@ -96,7 +128,9 @@ export const suiDepositAndCallTask = task(
         module,
         receiver,
         amount,
-        message
+        message,
+        values,
+        types
       );
     } catch (error) {
       console.error("Error:", error);
@@ -111,4 +145,5 @@ export const suiDepositAndCallTask = task(
   )
   .addParam("receiver", "Receiver EVM address")
   .addParam("amount", "Amount of SUI to deposit")
-  .addParam("message", "Message");
+  .addParam("types", `The types of the parameters (example: '["string"]')`)
+  .addVariadicPositionalParam("values", "The values of the parameters");
