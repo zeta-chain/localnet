@@ -16,8 +16,6 @@ export const suiWithdraw = async ({
   const coinType =
     "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
   tx.moveCall({
-    target: `${moduleId}::gateway::withdraw`,
-    typeArguments: [coinType],
     arguments: [
       tx.object(gatewayObjectId),
       tx.pure.u64(amount),
@@ -25,6 +23,8 @@ export const suiWithdraw = async ({
       tx.pure.address(sender),
       tx.object(withdrawCapObjectId),
     ],
+    target: `${moduleId}::gateway::withdraw`,
+    typeArguments: [coinType],
   });
 
   await client.signAndExecuteTransaction({
@@ -41,7 +41,7 @@ export const suiWithdraw = async ({
   );
 };
 
-async function fetchGatewayNonce(client: any, gatewayId: string) {
+const fetchGatewayNonce = async (client: any, gatewayId: string) => {
   const resp = await client.getObject({
     id: gatewayId,
     options: { showContent: true },
@@ -56,4 +56,4 @@ async function fetchGatewayNonce(client: any, gatewayId: string) {
 
   console.log("Gateway nonce:", nonceValue);
   return nonceValue;
-}
+};

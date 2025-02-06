@@ -1,8 +1,9 @@
 import ansis from "ansis";
+import { ethers } from "ethers";
+
+import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
-import { suiWithdraw } from "./suiWithdraw";
-import { ethers } from "ethers";
 
 export const suiDepositAndCall = async ({
   asset,
@@ -46,12 +47,12 @@ export const suiDepositAndCall = async ({
     const revertAmount = BigInt(args.amount) - revertGasFee;
     if (revertAmount > 0) {
       await suiWithdraw({
-        sender: args.sender,
         amount: revertAmount,
         client: args.client,
+        gatewayObjectId: args.gatewayObjectId,
         keypair: args.keypair,
         moduleId: args.moduleId,
-        gatewayObjectId: args.gatewayObjectId,
+        sender: args.sender,
         withdrawCapObjectId: args.withdrawCapObjectId,
       });
     } else {

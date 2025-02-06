@@ -295,6 +295,7 @@ export const initLocalnet = async ({
     handlers: {
       deposit: (args: any) => {
         suiDeposit({
+          args,
           asset: ethers.ZeroAddress,
           chainID: "103",
           deployer,
@@ -302,11 +303,11 @@ export const initLocalnet = async ({
           fungibleModuleSigner,
           protocolContracts,
           provider,
-          args,
         });
       },
       depositAndCall: (args: any) => {
         suiDepositAndCall({
+          args,
           asset: ethers.ZeroAddress,
           chainID: "103",
           deployer,
@@ -314,7 +315,6 @@ export const initLocalnet = async ({
           fungibleModuleSigner,
           protocolContracts,
           provider,
-          args,
         });
       },
     },

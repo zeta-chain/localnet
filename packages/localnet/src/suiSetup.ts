@@ -137,12 +137,12 @@ export const suiSetup = async ({ handlers }: any) => {
     whitelistTx.setGasBudget(GAS_BUDGET);
 
     whitelistTx.moveCall({
-      target: `${moduleId}::gateway::whitelist`,
-      typeArguments: ["0x2::sui::SUI"],
       arguments: [
         whitelistTx.object(gatewayObjectId),
         whitelistTx.object(adminCapObjectId),
       ],
+      target: `${moduleId}::gateway::whitelist`,
+      typeArguments: ["0x2::sui::SUI"],
     });
 
     const whitelistResult = await client.signAndExecuteTransaction({
@@ -238,28 +238,28 @@ const pollEvents = async (
 
           if (event.type === DEPOSIT_EVENT_TYPE) {
             handlers.deposit({
-              event: event.parsedJson,
               amount,
-              receiver,
-              sender,
               client,
+              event: event.parsedJson,
+              gatewayObjectId,
               keypair,
               moduleId,
-              gatewayObjectId,
+              receiver,
+              sender,
               withdrawCapObjectId,
             });
           } else if (event.type === DEPOSIT_AND_CALL_EVENT_TYPE) {
             handlers.depositAndCall({
-              event: event.parsedJson,
               amount,
-              receiver,
-              sender,
               client,
+              event: event.parsedJson,
+              gatewayObjectId,
               keypair,
               moduleId,
-              gatewayObjectId,
-              withdrawCapObjectId,
               payload,
+              receiver,
+              sender,
+              withdrawCapObjectId,
             });
           }
         }
