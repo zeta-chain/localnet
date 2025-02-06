@@ -1,12 +1,21 @@
 import ansis from "ansis";
 
-export const log = (chain: string, ...messages: string[]) => {
-  const color = chain === "ZetaChain" ? ansis.green : ansis.cyan;
-  const combinedMessage = messages.join(" ");
-  console.log(color(`[${ansis.bold(chain)}]: ${combinedMessage}`));
+const chains: Record<string, { color: any; name: string }> = {
+  "102": { color: ansis.blue, name: "Sui" },
+  "5": { color: ansis.cyan, name: "Ethereum" },
+  "7001": { color: ansis.green, name: "ZetaChain" },
+  "901": { color: ansis.magenta, name: "Solana" },
+  "97": { color: ansis.yellow, name: "BNB" },
 };
 
-export const logErr = (chain: string, ...messages: string[]) => {
+export const log = (chainId: string, ...messages: string[]) => {
+  const chain = chains[chainId];
+  const chainName = chain ? chain.name : `Unknown Chain (${chainId})`;
+  const color = chains[chainId]?.color || ansis.black;
   const combinedMessage = messages.join(" ");
-  log(chain, ansis.red(combinedMessage));
+  console.log(color(`[${ansis.bold(chainName)}]:`), color(combinedMessage));
+};
+
+export const logErr = (chainId: string, ...messages: string[]) => {
+  log(chainId, ansis.red(messages.join(" ")));
 };

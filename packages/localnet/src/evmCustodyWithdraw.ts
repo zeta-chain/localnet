@@ -1,5 +1,5 @@
 import { deployOpts } from "./deployOpts";
-import { log, logErr } from "./log";
+import { log } from "./log";
 
 export const evmCustodyWithdraw = async ({
   evmContracts,
@@ -12,31 +12,28 @@ export const evmCustodyWithdraw = async ({
   foreignCoins: any[];
   tss: any;
 }) => {
-  const zrc20 = args[3];
-  const chainID = foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
-  )?.foreign_chain_id;
-  const getERC20ByZRC20 = (zrc20: string) => {
-    const foreignCoin = foreignCoins.find(
+  try {
+    const zrc20 = args[3];
+    const foreignAsset = foreignCoins.find(
       (coin: any) => coin.zrc20_contract_address === zrc20
     );
-    if (!foreignCoin) {
-      logErr(chainID, `Foreign coin not found for ZRC20 address: ${zrc20}`);
-      return;
+    if (!foreignAsset) {
+      throw new Error(`Foreign coin not found for ZRC20 address: ${zrc20}`);
     }
-    return foreignCoin.asset;
-  };
+    const { asset, foreign_chain_id } = foreignAsset;
 
-  const amount = args[4];
-  const receiver = args[2];
-  const erc20 = getERC20ByZRC20(zrc20);
+    const amount = args[4];
+    const receiver = args[2];
 
-  const tx = await evmContracts[chainID].custody
-    .connect(tss)
-    .withdraw(receiver, erc20, amount, deployOpts);
-  await tx.wait();
-  log(
-    chainID,
-    `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
-  );
+    const tx = await evmContracts[foreign_chain_id].custody
+      .connect(tss)
+      .withdraw(receiver, asset, amount, deployOpts);
+    await tx.wait();
+    log(
+      foreign_chain_id,
+      `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+    );
+  } catch (error: any) {
+    throw new Error(`Error withdrawing from ERC-20 custody: ${error}`);
+  }
 };

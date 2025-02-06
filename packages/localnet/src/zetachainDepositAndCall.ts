@@ -11,11 +11,7 @@ export const zetachainDepositAndCall = async ({
   foreignCoins,
   chainID,
 }: any) => {
-  const sender = args[0];
-  const receiver = args[1];
-  const amount = args[2];
-  const asset = args[3];
-  const message = args[4];
+  const [sender, receiver, amount, asset, message] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
@@ -27,7 +23,7 @@ export const zetachainDepositAndCall = async ({
   }
 
   if (!foreignCoin) {
-    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
   const zrc20 = foreignCoin.zrc20_contract_address;
@@ -38,7 +34,7 @@ export const zetachainDepositAndCall = async ({
     sender: chainID === "901" ? ethers.ZeroAddress : sender,
   };
   log(
-    "ZetaChain",
+    "7001",
     `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
       context
     )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
@@ -52,6 +48,6 @@ export const zetachainDepositAndCall = async ({
     fromBlock: "latest",
   });
   logs.forEach((data: any) => {
-    log("ZetaChain", `Event from onCall: ${JSON.stringify(data)}`);
+    log("7001", `Event from onCall: ${JSON.stringify(data)}`);
   });
 };

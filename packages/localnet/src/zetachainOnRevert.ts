@@ -1,6 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
+import { log } from "./log";
 import { logErr } from "./log";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
@@ -9,7 +10,6 @@ export const zetachainOnRevert = async ({
   asset,
   amount,
   provider,
-  log,
   fungibleModuleSigner,
   gatewayZEVM,
   deployOpts,
@@ -23,7 +23,6 @@ export const zetachainOnRevert = async ({
   err: any;
   fungibleModuleSigner: any;
   gatewayZEVM: any;
-  log: (chain: string, ...messages: string[]) => void;
   provider: any;
   revertOptions: any;
   sender: string;
@@ -40,7 +39,7 @@ export const zetachainOnRevert = async ({
 
   if (callOnRevert) {
     log(
-      "ZetaChain",
+      "7001",
       `callOnRevert is true, executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
         revertContext
       )}`
@@ -68,12 +67,12 @@ export const zetachainOnRevert = async ({
         fromBlock: "latest",
       });
       logs.forEach((data: any) => {
-        log("ZetaChain", `Event from onRevert: ${JSON.stringify(data)}`);
+        log("7001", `Event from onRevert: ${JSON.stringify(data)}`);
       });
     } catch (err) {
       const error = `onRevert failed: ${err}`;
-      logErr("ZetaChain", error);
-      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
+      logErr("7001", error);
+      log("7001", `Transferring tokens to abortAddress ${abortAddress}`);
       if (asset !== ethers.ZeroAddress) {
         const assetContract = new ethers.Contract(
           asset,
@@ -97,12 +96,12 @@ export const zetachainOnRevert = async ({
         });
       } catch (err) {
         const error = `onAbort failed: ${err}`;
-        logErr("ZetaChain", error);
+        logErr("7001", error);
       }
     }
   } else {
     log(
-      "ZetaChain",
+      "7001",
       `callOnRevert is false, transferring tokens to revertAddress ${revertAddress}`
     );
     try {
@@ -115,8 +114,8 @@ export const zetachainOnRevert = async ({
       await transferTx.wait();
     } catch (err) {
       const error = `Token transfer to revertAddress ${revertAddress} failed: ${err}`;
-      logErr("ZetaChain", error);
-      log("ZetaChain", `Transferring tokens to abortAddress ${abortAddress}`);
+      logErr("7001", error);
+      log("7001", `Transferring tokens to abortAddress ${abortAddress}`);
       const assetContract = new ethers.Contract(
         asset,
         ZRC20.abi,
@@ -138,7 +137,7 @@ export const zetachainOnRevert = async ({
         });
       } catch (err) {
         const error = `onAbort failed: ${err}`;
-        logErr("ZetaChain", error);
+        logErr("7001", error);
       }
     }
   }

@@ -10,9 +10,7 @@ export const zetachainDeposit = async ({
   args,
   chainID,
 }: any) => {
-  const receiver = args[1];
-  const amount = args[2];
-  const asset = args[3];
+  const [, receiver, amount, asset] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
@@ -24,7 +22,7 @@ export const zetachainDeposit = async ({
   }
 
   if (!foreignCoin) {
-    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
 
@@ -33,5 +31,5 @@ export const zetachainDeposit = async ({
     .connect(fungibleModuleSigner)
     .deposit(zrc20, amount, receiver, deployOpts);
   await tx.wait();
-  log("ZetaChain", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
+  log("7001", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);
 };

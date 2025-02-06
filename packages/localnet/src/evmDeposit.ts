@@ -17,12 +17,10 @@ export const evmDeposit = async ({
   foreignCoins,
   exitOnError = false,
   chainID,
-  chain,
   gatewayEVM,
   custody,
 }: {
   args: any;
-  chain: string;
   chainID: string;
   custody: any;
   deployer: any;
@@ -34,10 +32,8 @@ export const evmDeposit = async ({
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
-  log(chain, "Gateway: 'Deposited' event emitted");
-  const sender = args[0];
-  const amount = args[2];
-  const asset = args[3];
+  log(chainID, "Gateway: 'Deposited' event emitted");
+  const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
@@ -46,7 +42,7 @@ export const evmDeposit = async ({
   }
 
   if (!foreignCoin) {
-    logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+    logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
 
@@ -63,8 +59,7 @@ export const evmDeposit = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("ZetaChain", `Error depositing: ${err}`);
-    const revertOptions = args[5];
+    logErr("7001", `Error depositing: ${err}`);
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
       revertOptions[4]
@@ -96,7 +91,7 @@ export const evmDeposit = async ({
       return await evmOnRevert({
         amount: revertAmount,
         asset,
-        chain,
+        chainID,
         custody,
         err,
         gatewayEVM,
@@ -109,7 +104,6 @@ export const evmDeposit = async ({
       });
     } else {
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort
-      const revertOptions = args[5];
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       deployer.reset();
@@ -205,7 +199,7 @@ const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logErr("ZetaChain", `Error performing swap on Uniswap: ${swapError}`);
+    logErr("7001", `Error performing swap on Uniswap: ${swapError}`);
   }
 
   const amountInZeta = await getAmounts(

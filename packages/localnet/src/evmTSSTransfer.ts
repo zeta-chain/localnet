@@ -12,10 +12,7 @@ export const evmTSSTransfer = async ({
   foreignCoins: any[];
   tss: any;
 }) => {
-  const receiver = args[2];
-  const zrc20 = args[3];
-
-  const amount = args[4];
+  const [, , receiver, zrc20, amount] = args;
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;

@@ -1,4 +1,4 @@
-import { ethers, NonceManager } from "ethers";
+import { ethers } from "ethers";
 
 import { log, logErr } from "./log";
 import { zetachainExecute } from "./zetachainExecute";
@@ -11,13 +11,11 @@ export const evmCall = async ({
   fungibleModuleSigner,
   foreignCoins,
   chainID,
-  chain,
   exitOnError = false,
   deployer,
 }: {
   args: any;
-  chain: any;
-  chainID: any;
+  chainID: string;
   deployer: any;
   exitOnError?: any;
   foreignCoins: any;
@@ -25,12 +23,11 @@ export const evmCall = async ({
   protocolContracts: any;
   provider: any;
 }) => {
-  log(chain, "Gateway: 'Called' event emitted");
+  log(chainID, "Gateway: 'Called' event emitted");
   const sender = args[0];
   try {
     zetachainExecute({
       args,
-      chain,
       chainID,
       deployer,
       foreignCoins,
@@ -42,7 +39,7 @@ export const evmCall = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("ZetaChain", `Error executing onCall: ${err}`);
+    logErr("7001", `Error executing onCall: ${err}`);
     // No asset calls don't support reverts, so aborting
     const revertOptions = args[5];
     const abortAddress = revertOptions[2];

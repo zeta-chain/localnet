@@ -15,9 +15,7 @@ export const solanaDepositAndCall = async ({
   chainID,
   deployer,
 }: any) => {
-  const sender = args[0];
-  const amount = args[2];
-  const asset = args[3];
+  const [sender, , amount, asset] = args;
   try {
     console.log(
       ansis.magenta(
@@ -35,7 +33,7 @@ export const solanaDepositAndCall = async ({
     }
 
     if (!foreignCoin) {
-      logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+      logErr("7001", `Foreign coin not found for asset: ${asset}`);
       return;
     }
     await zetachainDepositAndCall({

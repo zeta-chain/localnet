@@ -15,14 +15,11 @@ export const solanaDeposit = async ({
   chainID,
   deployer,
 }: any) => {
-  const sender = args[0];
-  const amount = args[2];
-  const asset = args[3];
+  const [sender, , amount, asset] = args;
   try {
     console.log(
       ansis.magenta(`[${ansis.bold("Solana")}]: Gateway Deposit executed`)
     );
-    const asset = args[3];
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find(
@@ -34,7 +31,7 @@ export const solanaDeposit = async ({
     }
 
     if (!foreignCoin) {
-      logErr("ZetaChain", `Foreign coin not found for asset: ${asset}`);
+      logErr("7001", `Foreign coin not found for asset: ${asset}`);
       return;
     }
 
