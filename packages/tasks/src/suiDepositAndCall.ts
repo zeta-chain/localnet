@@ -29,15 +29,8 @@ const getFirstSuiCoin = async (
   return coins.data[0].coinObjectId;
 };
 
-const depositSuiToGateway = async (
-  mnemonic: string,
-  gatewayObjectId: string,
-  moduleId: string,
-  receiverEthAddress: string,
-  depositAmount: number,
-  values: any,
-  types: any
-) => {
+const suiDepositAndCall = async (args: any) => {
+  const { mnemonic, gateway, module, receiver, amount, types, values } = args;
   const valuesArray = values.map((value: any, index: any) => {
     const type = JSON.parse(types)[index];
 
@@ -71,15 +64,15 @@ const depositSuiToGateway = async (
   console.log(`Using SUI Coin: ${coinObjectId}`);
 
   const tx = new Transaction();
-  const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [depositAmount]);
+  const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [amount]);
   tx.moveCall({
     arguments: [
-      tx.object(gatewayObjectId),
+      tx.object(gateway),
       splittedCoin,
-      tx.pure.string(receiverEthAddress),
+      tx.pure.string(receiver),
       tx.pure.vector("u8", payload),
     ],
-    target: `${moduleId}::gateway::deposit_and_call`,
+    target: `${module}::gateway::deposit_and_call`,
     typeArguments: ["0x2::sui::SUI"],
   });
 
@@ -109,23 +102,7 @@ const depositSuiToGateway = async (
 export const suiDepositAndCallTask = task(
   "localnet:sui-deposit-and-call",
   "Sui deposit and call",
-  async (args) => {
-    const { mnemonic, gateway, module, receiver, amount, types, values } =
-      args as any;
-    try {
-      await depositSuiToGateway(
-        mnemonic,
-        gateway,
-        module,
-        receiver,
-        amount,
-        values,
-        types
-      );
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  }
+  suiDepositAndCall
 )
   .addParam("mnemonic", "Mnemonic for key generation")
   .addParam("gateway", "Gateway object ID")

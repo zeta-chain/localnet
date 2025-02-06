@@ -28,13 +28,8 @@ const getFirstSuiCoin = async (
   return coins.data[0].coinObjectId;
 };
 
-const depositSuiToGateway = async (
-  mnemonic: string,
-  gatewayObjectId: string,
-  moduleId: string,
-  receiverEthAddress: string,
-  depositAmount: number
-) => {
+const suiDeposit = async (args: any) => {
+  const { mnemonic, gateway, module, receiver, amount } = args;
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
   const keypair = getKeypairFromMnemonic(mnemonic);
@@ -45,15 +40,11 @@ const depositSuiToGateway = async (
   console.log(`Using SUI Coin: ${coinObjectId}`);
 
   const tx = new Transaction();
-  const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [depositAmount]);
+  const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [amount]);
 
   tx.moveCall({
-    arguments: [
-      tx.object(gatewayObjectId),
-      splittedCoin,
-      tx.pure.string(receiverEthAddress),
-    ],
-    target: `${moduleId}::gateway::deposit`,
+    arguments: [tx.object(gateway), splittedCoin, tx.pure.string(receiver)],
+    target: `${module}::gateway::deposit`,
     typeArguments: ["0x2::sui::SUI"],
   });
 
@@ -83,14 +74,7 @@ const depositSuiToGateway = async (
 export const suiDepositTask = task(
   "localnet:sui-deposit",
   "Sui deposit",
-  async (args) => {
-    const { mnemonic, gateway, module, receiver, amount } = args as any;
-    try {
-      await depositSuiToGateway(mnemonic, gateway, module, receiver, amount);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  }
+  suiDeposit
 )
   .addParam("mnemonic", "Mnemonic for key generation")
   .addParam("gateway", "Gateway object ID")
