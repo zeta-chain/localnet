@@ -29,36 +29,41 @@ export const suiSetup = async ({ handlers }: any) => {
   console.log("Address:", address);
 
   console.log("Requesting SUI from faucet...");
-  // don't await, because this is a user account
   requestSuiFromFaucetV0({
     host: "http://127.0.0.1:9123",
     recipient: address,
   });
 
   const keypair = new Ed25519Keypair();
+  const publisherAddress = keypair.toSuiAddress();
+  console.log("Publisher address:", publisherAddress);
+
   await requestSuiFromFaucetV0({
     host: "http://127.0.0.1:9123",
-    recipient: keypair.toSuiAddress(),
+    recipient: publisherAddress,
   });
 
   const gatewayPath = require.resolve("@zetachain/localnet/sui/gateway.json");
-
-  const gateway = JSON.parse(fs.readFileSync(gatewayPath).toString());
-
+  const gateway = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
   const { modules, dependencies } = gateway;
 
-  const tx = new Transaction();
-  tx.setGasBudget(GAS_BUDGET);
+  const publishTx = new Transaction();
+  publishTx.setGasBudget(GAS_BUDGET);
 
-  const [upgradeCap] = tx.publish({
+  const [upgradeCap] = publishTx.publish({
     dependencies,
     modules,
   });
 
-  tx.transferObjects([upgradeCap], keypair.toSuiAddress());
+  publishTx.transferObjects([upgradeCap], publisherAddress);
+
+  let moduleId: string | null = null;
+  let gatewayObjectId: string | null = null;
+  let adminCapObjectId: string | null = null;
+  let withdrawCapObjectId: string | null = null;
 
   try {
-    const result = await client.signAndExecuteTransaction({
+    const publishResult = await client.signAndExecuteTransaction({
       options: {
         showEffects: true,
         showEvents: true,
@@ -66,141 +71,114 @@ export const suiSetup = async ({ handlers }: any) => {
       },
       requestType: "WaitForLocalExecution",
       signer: keypair,
-      transaction: tx,
+      transaction: publishTx,
     });
 
-    await waitForConfirmation(client, result.digest);
+    await waitForConfirmation(client, publishResult.digest);
 
-    console.log("Deployment Result:", result);
+    console.log("Publish / Deployment Result:", publishResult);
 
-    const publishedModule = result.objectChanges?.find(
+    const publishedModule = publishResult.objectChanges?.find(
       (change) => change.type === "published"
     );
+    if (publishedModule) {
+      moduleId = (publishedModule as any).packageId;
+      console.log("Published Module ID:", moduleId);
+    }
 
-    const gatewayObject: any = result.objectChanges?.find(
+    const gatewayObject = publishResult.objectChanges?.find(
       (change) =>
         change.type === "created" &&
         change.objectType.includes("gateway::Gateway")
     );
-
-    const withdrawCapObject: any = result.objectChanges?.find(
+    const withdrawCapObject = publishResult.objectChanges?.find(
       (change) =>
         change.type === "created" &&
         change.objectType.includes("gateway::WithdrawCap")
     );
+    const adminCapObject = publishResult.objectChanges?.find(
+      (change) =>
+        change.type === "created" &&
+        change.objectType.includes("gateway::AdminCap")
+    );
 
-    if (publishedModule && gatewayObject) {
-      const moduleId = publishedModule.packageId;
-      const gatewayObjectId = gatewayObject.objectId;
-      const withdrawCapObjectId = withdrawCapObject.objectId;
-
-      console.log("Published Module ID:", moduleId);
+    if (gatewayObject) {
+      gatewayObjectId = (gatewayObject as any).objectId;
       console.log("Gateway Object ID:", gatewayObjectId);
-      console.log("Withdraw Cap Object ID:", withdrawCapObject.objectId);
-
-      await registerVault(client, keypair, moduleId, gatewayObjectId);
-      pollEvents(
-        client,
-        moduleId,
-        handlers,
-        keypair,
-        moduleId,
-        gatewayObjectId,
-        withdrawCapObjectId
-      );
     } else {
-      console.log("No module or gateway object found.");
+      console.warn("No Gateway object found after publish.");
+    }
+
+    if (withdrawCapObject) {
+      withdrawCapObjectId = (withdrawCapObject as any).objectId;
+      console.log("Withdraw Cap Object ID:", withdrawCapObjectId);
+    } else {
+      console.warn("No WithdrawCap object found after publish.");
+    }
+
+    if (adminCapObject) {
+      adminCapObjectId = (adminCapObject as any).objectId;
+      console.log("AdminCap Object ID:", adminCapObjectId);
+    } else {
+      console.warn("No AdminCap object found after publish.");
     }
   } catch (error) {
-    console.error("Deployment failed:", error);
+    console.error("Publish/Deployment failed:", error);
+    return;
+  }
+
+  if (!moduleId || !gatewayObjectId || !adminCapObjectId) {
+    console.error("Cannot whitelist SUI — missing module/gateway/admin cap");
+    return;
+  }
+
+  try {
+    const whitelistTx = new Transaction();
+    whitelistTx.setGasBudget(GAS_BUDGET);
+
+    whitelistTx.moveCall({
+      target: `${moduleId}::gateway::whitelist`,
+      typeArguments: ["0x2::sui::SUI"],
+      arguments: [
+        whitelistTx.object(gatewayObjectId),
+        whitelistTx.object(adminCapObjectId),
+      ],
+    });
+
+    const whitelistResult = await client.signAndExecuteTransaction({
+      options: {
+        showEffects: true,
+        showEvents: true,
+        showObjectChanges: true,
+      },
+      requestType: "WaitForLocalExecution",
+      signer: keypair,
+      transaction: whitelistTx,
+    });
+
+    await waitForConfirmation(client, whitelistResult.digest);
+    console.log(
+      "Successfully whitelisted SUI:",
+      whitelistResult.effects?.status
+    );
+
+    pollEvents(
+      client,
+      moduleId,
+      handlers,
+      keypair,
+      moduleId,
+      gatewayObjectId,
+      withdrawCapObjectId as string
+    );
+  } catch (error) {
+    console.error("Whitelisting SUI failed:", error);
   }
 };
 
-const registerVault = async (
-  client: SuiClient,
-  keypair: Ed25519Keypair,
-  moduleId: string,
-  gatewayObjectId: string
-) => {
-  console.log("Registering Vault...");
-
-  const adminCapType = `${moduleId}::gateway::AdminCap`;
-
-  const adminCapId = await findOwnedObject(client, keypair, adminCapType);
-
-  if (!adminCapId || !gatewayObjectId) {
-    console.error(`Missing AdminCap or Gateway Object`);
-    throw new Error("AdminCap or Gateway not found!");
-  }
-
-  console.log(`AdminCap Found: ${adminCapId}`);
-  console.log(`Gateway Found: ${gatewayObjectId}`);
-
-  const secondKeypair = new Ed25519Keypair();
-  await requestSuiFromFaucetV0({
-    host: "http://127.0.0.1:9123",
-    recipient: secondKeypair.toSuiAddress(),
-  });
-
-  console.log("Transferring AdminCap to second signer...");
-
-  const transferTx = new Transaction();
-  transferTx.setGasBudget(GAS_BUDGET);
-  transferTx.transferObjects(
-    [transferTx.object(adminCapId)],
-    secondKeypair.toSuiAddress()
-  );
-
-  const result = await client.signAndExecuteTransaction({
-    requestType: "WaitForLocalExecution",
-    signer: keypair,
-    transaction: transferTx,
-  });
-
-  await waitForConfirmation(client, result.digest);
-
-  console.log("AdminCap transferred successfully.");
-
-  console.log("Registering vault with second signer...");
-
-  const registerTx = new Transaction();
-  registerTx.setGasBudget(GAS_BUDGET);
-  registerTx.moveCall({
-    arguments: [
-      registerTx.object(gatewayObjectId),
-      registerTx.object(adminCapId),
-    ],
-    target: `${moduleId}::gateway::register_vault`,
-    typeArguments: ["0x2::sui::SUI"],
-  });
-
-  const registerResult = await client.signAndExecuteTransaction({
-    requestType: "WaitForLocalExecution",
-    signer: secondKeypair,
-    transaction: registerTx,
-  });
-
-  await waitForConfirmation(client, registerResult.digest);
-
-  console.log("Vault registered successfully!", registerResult);
-};
-
-const findOwnedObject = async (
-  client: SuiClient,
-  keypair: Ed25519Keypair,
-  typeName: string
-) => {
-  const objects = await client.getOwnedObjects({
-    options: { showContent: true, showOwner: true, showType: true },
-    owner: keypair.toSuiAddress(),
-  });
-
-  const matchingObject: any = objects.data.find(
-    (obj) => obj.data?.type === typeName
-  );
-
-  return matchingObject ? matchingObject.data.objectId : null;
-};
+//
+// === Helpers ===
+//
 
 const waitForConfirmation = async (
   client: SuiClient,

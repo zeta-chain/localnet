@@ -78,7 +78,7 @@ const depositSuiToGateway = async (
     transaction: tx,
   });
 
-  // console.log("Deposit Result:", result);
+  console.log("Deposit Result:", result);
 
   const depositEvent = result.events?.find((event) =>
     event.type.includes("gateway::DepositEvent")
