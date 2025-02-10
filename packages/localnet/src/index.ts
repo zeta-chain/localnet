@@ -291,7 +291,7 @@ export const initLocalnet = async ({
     console.error("Solana CLI not available. Skipping setup.");
   }
 
-  await suiSetup({
+  const suiAddresses = await suiSetup({
     handlers: {
       deposit: (args: any) => {
         suiDeposit({
@@ -524,6 +524,7 @@ export const initLocalnet = async ({
   );
 
   return [
+    ...suiAddresses,
     ...Object.entries(protocolContracts)
       .filter(([_, value]) => value.target !== undefined)
       .map(([key, value]) => {

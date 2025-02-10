@@ -139,6 +139,19 @@ export const suiSetup = async ({ handlers }: any) => {
     gatewayObjectId,
     withdrawCapObjectId as string
   );
+
+  return [
+    {
+      address: moduleId,
+      type: "gatewayModuleID",
+      chain: "sui",
+    },
+    {
+      address: gatewayObjectId,
+      type: "gatewayObjectId",
+      chain: "sui",
+    },
+  ];
 };
 const waitForConfirmation = async (
   client: SuiClient,
