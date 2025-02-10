@@ -16,6 +16,7 @@ import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";
 import { isSolanaAvailable } from "./isSolanaAvailable";
+import { isSuiAvailable } from "./isSuiAvailable";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
@@ -262,7 +263,7 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
 }) => {
-  let solanaAddresses: any;
+  let solanaAddresses: any = [];
   if (isSolanaAvailable()) {
     solanaAddresses = solanaSetup({
       handlers: {
@@ -292,34 +293,38 @@ export const initLocalnet = async ({
     console.error("Solana CLI not available. Skipping setup.");
   }
 
-  const suiAddresses = suiSetup({
-    handlers: {
-      deposit: (args: any) => {
-        suiDeposit({
-          args,
-          asset: ethers.ZeroAddress,
-          chainID: "103",
-          deployer,
-          foreignCoins,
-          fungibleModuleSigner,
-          protocolContracts,
-          provider,
-        });
+  let suiAddresses: any = [];
+
+  if (isSuiAvailable()) {
+    suiAddresses = suiSetup({
+      handlers: {
+        deposit: (args: any) => {
+          suiDeposit({
+            args,
+            asset: ethers.ZeroAddress,
+            chainID: "103",
+            deployer,
+            foreignCoins,
+            fungibleModuleSigner,
+            protocolContracts,
+            provider,
+          });
+        },
+        depositAndCall: (args: any) => {
+          suiDepositAndCall({
+            args,
+            asset: ethers.ZeroAddress,
+            chainID: "103",
+            deployer,
+            foreignCoins,
+            fungibleModuleSigner,
+            protocolContracts,
+            provider,
+          });
+        },
       },
-      depositAndCall: (args: any) => {
-        suiDepositAndCall({
-          args,
-          asset: ethers.ZeroAddress,
-          chainID: "103",
-          deployer,
-          foreignCoins,
-          fungibleModuleSigner,
-          protocolContracts,
-          provider,
-        });
-      },
-    },
-  });
+    });
+  }
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
