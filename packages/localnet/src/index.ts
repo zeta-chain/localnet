@@ -262,8 +262,9 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
 }) => {
+  let solanaAddresses: any;
   if (isSolanaAvailable()) {
-    solanaSetup({
+    solanaAddresses = solanaSetup({
       handlers: {
         deposit: (args: any) =>
           solanaDeposit({
@@ -291,7 +292,7 @@ export const initLocalnet = async ({
     console.error("Solana CLI not available. Skipping setup.");
   }
 
-  const suiAddresses = await suiSetup({
+  const suiAddresses = suiSetup({
     handlers: {
       deposit: (args: any) => {
         suiDeposit({
@@ -524,7 +525,8 @@ export const initLocalnet = async ({
   );
 
   return [
-    ...suiAddresses,
+    ...(await suiAddresses),
+    ...(await solanaAddresses),
     ...Object.entries(protocolContracts)
       .filter(([_, value]) => value.target !== undefined)
       .map(([key, value]) => {

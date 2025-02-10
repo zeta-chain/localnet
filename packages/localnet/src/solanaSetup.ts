@@ -46,6 +46,8 @@ export const solanaSetup = async ({ handlers }: any) => {
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
   );
 
+  const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
+
   try {
     if (!fs.existsSync(gatewayKeypairPath)) {
       throw new Error(`Keypair file not found: ${gatewayKeypairPath}`);
@@ -64,7 +66,6 @@ export const solanaSetup = async ({ handlers }: any) => {
     const address = addressBuffer.slice(-20);
     const tssAddress = Array.from(address);
 
-    const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
     const connection = gatewayProgram.provider.connection;
 
     // Airdrop into the payer so it has enough SOL
@@ -126,6 +127,13 @@ export const solanaSetup = async ({ handlers }: any) => {
     }
     throw error;
   }
+  return [
+    {
+      address: gatewayProgram.programId.toBase58(),
+      type: "gatewayProgram",
+      chain: "solana",
+    },
+  ];
 };
 
 export const solanaMonitorTransactions = async ({ handlers }: any) => {
