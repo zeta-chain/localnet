@@ -151,6 +151,11 @@ export const suiSetup = async ({ handlers }: any) => {
       type: "gatewayObjectId",
       chain: "sui",
     },
+    {
+      address: user.mnemonic,
+      type: "userMnemonic",
+      chain: "sui",
+    },
   ];
 };
 const waitForConfirmation = async (

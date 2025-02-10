@@ -46,6 +46,8 @@ export const solanaSetup = async ({ handlers }: any) => {
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
   );
 
+  console.log("!!!PAYER", payer.publicKey.toBase58());
+
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   try {
@@ -139,10 +141,6 @@ export const solanaSetup = async ({ handlers }: any) => {
 export const solanaMonitorTransactions = async ({ handlers }: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
   const connection = gatewayProgram.provider.connection;
-
-  console.log(
-    `Monitoring new transactions for program: ${gatewayProgram.programId.toBase58()}`
-  );
 
   let lastSignature: string;
 
