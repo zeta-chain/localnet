@@ -7,21 +7,24 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 
 const GAS_BUDGET = 5_000_000_000;
+const NODE_RPC = "http://127.0.0.1:9000";
+const FAUCET_URL = "http://127.0.0.1:9123";
+const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
+const MNEMONIC =
+  "grape subway rack mean march bubble carry avoid muffin consider thing street";
 
-const generateAccount = () => {
-  const mnemonic =
-    "grape subway rack mean march bubble carry avoid muffin consider thing street";
+const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);
   const hdKey = HDKey.fromMasterSeed(seed);
-  const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
+  const derivedKey = hdKey.derive(DERIVATION_PATH);
   const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
   return { keypair, mnemonic };
 };
 
 export const suiSetup = async ({ handlers }: any) => {
-  const client = new SuiClient({ url: "http://127.0.0.1:9000" });
+  const client = new SuiClient({ url: NODE_RPC });
 
-  const user = generateAccount();
+  const user = generateAccount(MNEMONIC);
   const address = user.keypair.toSuiAddress();
 
   console.log("Generated new Sui account:");
@@ -29,17 +32,14 @@ export const suiSetup = async ({ handlers }: any) => {
   console.log("Address:", address);
 
   console.log("Requesting SUI from faucet...");
-  requestSuiFromFaucetV0({
-    host: "http://127.0.0.1:9123",
-    recipient: address,
-  });
+  requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address });
 
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.toSuiAddress();
   console.log("Publisher address:", publisherAddress);
 
   await requestSuiFromFaucetV0({
-    host: "http://127.0.0.1:9123",
+    host: FAUCET_URL,
     recipient: publisherAddress,
   });
 
