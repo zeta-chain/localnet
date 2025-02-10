@@ -132,8 +132,8 @@ export const solanaSetup = async ({ handlers }: any) => {
   return [
     {
       address: gatewayProgram.programId.toBase58(),
-      type: "gatewayProgram",
       chain: "solana",
+      type: "gatewayProgram",
     },
   ];
 };

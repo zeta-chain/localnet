@@ -143,18 +143,18 @@ export const suiSetup = async ({ handlers }: any) => {
   return [
     {
       address: moduleId,
-      type: "gatewayModuleID",
       chain: "sui",
+      type: "gatewayModuleID",
     },
     {
       address: gatewayObjectId,
-      type: "gatewayObjectId",
       chain: "sui",
+      type: "gatewayObjectId",
     },
     {
       address: user.mnemonic,
-      type: "userMnemonic",
       chain: "sui",
+      type: "userMnemonic",
     },
   ];
 };
