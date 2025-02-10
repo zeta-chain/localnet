@@ -62,124 +62,84 @@ export const suiSetup = async ({ handlers }: any) => {
   let adminCapObjectId: string | null = null;
   let withdrawCapObjectId: string | null = null;
 
-  try {
-    const publishResult = await client.signAndExecuteTransaction({
-      options: {
-        showEffects: true,
-        showEvents: true,
-        showObjectChanges: true,
-      },
-      requestType: "WaitForLocalExecution",
-      signer: keypair,
-      transaction: publishTx,
-    });
+  const publishResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: publishTx,
+  });
 
-    await waitForConfirmation(client, publishResult.digest);
+  await waitForConfirmation(client, publishResult.digest);
 
-    console.log("Publish / Deployment Result:", publishResult);
+  const publishedModule = publishResult.objectChanges?.find(
+    (change) => change.type === "published"
+  );
 
-    const publishedModule = publishResult.objectChanges?.find(
-      (change) => change.type === "published"
-    );
-    if (publishedModule) {
-      moduleId = (publishedModule as any).packageId;
-      console.log("Published Module ID:", moduleId);
-    }
+  const gatewayObject = publishResult.objectChanges?.find(
+    (change) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::Gateway")
+  );
+  const withdrawCapObject = publishResult.objectChanges?.find(
+    (change) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::WithdrawCap")
+  );
+  const adminCapObject = publishResult.objectChanges?.find(
+    (change) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::AdminCap")
+  );
 
-    const gatewayObject = publishResult.objectChanges?.find(
-      (change) =>
-        change.type === "created" &&
-        change.objectType.includes("gateway::Gateway")
-    );
-    const withdrawCapObject = publishResult.objectChanges?.find(
-      (change) =>
-        change.type === "created" &&
-        change.objectType.includes("gateway::WithdrawCap")
-    );
-    const adminCapObject = publishResult.objectChanges?.find(
-      (change) =>
-        change.type === "created" &&
-        change.objectType.includes("gateway::AdminCap")
-    );
-
-    if (gatewayObject) {
-      gatewayObjectId = (gatewayObject as any).objectId;
-      console.log("Gateway Object ID:", gatewayObjectId);
-    } else {
-      console.warn("No Gateway object found after publish.");
-    }
-
-    if (withdrawCapObject) {
-      withdrawCapObjectId = (withdrawCapObject as any).objectId;
-      console.log("Withdraw Cap Object ID:", withdrawCapObjectId);
-    } else {
-      console.warn("No WithdrawCap object found after publish.");
-    }
-
-    if (adminCapObject) {
-      adminCapObjectId = (adminCapObject as any).objectId;
-      console.log("AdminCap Object ID:", adminCapObjectId);
-    } else {
-      console.warn("No AdminCap object found after publish.");
-    }
-  } catch (error) {
-    console.error("Publish/Deployment failed:", error);
-    return;
+  if (publishedModule) {
+    moduleId = (publishedModule as any).packageId;
+    console.log("Published Module ID:", moduleId);
+  } else {
+    throw new Error("Failed to get module ID");
   }
 
-  if (!moduleId || !gatewayObjectId || !adminCapObjectId) {
-    console.error("Cannot whitelist SUI — missing module/gateway/admin cap");
-    return;
+  if (gatewayObject) {
+    gatewayObjectId = (gatewayObject as any).objectId;
+    console.log("Gateway Object ID:", gatewayObjectId);
+  } else {
+    console.warn("No Gateway object found after publish.");
   }
 
-  try {
-    const whitelistTx = new Transaction();
-    whitelistTx.setGasBudget(GAS_BUDGET);
-
-    whitelistTx.moveCall({
-      arguments: [
-        whitelistTx.object(gatewayObjectId),
-        whitelistTx.object(adminCapObjectId),
-      ],
-      target: `${moduleId}::gateway::whitelist`,
-      typeArguments: ["0x2::sui::SUI"],
-    });
-
-    const whitelistResult = await client.signAndExecuteTransaction({
-      options: {
-        showEffects: true,
-        showEvents: true,
-        showObjectChanges: true,
-      },
-      requestType: "WaitForLocalExecution",
-      signer: keypair,
-      transaction: whitelistTx,
-    });
-
-    await waitForConfirmation(client, whitelistResult.digest);
-    console.log(
-      "Successfully whitelisted SUI:",
-      whitelistResult.effects?.status
-    );
-
-    pollEvents(
-      client,
-      moduleId,
-      handlers,
-      keypair,
-      moduleId,
-      gatewayObjectId,
-      withdrawCapObjectId as string
-    );
-  } catch (error) {
-    console.error("Whitelisting SUI failed:", error);
+  if (withdrawCapObject) {
+    withdrawCapObjectId = (withdrawCapObject as any).objectId;
+    console.log("Withdraw Cap Object ID:", withdrawCapObjectId);
+  } else {
+    console.warn("No WithdrawCap object found after publish.");
   }
+
+  if (adminCapObject) {
+    adminCapObjectId = (adminCapObject as any).objectId;
+    console.log("AdminCap Object ID:", adminCapObjectId);
+  } else {
+    console.warn("No AdminCap object found after publish.");
+  }
+
+  if (!moduleId) {
+    throw new Error("Failed to get module ID");
+  }
+
+  if (!gatewayObjectId) {
+    throw new Error("Failed to get gateway object ID");
+  }
+
+  pollEvents(
+    client,
+    moduleId,
+    handlers,
+    keypair,
+    gatewayObjectId,
+    withdrawCapObjectId as string
+  );
 };
-
-//
-// === Helpers ===
-//
-
 const waitForConfirmation = async (
   client: SuiClient,
   digest: string,
@@ -208,7 +168,6 @@ const pollEvents = async (
   packageId: string,
   handlers: any,
   keypair: Ed25519Keypair,
-  moduleId: string,
   gatewayObjectId: string,
   withdrawCapObjectId: string
 ) => {
@@ -243,7 +202,7 @@ const pollEvents = async (
               event: event.parsedJson,
               gatewayObjectId,
               keypair,
-              moduleId,
+              packageId,
               receiver,
               sender,
               withdrawCapObjectId,
@@ -255,7 +214,7 @@ const pollEvents = async (
               event: event.parsedJson,
               gatewayObjectId,
               keypair,
-              moduleId,
+              packageId,
               payload,
               receiver,
               sender,
