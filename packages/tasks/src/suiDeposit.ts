@@ -61,11 +61,11 @@ const suiDeposit = async (args: any) => {
     transaction: tx,
   });
 
-  const depositEvent = result.events?.find((evt) =>
+  const event = result.events?.find((evt) =>
     evt.type.includes("gateway::DepositEvent")
   );
-  if (depositEvent) {
-    console.log("Deposit Event:", depositEvent.parsedJson);
+  if (event) {
+    console.log("Event:", event.parsedJson);
   } else {
     console.log("No Deposit Event found.");
   }

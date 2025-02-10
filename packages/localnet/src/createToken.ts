@@ -9,7 +9,8 @@ export const createToken = async (
   custody: any,
   symbol: string,
   isGasToken: boolean,
-  chainID: string
+  chainID: string,
+  decimals: number
 ) => {
   let erc20;
 
@@ -35,7 +36,7 @@ export const createToken = async (
     .deploy(
       `ZRC-20 ${symbol} on ${chainID}`,
       `ZRC20${symbol}`,
-      18,
+      decimals,
       chainID,
       isGasToken ? 1 : 2,
       1,

@@ -365,12 +365,19 @@ export const initLocalnet = async ({
     tss,
   };
 
-  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5");
-  await createToken(addresses, contractsEthereum.custody, "USDC", false, "5");
-  await createToken(addresses, contractsBNB.custody, "BNB", true, "97");
-  await createToken(addresses, contractsBNB.custody, "USDC", false, "97");
-  await createToken(addresses, null, "SOL", true, "901");
-  await createToken(addresses, null, "SUI", true, "103");
+  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5", 18);
+  await createToken(
+    addresses,
+    contractsEthereum.custody,
+    "USDC",
+    false,
+    "5",
+    18
+  );
+  await createToken(addresses, contractsBNB.custody, "BNB", true, "97", 18);
+  await createToken(addresses, contractsBNB.custody, "USDC", false, "97", 18);
+  await createToken(addresses, null, "SOL", true, "901", 9);
+  await createToken(addresses, null, "SUI", true, "103", 9);
 
   const evmContracts = {
     5: contractsEthereum,

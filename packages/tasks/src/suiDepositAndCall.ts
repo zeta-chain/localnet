@@ -42,6 +42,8 @@ const suiDepositAndCall = async (args: any) => {
       }
     } else if (type.startsWith("uint") || type.startsWith("int")) {
       return BigInt(value);
+    } else if (type === "bytes") {
+      return ethers.toUtf8Bytes(value);
     } else {
       return value;
     }
@@ -89,14 +91,14 @@ const suiDepositAndCall = async (args: any) => {
     transaction: tx,
   });
 
-  const depositEvent = result.events?.find((evt) =>
-    evt.type.includes("gateway::DepositAndCallEvent")
-  );
-  if (depositEvent) {
-    console.log("Event:", depositEvent.parsedJson);
-  } else {
-    console.log("No Event found.");
-  }
+  // const event = result.events?.find((evt) =>
+  //   evt.type.includes("gateway::DepositAndCallEvent")
+  // );
+  // if (event) {
+  //   console.log("Event:", event.parsedJson);
+  // } else {
+  //   console.log("No Event found.");
+  // }
 };
 
 export const suiDepositAndCallTask = task(
