@@ -43,7 +43,7 @@ const suiDepositAndCall = async (args: any) => {
     } else if (type.startsWith("uint") || type.startsWith("int")) {
       return BigInt(value);
     } else if (type === "bytes") {
-      return ethers.toUtf8Bytes(value);
+      return value.startsWith("0x") ? value : ethers.toUtf8Bytes(value);
     } else {
       return value;
     }
