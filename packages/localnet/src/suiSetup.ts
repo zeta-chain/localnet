@@ -211,8 +211,6 @@ const pollEvents = async (
       if (data.length > 0) {
         for (const event of data) {
           const { amount, receiver, sender, payload } = event.parsedJson as any;
-          console.log(event);
-
           if (event.type === DEPOSIT_EVENT_TYPE) {
             handlers.deposit({
               amount,
