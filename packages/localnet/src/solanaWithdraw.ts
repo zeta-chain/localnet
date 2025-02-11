@@ -3,8 +3,8 @@ import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
-import { log, logErr } from "./log";
 
+import { log, logErr } from "./log";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, tssKeyPair } from "./solanaSetup";
 

@@ -1,7 +1,7 @@
+import { log } from "./log";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
-import { log } from "./log";
 
 export const suiDeposit = async ({
   asset,
