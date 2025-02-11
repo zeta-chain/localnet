@@ -43,7 +43,6 @@ export const zetachainDepositAndCall = async ({
     .connect(fungibleModuleSigner)
     .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
   await tx.wait();
-  console.log("!!!", receiver);
   const logs = await provider.getLogs({
     address: receiver,
     fromBlock: "latest",

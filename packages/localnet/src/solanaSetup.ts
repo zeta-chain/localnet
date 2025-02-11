@@ -46,8 +46,6 @@ export const solanaSetup = async ({ handlers }: any) => {
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
   );
 
-  console.log("!!!PAYER", payer.publicKey.toBase58());
-
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   try {
