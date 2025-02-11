@@ -7,6 +7,7 @@ import { AbiCoder, ethers } from "ethers";
 import { task } from "hardhat/config";
 
 const GAS_BUDGET = 5_000_000_000;
+const COIN_TYPE = "0x2::sui::SUI";
 
 const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
   const seed = mnemonicToSeedSync(mnemonic);
@@ -20,7 +21,7 @@ const getFirstSuiCoin = async (
   owner: string
 ): Promise<string> => {
   const coins = await client.getCoins({
-    coinType: "0x2::sui::SUI",
+    coinType: COIN_TYPE,
     owner,
   });
   if (!coins.data.length) {
@@ -75,7 +76,7 @@ const suiDepositAndCall = async (args: any) => {
       tx.pure.vector("u8", payload),
     ],
     target: `${module}::gateway::deposit_and_call`,
-    typeArguments: ["0x2::sui::SUI"],
+    typeArguments: [COIN_TYPE],
   });
 
   tx.setGasBudget(GAS_BUDGET);
@@ -90,15 +91,6 @@ const suiDepositAndCall = async (args: any) => {
     signer: keypair,
     transaction: tx,
   });
-
-  // const event = result.events?.find((evt) =>
-  //   evt.type.includes("gateway::DepositAndCallEvent")
-  // );
-  // if (event) {
-  //   console.log("Event:", event.parsedJson);
-  // } else {
-  //   console.log("No Event found.");
-  // }
 };
 
 export const suiDepositAndCallTask = task(
