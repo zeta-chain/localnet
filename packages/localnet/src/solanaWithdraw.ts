@@ -1,9 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import ansis from "ansis";
 import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
+import { log, logErr } from "./log";
 
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, tssKeyPair } from "./solanaSetup";
@@ -50,21 +50,14 @@ export const solanaWithdraw = async (recipient: string, amount: bigint) => {
         recipient: new PublicKey(recipient),
       })
       .rpc();
-    console.log(
-      ansis.magenta(
-        `[${ansis.bold(
-          "Solana"
-        )}]: Executing Gateway withdraw, sending ${ethers.formatUnits(
-          amount,
-          9
-        )} SOL to ${recipient}`
-      )
+    log(
+      "901",
+      `Executing Gateway withdraw, sending ${ethers.formatUnits(
+        amount,
+        9
+      )} SOL to ${recipient}`
     );
   } catch (err) {
-    console.error(
-      ansis.red(
-        `[${ansis.bold("Solana")}]: Error executing Gateway withdraw, ${err}`
-      )
-    );
+    logErr("901", `Error executing Gateway withdraw, ${err}`);
   }
 };

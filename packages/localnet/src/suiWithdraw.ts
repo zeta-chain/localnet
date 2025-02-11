@@ -1,6 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
-import ansis from "ansis";
 import { ethers } from "ethers";
+import { log } from "./log";
 
 export const suiWithdraw = async ({
   amount,
@@ -31,13 +31,12 @@ export const suiWithdraw = async ({
     signer: keypair,
     transaction: tx,
   });
-  console.log(
-    ansis.blue(
-      `[${ansis.bold("Sui")}]: Withdrawing ${ethers.formatUnits(
-        amount,
-        9
-      )} SUI tokens from the Gateway to ${sender}`
-    )
+  log(
+    "103",
+    `Withdrawing ${ethers.formatUnits(
+      amount,
+      9
+    )} SUI tokens from the Gateway to ${sender}`
   );
 };
 

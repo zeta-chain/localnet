@@ -1,7 +1,6 @@
-import ansis from "ansis";
 import { ethers } from "ethers";
 
-import { logErr } from "./log";
+import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
@@ -17,9 +16,7 @@ export const solanaDeposit = async ({
 }: any) => {
   const [sender, , amount, asset] = args;
   try {
-    console.log(
-      ansis.magenta(`[${ansis.bold("Solana")}]: Gateway Deposit executed`)
-    );
+    log("901", "Gateway Deposit executed");
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find(

@@ -1,8 +1,7 @@
-import ansis from "ansis";
-
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
+import { log } from "./log";
 
 export const suiDeposit = async ({
   asset,
@@ -15,13 +14,7 @@ export const suiDeposit = async ({
   args,
 }: any) => {
   try {
-    console.log(
-      ansis.blue(
-        `[${ansis.bold("Sui")}]: Gateway deposit event, ${JSON.stringify(
-          args.event
-        )}`
-      )
-    );
+    log("103", `Gateway deposit event, ${JSON.stringify(args.event)}`);
     await zetachainDeposit({
       args: [null, args.receiver, args.amount, asset],
       chainID,
