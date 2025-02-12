@@ -45,8 +45,7 @@ export const zetachainWithdraw = async ({
 
     if (isSolana) {
       const receiverAddress = ethers.toUtf8String(receiver);
-      const amountFormatted = amount / BigInt(10 ** 9);
-      await solanaWithdraw(receiverAddress, amountFormatted);
+      await solanaWithdraw(receiverAddress, amount);
     } else {
       if (isGasToken) {
         await evmTSSTransfer({ args, foreignCoins, tss });

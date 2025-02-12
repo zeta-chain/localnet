@@ -30,8 +30,8 @@ export const zetachainDepositAndCall = async ({
 
   const context = {
     chainID,
-    origin: chainID === "901" ? sender : ethers.ZeroAddress,
-    sender: chainID === "901" ? ethers.ZeroAddress : sender,
+    origin: ["901", "103"].includes(chainID) ? sender : ethers.ZeroAddress,
+    sender: ["901", "103"].includes(chainID) ? ethers.ZeroAddress : sender,
   };
   log(
     "7001",

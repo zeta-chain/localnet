@@ -16,9 +16,13 @@ import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";
 import { isSolanaAvailable } from "./isSolanaAvailable";
+import { isSuiAvailable } from "./isSuiAvailable";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
+import { suiDeposit } from "./suiDeposit";
+import { suiDepositAndCall } from "./suiDepositAndCall";
+import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
@@ -259,8 +263,9 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
 }) => {
+  let solanaAddresses: any = [];
   if (isSolanaAvailable()) {
-    solanaSetup({
+    solanaAddresses = solanaSetup({
       handlers: {
         deposit: (args: any) =>
           solanaDeposit({
@@ -286,6 +291,39 @@ export const initLocalnet = async ({
     });
   } else {
     console.error("Solana CLI not available. Skipping setup.");
+  }
+
+  let suiAddresses: any = [];
+
+  if (isSuiAvailable()) {
+    suiAddresses = suiSetup({
+      handlers: {
+        deposit: (args: any) => {
+          suiDeposit({
+            args,
+            asset: ethers.ZeroAddress,
+            chainID: "103",
+            deployer,
+            foreignCoins,
+            fungibleModuleSigner,
+            protocolContracts,
+            provider,
+          });
+        },
+        depositAndCall: (args: any) => {
+          suiDepositAndCall({
+            args,
+            asset: ethers.ZeroAddress,
+            chainID: "103",
+            deployer,
+            foreignCoins,
+            fungibleModuleSigner,
+            protocolContracts,
+            provider,
+          });
+        },
+      },
+    });
   }
 
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
@@ -333,11 +371,19 @@ export const initLocalnet = async ({
     tss,
   };
 
-  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5");
-  await createToken(addresses, contractsEthereum.custody, "USDC", false, "5");
-  await createToken(addresses, contractsBNB.custody, "BNB", true, "97");
-  await createToken(addresses, contractsBNB.custody, "USDC", false, "97");
-  await createToken(addresses, null, "SOL", true, "901");
+  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5", 18);
+  await createToken(
+    addresses,
+    contractsEthereum.custody,
+    "USDC",
+    false,
+    "5",
+    18
+  );
+  await createToken(addresses, contractsBNB.custody, "BNB", true, "97", 18);
+  await createToken(addresses, contractsBNB.custody, "USDC", false, "97", 18);
+  await createToken(addresses, null, "SOL", true, "901", 9);
+  await createToken(addresses, null, "SUI", true, "103", 9);
 
   const evmContracts = {
     5: contractsEthereum,
@@ -484,6 +530,8 @@ export const initLocalnet = async ({
   );
 
   return [
+    ...(await suiAddresses),
+    ...(await solanaAddresses),
     ...Object.entries(protocolContracts)
       .filter(([_, value]) => value.target !== undefined)
       .map(([key, value]) => {
