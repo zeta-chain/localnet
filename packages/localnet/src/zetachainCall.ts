@@ -32,6 +32,7 @@ export const zetachainCall = async ({
 
   try {
     await evmExecute({
+      amount: 0,
       callOptions,
       evmContracts,
       foreignCoins,
@@ -41,7 +42,6 @@ export const zetachainCall = async ({
       sender,
       tss,
       zrc20,
-      amount: 0,
     });
   } catch (err: any) {
     if (exitOnError) {

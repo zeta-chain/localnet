@@ -15,6 +15,7 @@ export const evmExecute = async ({
   callOptions,
   amount,
 }: {
+  amount: BigNumberish;
   callOptions: any;
   evmContracts: any;
   foreignCoins: any[];
@@ -24,7 +25,6 @@ export const evmExecute = async ({
   sender: any;
   tss: any;
   zrc20: any;
-  amount: BigNumberish;
 }) => {
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
