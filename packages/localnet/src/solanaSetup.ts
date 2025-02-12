@@ -1,16 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Keypair } from "@solana/web3.js";
+import * as bip39 from "bip39";
 import { exec } from "child_process";
 import { ec as EC } from "elliptic";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 import * as fs from "fs";
+import * as os from "os";
 import path from "path";
 import util from "util";
-import * as bip39 from "bip39";
-import { Keypair } from "@solana/web3.js";
-import { MNEMONIC } from "./suiSetup";
+
 import Gateway_IDL from "./solana/idl/gateway.json";
-import * as os from "os";
+import { MNEMONIC } from "./suiSetup";
 
 const execAsync = util.promisify(exec);
 

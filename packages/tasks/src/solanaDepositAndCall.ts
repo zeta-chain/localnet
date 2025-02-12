@@ -1,8 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AbiCoder, ethers } from "ethers";
-import { task } from "hardhat/config";
 import { Keypair } from "@solana/web3.js";
+import { AbiCoder, ethers } from "ethers";
 import * as fs from "fs";
+import { task } from "hardhat/config";
 import * as path from "path";
 
 import Gateway_IDL from "../../localnet/src/solana/idl/gateway.json";
