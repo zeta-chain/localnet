@@ -41,6 +41,7 @@ export const zetachainCall = async ({
       sender,
       tss,
       zrc20,
+      amount: 0,
     });
   } catch (err: any) {
     if (exitOnError) {

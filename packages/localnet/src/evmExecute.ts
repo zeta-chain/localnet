@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { BigNumberish, ethers } from "ethers";
 
 import { deployOpts } from "./deployOpts";
 import { log } from "./log";
@@ -13,6 +13,7 @@ export const evmExecute = async ({
   receiver,
   message,
   callOptions,
+  amount,
 }: {
   callOptions: any;
   evmContracts: any;
@@ -23,6 +24,7 @@ export const evmExecute = async ({
   sender: any;
   tss: any;
   zrc20: any;
+  amount: BigNumberish;
 }) => {
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
@@ -46,7 +48,10 @@ export const evmExecute = async ({
   }
   const executeTx = await evmContracts[chainID].gatewayEVM
     .connect(tss)
-    .execute(messageContext, receiver, message, deployOpts);
+    .execute(messageContext, receiver, message, {
+      value: amount,
+      ...deployOpts,
+    });
 
   const logs = await provider.getLogs({
     address: receiver,

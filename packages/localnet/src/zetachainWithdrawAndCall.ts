@@ -62,7 +62,6 @@ export const zetachainWithdrawAndCall = async ({
         );
       }
     }
-
     if (isGasToken) {
       await evmExecute({
         callOptions,
@@ -74,6 +73,7 @@ export const zetachainWithdrawAndCall = async ({
         sender,
         tss,
         zrc20,
+        amount,
       });
     } else {
       await evmCustodyWithdrawAndCall({
