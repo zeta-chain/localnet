@@ -10,7 +10,8 @@ const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
 const FAUCET_URL = "http://127.0.0.1:9123";
 const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
-const MNEMONIC =
+
+export const MNEMONIC =
   "grape subway rack mean march bubble carry avoid muffin consider thing street";
 
 const generateAccount = (mnemonic: string) => {

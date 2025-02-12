@@ -6,10 +6,31 @@ import { ethers } from "ethers";
 import * as fs from "fs";
 import path from "path";
 import util from "util";
-
+import * as bip39 from "bip39";
+import { Keypair } from "@solana/web3.js";
+import { MNEMONIC } from "./suiSetup";
 import Gateway_IDL from "./solana/idl/gateway.json";
+import * as os from "os";
 
 const execAsync = util.promisify(exec);
+
+const loadSolanaKeypair = async (): Promise<Keypair> => {
+  const filePath = path.join(os.homedir(), ".config", "solana", "id.json");
+  try {
+    const secretKey = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    return Keypair.fromSecretKey(Uint8Array.from(secretKey));
+  } catch (error) {
+    console.log("id.json not found, generating new keypair...");
+
+    // Generate new keypair
+    await execAsync(
+      `solana-keygen new --no-bip39-passphrase --outfile ${filePath}`
+    );
+
+    const secretKey = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    return Keypair.fromSecretKey(Uint8Array.from(secretKey));
+  }
+};
 
 process.env.ANCHOR_WALLET = path.resolve(
   process.env.HOME || process.env.USERPROFILE || "",
@@ -37,13 +58,32 @@ export const payer: anchor.web3.Keypair = anchor.web3.Keypair.fromSecretKey(
   new Uint8Array(PAYER_SECRET_KEY)
 );
 
+export const keypairFromMnemonic = async (
+  mnemonic: string
+): Promise<Keypair> => {
+  const seed = await bip39.mnemonicToSeed(mnemonic);
+  const seedSlice = new Uint8Array(seed).slice(0, 32);
+  return Keypair.fromSeed(seedSlice);
+};
+
 export const solanaSetup = async ({ handlers }: any) => {
+  const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
+  console.log(
+    `Default Solana user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`
+  );
   console.log("Setting up Solana...");
   const gatewaySoPath = require.resolve(
     "@zetachain/localnet/solana/deploy/gateway.so"
   );
   const gatewayKeypairPath = require.resolve(
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
+  );
+
+  const defaultSolanaUserKeypair = await loadSolanaKeypair();
+
+  console.log(
+    "Public Key from id.json:",
+    defaultSolanaUserKeypair.publicKey.toBase58()
   );
 
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
@@ -74,11 +114,31 @@ export const solanaSetup = async ({ handlers }: any) => {
       payer.publicKey,
       20_000_000_000_000
     );
+
     await connection.confirmTransaction(
       {
         blockhash: latestBlockhash.blockhash,
         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
         signature: airdropSig,
+      },
+      "confirmed"
+    );
+
+    await connection.requestAirdrop(
+      defaultLocalnetUserKeypair.publicKey,
+      20_000_000_000_000
+    );
+
+    const defaultSolanaUserKeypairAirdrop = await connection.requestAirdrop(
+      defaultSolanaUserKeypair.publicKey,
+      20_000_000_000_000
+    );
+
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: defaultSolanaUserKeypairAirdrop,
       },
       "confirmed"
     );
