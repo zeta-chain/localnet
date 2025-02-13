@@ -18,6 +18,7 @@
       "require": "./dist/localnet/src/index.js",
       "types": "./dist/localnet/src/index.d.ts"
     },
+    "./solana/idl/gateway.json": "./dist/localnet/src/solana/idl/gateway.json",
     "./solana/deploy/gateway.so": "./dist/localnet/src/solana/deploy/gateway.so",
     "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json",
     "./sui/gateway.mv": "./dist/localnet/src/sui/gateway.mv",

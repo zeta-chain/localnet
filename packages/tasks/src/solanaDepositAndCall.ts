@@ -5,7 +5,6 @@ import * as fs from "fs";
 import { task } from "hardhat/config";
 import * as path from "path";
 
-import Gateway_IDL from "../../localnet/src/solana/idl/gateway.json";
 import { keypairFromMnemonic } from "../../localnet/src/solanaSetup";
 
 export const getDefaultKeypair = (): Keypair | null => {
@@ -39,6 +38,11 @@ export const getKeypair = async (mnemonic?: string): Promise<Keypair> => {
 };
 
 const solanaDepositAndCall = async (args: any) => {
+  const gatewayPath = require.resolve(
+    "@zetachain/localnet/solana/idl/gateway.json"
+  );
+  const Gateway_IDL = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
+
   const valuesArray = args.values.map((value: any, index: any) => {
     const type = JSON.parse(args.types)[index];
 
