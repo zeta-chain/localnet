@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { ethers } from "ethers";
-import { task } from "hardhat/config";
 import * as fs from "fs";
+import { task } from "hardhat/config";
 
 import { getKeypair } from "./solanaDepositAndCall";
 
