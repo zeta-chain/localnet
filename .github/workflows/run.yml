@@ -28,6 +28,11 @@ jobs:
       - name: Install Anchor (Solana)
         uses: metadaoproject/setup-anchor@v3.1
 
+      - name: Install Sui CLI
+        run: |
+          cargo install --locked --git https://github.com/MystenLabs/sui.git --branch main sui
+          echo "$(cargo bin)/sui" >> $GITHUB_PATH
+
       - name: Install Dependencies
         run: yarn
 
