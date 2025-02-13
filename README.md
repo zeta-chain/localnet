@@ -14,5 +14,5 @@ Make sure you have the following installed to use Localnet:
 
 ## Documentation
 
-Learn more about Localnet:  
+Learn about Localnet:  
 https://www.zetachain.com/docs/developers/tutorials/localnet/
