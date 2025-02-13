@@ -6,7 +6,8 @@
   "scripts": {
     "build": "del-cli dist && tsc && cpx 'packages/localnet/src/solana/**/*' dist/localnet/src/solana/ && cpx 'packages/localnet/src/sui/**/*' dist/localnet/src/sui/",
     "lint:fix": "eslint --ext .js,.ts . --fix",
-    "lint": "eslint --ext .js,.ts ."
+    "lint": "eslint --ext .js,.ts .",
+    "localnet": "yarn build && npx hardhat localnet"
   },
   "files": [
     "dist"
