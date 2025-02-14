@@ -31,7 +31,6 @@ export const zetachainWithdraw = async ({
 }) => {
   log("7001", "Gateway: 'Withdrawn' event emitted");
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
-  console.log("!!!", args);
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
