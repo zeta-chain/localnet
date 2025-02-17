@@ -293,10 +293,10 @@ export const initLocalnet = async ({
     console.error("Solana CLI not available. Skipping setup.");
   }
 
-  let suiAddresses: any = [];
+  let suiEnv: any = {};
 
   if (isSuiAvailable()) {
-    suiAddresses = suiSetup({
+    suiEnv = suiSetup({
       handlers: {
         deposit: (args: any) => {
           suiDeposit({
@@ -414,6 +414,7 @@ export const initLocalnet = async ({
       gatewayZEVM: protocolContracts.gatewayZEVM,
       provider,
       tss,
+      suiEnv: (await suiEnv).env,
     });
   });
 
@@ -530,7 +531,7 @@ export const initLocalnet = async ({
   );
 
   return [
-    ...(await suiAddresses),
+    ...(await suiEnv).addresses,
     ...(await solanaAddresses),
     ...Object.entries(protocolContracts)
       .filter(([_, value]) => value.target !== undefined)

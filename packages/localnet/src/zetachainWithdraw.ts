@@ -7,6 +7,7 @@ import { evmTSSTransfer } from "./evmTSSTransfer";
 import { log } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
+import { suiWithdraw } from "./suiWithdraw";
 
 export const zetachainWithdraw = async ({
   evmContracts,
@@ -17,6 +18,7 @@ export const zetachainWithdraw = async ({
   fungibleModuleSigner,
   deployer,
   foreignCoins,
+  suiEnv,
   exitOnError = false,
 }: {
   args: any;
@@ -28,6 +30,7 @@ export const zetachainWithdraw = async ({
   gatewayZEVM: any;
   provider: ethers.JsonRpcProvider;
   tss: any;
+  suiEnv: any;
 }) => {
   log("7001", "Gateway: 'Withdrawn' event emitted");
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
@@ -42,10 +45,17 @@ export const zetachainWithdraw = async ({
     const isGasToken = coinType === 1n;
     const isERC20orZETA = coinType === 2n;
     const isSolana = chainID === "901";
+    const isSui = chainID === "103";
 
     if (isSolana) {
       const receiverAddress = ethers.toUtf8String(receiver);
       await solanaWithdraw(receiverAddress, amount);
+    } else if (isSui) {
+      await suiWithdraw({
+        amount,
+        sender: receiver,
+        ...suiEnv,
+      });
     } else {
       if (isGasToken) {
         await evmTSSTransfer({ args, foreignCoins, tss });
