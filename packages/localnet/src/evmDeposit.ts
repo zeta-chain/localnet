@@ -106,13 +106,10 @@ export const evmDeposit = async ({
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
-      deployer.reset();
-      const transferTx = await zrc20Contract.transfer(abortAddress, amount);
-      await transferTx.wait();
       return await zetachainOnAbort({
         abortAddress: abortAddress,
-        amount: 0,
-        asset: ethers.ZeroAddress,
+        amount,
+        asset: zrc20,
         chainID,
         fungibleModuleSigner,
         outgoing: false,

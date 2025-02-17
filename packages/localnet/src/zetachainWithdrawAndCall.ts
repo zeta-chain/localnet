@@ -4,7 +4,7 @@ import { ethers, NonceManager } from "ethers";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
-import { log } from "./log";
+import { log, logErr } from "./log";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdrawAndCall = async ({
@@ -84,6 +84,7 @@ export const zetachainWithdrawAndCall = async ({
       });
     }
   } catch (err: any) {
+    logErr(chainID, `Error executing ${receiver}: ${err}`);
     if (exitOnError) {
       throw new Error(err);
     }

@@ -64,6 +64,7 @@ export const evmDepositAndCall = async ({
     }
     logErr("7001", `onCall failed: ${err}`);
     const gasLimit = revertOptions[4];
+    // TODO: instead of swapping, get a quote from Uniswap to estimate if the amount is sufficient. Do the same for evmDeposit
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
       {
         amount,
@@ -100,15 +101,10 @@ export const evmDepositAndCall = async ({
       );
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
-      log("7001", `Transferring tokens to abortAddress ${abortAddress}`);
-      deployer.reset();
-      const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
-      const transferTx = await zrc20Contract.transfer(abortAddress, amount);
-      await transferTx.wait();
       return await zetachainOnAbort({
         abortAddress: abortAddress,
-        amount: 0,
-        asset: ethers.ZeroAddress,
+        amount: amount,
+        asset: zrc20,
         chainID,
         fungibleModuleSigner,
         outgoing: false,
