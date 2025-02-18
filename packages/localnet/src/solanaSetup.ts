@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import * as bip39 from "bip39";
 import { exec } from "child_process";
 import { ec as EC } from "elliptic";
@@ -9,11 +9,6 @@ import * as fs from "fs";
 import * as os from "os";
 import path from "path";
 import util from "util";
-import {
-  createMint,
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-} from "@solana/spl-token";
 import { sha256 } from "js-sha256";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
@@ -200,34 +195,6 @@ export const solanaSetup = async ({
       commitment: "confirmed",
     });
 
-    // const mint = await createMint(
-    //   connection,
-    //   tssKeypair,
-    //   tssKeypair.publicKey,
-    //   null,
-    //   9
-    // );
-    // console.log(`Created new token: ${mint.toBase58()}`);
-
-    // const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    //   connection,
-    //   tssKeypair,
-    //   mint,
-    //   tssKeypair.publicKey
-    // );
-
-    // await mintTo(
-    //   connection,
-    //   tssKeypair,
-    //   mint,
-    //   userTokenAccount.address,
-    //   tssKeypair.publicKey,
-    //   100 * LAMPORTS_PER_SOL
-    // );
-
-    console.log("PDA funded successfully.");
-
-    // Start monitoring program transactions
     solanaMonitorTransactions({
       deployer,
       foreignCoins,
@@ -253,6 +220,7 @@ export const solanaSetup = async ({
     ],
     env: {
       gatewayProgram,
+      defaultSolanaUser: defaultSolanaUserKeypair,
     },
   };
 };

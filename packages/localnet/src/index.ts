@@ -125,15 +125,7 @@ export const initLocalnet = async ({
     null
   );
   await createToken(addresses, null, "SOL", true, "901", 9, null);
-  await createToken(
-    addresses,
-    null,
-    "USDC",
-    false,
-    "901",
-    9,
-    solanaEnv.env.gatewayProgram
-  );
+  await createToken(addresses, null, "USDC", false, "901", 9, solanaEnv.env);
   await createToken(addresses, null, "SUI", true, "103", 9, null);
 
   const evmContracts = {
@@ -283,7 +275,7 @@ export const initLocalnet = async ({
 
   const res = [
     ...Object.entries(protocolContracts)
-      .filter(([_, value]) => value.target !== undefined)
+      .filter(([, value]) => value.target !== undefined)
       .map(([key, value]) => {
         return {
           address: value.target,
@@ -299,8 +291,11 @@ export const initLocalnet = async ({
       };
     }),
     ...Object.entries(foreignCoins)
-      .map(([key, value]) => {
-        if (value.asset) {
+      .map(([, value]) => {
+        if (
+          value.asset &&
+          (value.foreign_chain_id === "5" || value.foreign_chain_id === "97")
+        ) {
           return {
             address: value.asset,
             chain: value.foreign_chain_id === "5" ? "ethereum" : "bnb",
@@ -320,7 +315,6 @@ export const initLocalnet = async ({
         }
       })
       .filter(Boolean),
-
     {
       address: await protocolContracts.tss.getAddress(),
       chain: "zetachain",

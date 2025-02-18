@@ -19,7 +19,7 @@ export const createToken = async (
   isGasToken: boolean,
   chainID: string,
   decimals: number,
-  gatewayProgram?: any
+  solana?: any
 ) => {
   let erc20;
 
@@ -57,7 +57,7 @@ export const createToken = async (
   let splAddress;
 
   if (chainID === "901" && !isGasToken) {
-    splAddress = await createSolanaSPL(gatewayProgram);
+    splAddress = await createSolanaSPL(solana);
   }
 
   await zrc20.waitForDeployment();
@@ -183,9 +183,9 @@ export const createToken = async (
   );
 };
 
-const createSolanaSPL = async (gatewayProgram: any) => {
+const createSolanaSPL = async (env: any) => {
   const mint = await createMint(
-    gatewayProgram.provider.connection,
+    env.gatewayProgram.provider.connection,
     tssKeypair,
     tssKeypair.publicKey,
     null,
@@ -193,21 +193,40 @@ const createSolanaSPL = async (gatewayProgram: any) => {
   );
   console.log(`Created new SPL token: ${mint.toBase58()}`);
 
-  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    gatewayProgram.provider.connection,
+  const tssTokenAccount = await getOrCreateAssociatedTokenAccount(
+    env.gatewayProgram.provider.connection,
     tssKeypair,
     mint,
     tssKeypair.publicKey
   );
 
   await mintTo(
-    gatewayProgram.provider.connection,
+    env.gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    tssTokenAccount.address,
+    tssKeypair.publicKey,
+    100 * LAMPORTS_PER_SOL
+  );
+
+  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+    env.gatewayProgram.provider.connection,
+    env.defaultSolanaUser,
+    mint,
+    env.defaultSolanaUser.publicKey
+  );
+
+  await mintTo(
+    env.gatewayProgram.provider.connection,
     tssKeypair,
     mint,
     userTokenAccount.address,
     tssKeypair.publicKey,
     100 * LAMPORTS_PER_SOL
   );
+
+  console.log("tssTokenAccount", tssTokenAccount);
+  console.log("userTokenAccount", userTokenAccount);
 
   return mint.toBase58();
 };
