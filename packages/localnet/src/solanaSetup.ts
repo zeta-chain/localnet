@@ -13,10 +13,10 @@ import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
-  transfer,
-  getAccount,
 } from "@solana/spl-token";
 import { sha256 } from "js-sha256";
+import { solanaDeposit } from "./solanaDeposit";
+import { solanaDepositAndCall } from "./solanaDepositAndCall";
 
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { MNEMONIC } from "./suiSetup";
@@ -82,7 +82,13 @@ export const keypairFromMnemonic = async (
   return Keypair.fromSeed(seedSlice);
 };
 
-export const solanaSetup = async ({ handlers }: any) => {
+export const solanaSetup = async ({
+  deployer,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+}: any) => {
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
   console.log(
     `Default Solana user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`
@@ -161,12 +167,12 @@ export const solanaSetup = async ({ handlers }: any) => {
       "confirmed"
     );
 
-    const provider = new anchor.AnchorProvider(
+    const anchorProvider = new anchor.AnchorProvider(
       connection,
       new anchor.Wallet(payer),
       {}
     );
-    anchor.setProvider(provider);
+    anchor.setProvider(anchorProvider);
 
     const deployCommand = `solana program deploy --program-id ${gatewayKeypairPath} ${gatewaySoPath} --url localhost`;
 
@@ -222,7 +228,13 @@ export const solanaSetup = async ({ handlers }: any) => {
     console.log("PDA funded successfully.");
 
     // Start monitoring program transactions
-    solanaMonitorTransactions({ handlers });
+    solanaMonitorTransactions({
+      deployer,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
+      provider,
+    });
   } catch (error: any) {
     console.error(`Error setting up Solana: ${error.message}`);
     if (error.logs) {
@@ -242,7 +254,13 @@ export const solanaSetup = async ({ handlers }: any) => {
   };
 };
 
-export const solanaMonitorTransactions = async ({ handlers }: any) => {
+export const solanaMonitorTransactions = async ({
+  deployer,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+}: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
   const connection = gatewayProgram.provider.connection;
 
@@ -322,9 +340,23 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                     if (decodedInstruction.name === "deposit_and_call") {
                       const message = data.message.toString();
                       args.push(message);
-                      handlers.depositAndCall(args);
+                      solanaDepositAndCall({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
                     } else if (decodedInstruction.name === "deposit") {
-                      handlers.deposit(args);
+                      solanaDeposit({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
                     }
                   }
                 }

@@ -6,7 +6,6 @@ import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const suiDepositAndCall = async ({
-  asset,
   deployer,
   foreignCoins,
   fungibleModuleSigner,
@@ -14,6 +13,7 @@ export const suiDepositAndCall = async ({
   provider,
   args,
 }: any) => {
+  const asset = ethers.ZeroAddress;
   const chainID = "103";
   try {
     log("103", `Gateway deposit and call event, ${JSON.stringify(args.event)}`);

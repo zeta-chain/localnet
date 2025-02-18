@@ -4,13 +4,7 @@ import { createToken } from "./createToken";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";
-import { isSolanaAvailable } from "./isSolanaAvailable";
-import { isSuiAvailable } from "./isSuiAvailable";
-import { solanaDeposit } from "./solanaDeposit";
-import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { solanaSetup } from "./solanaSetup";
-import { suiDeposit } from "./suiDeposit";
-import { suiDepositAndCall } from "./suiDepositAndCall";
 import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
@@ -33,68 +27,6 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
 }) => {
-  const solanaSetupPromise = (async () => {
-    if (isSolanaAvailable()) {
-      return await solanaSetup({
-        handlers: {
-          deposit: (args: any) =>
-            solanaDeposit({
-              args,
-              deployer,
-              foreignCoins,
-              fungibleModuleSigner,
-              protocolContracts,
-              provider,
-            }),
-          depositAndCall: (args: any) =>
-            solanaDepositAndCall({
-              args,
-              deployer,
-              foreignCoins,
-              fungibleModuleSigner,
-              protocolContracts,
-              provider,
-            }),
-        },
-      });
-    } else {
-      console.error("Solana CLI not available. Skipping setup.");
-    }
-  })();
-
-  const suiSetupPromise = (async () => {
-    if (isSuiAvailable()) {
-      return await suiSetup({
-        handlers: {
-          deposit: (args: any) => {
-            suiDeposit({
-              args,
-              asset: ethers.ZeroAddress,
-              deployer,
-              foreignCoins,
-              fungibleModuleSigner,
-              protocolContracts,
-              provider,
-            });
-          },
-          depositAndCall: (args: any) => {
-            suiDepositAndCall({
-              args,
-              asset: ethers.ZeroAddress,
-              deployer,
-              foreignCoins,
-              fungibleModuleSigner,
-              protocolContracts,
-              provider,
-            });
-          },
-        },
-      });
-    } else {
-      console.error("Sui CLI not available. Skipping setup.");
-    }
-  })();
-
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
@@ -129,8 +61,20 @@ export const initLocalnet = async ({
 
   const [solanaEnv, suiEnv, contractsEthereum, contractsBNB] =
     await Promise.all([
-      solanaSetupPromise,
-      suiSetupPromise,
+      solanaSetup({
+        deployer,
+        foreignCoins,
+        fungibleModuleSigner,
+        protocolContracts,
+        provider,
+      }),
+      suiSetup({
+        deployer,
+        foreignCoins,
+        fungibleModuleSigner,
+        protocolContracts,
+        provider,
+      }),
       evmSetup(deployer, tss),
       evmSetup(deployer, tss),
     ]);
