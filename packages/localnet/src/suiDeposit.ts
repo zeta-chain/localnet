@@ -5,7 +5,6 @@ import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const suiDeposit = async ({
   asset,
-  chainID,
   deployer,
   foreignCoins,
   fungibleModuleSigner,
@@ -13,6 +12,7 @@ export const suiDeposit = async ({
   provider,
   args,
 }: any) => {
+  const chainID = "103";
   try {
     log("103", `Gateway deposit event, ${JSON.stringify(args.event)}`);
     await zetachainDeposit({

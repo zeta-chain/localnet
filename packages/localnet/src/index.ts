@@ -40,7 +40,6 @@ export const initLocalnet = async ({
           deposit: (args: any) =>
             solanaDeposit({
               args,
-              chainID: "901",
               deployer,
               foreignCoins,
               fungibleModuleSigner,
@@ -50,7 +49,6 @@ export const initLocalnet = async ({
           depositAndCall: (args: any) =>
             solanaDepositAndCall({
               args,
-              chainID: "901",
               deployer,
               foreignCoins,
               fungibleModuleSigner,
@@ -72,7 +70,6 @@ export const initLocalnet = async ({
             suiDeposit({
               args,
               asset: ethers.ZeroAddress,
-              chainID: "103",
               deployer,
               foreignCoins,
               fungibleModuleSigner,
@@ -84,7 +81,6 @@ export const initLocalnet = async ({
             suiDepositAndCall({
               args,
               asset: ethers.ZeroAddress,
-              chainID: "103",
               deployer,
               foreignCoins,
               fungibleModuleSigner,
@@ -125,19 +121,19 @@ export const initLocalnet = async ({
   );
   tss = tss.connect(provider);
 
-  const [
-    solanaEnv,
-    suiEnv,
-    contractsEthereum,
-    contractsBNB,
-    protocolContracts,
-  ] = await Promise.all([
-    solanaSetupPromise,
-    suiSetupPromise,
-    evmSetup(deployer, tss),
-    evmSetup(deployer, tss),
-    zetachainSetup(deployer, tss, fungibleModuleSigner),
-  ]);
+  const protocolContracts = await zetachainSetup(
+    deployer,
+    tss,
+    fungibleModuleSigner
+  );
+
+  const [solanaEnv, suiEnv, contractsEthereum, contractsBNB] =
+    await Promise.all([
+      solanaSetupPromise,
+      suiSetupPromise,
+      evmSetup(deployer, tss),
+      evmSetup(deployer, tss),
+    ]);
 
   const addresses = {
     ...protocolContracts,

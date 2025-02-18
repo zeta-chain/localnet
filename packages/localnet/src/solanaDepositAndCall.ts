@@ -11,9 +11,9 @@ export const solanaDepositAndCall = async ({
   args,
   fungibleModuleSigner,
   foreignCoins,
-  chainID,
   deployer,
 }: any) => {
+  const chainID = "901";
   const [sender, , amount, asset] = args;
   try {
     log("901", "Gateway Deposit and call executed");
