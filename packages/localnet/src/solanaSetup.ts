@@ -58,7 +58,7 @@ const seed = new Uint8Array(
   sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))
 ).slice(0, 32);
 
-const tssKeypair = Keypair.fromSeed(seed);
+export const tssKeypair = Keypair.fromSeed(seed);
 
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
@@ -200,30 +200,30 @@ export const solanaSetup = async ({
       commitment: "confirmed",
     });
 
-    const mint = await createMint(
-      connection,
-      tssKeypair,
-      tssKeypair.publicKey,
-      null,
-      9
-    );
-    console.log(`Created new token: ${mint.toBase58()}`);
+    // const mint = await createMint(
+    //   connection,
+    //   tssKeypair,
+    //   tssKeypair.publicKey,
+    //   null,
+    //   9
+    // );
+    // console.log(`Created new token: ${mint.toBase58()}`);
 
-    const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-      connection,
-      tssKeypair,
-      mint,
-      tssKeypair.publicKey
-    );
+    // const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+    //   connection,
+    //   tssKeypair,
+    //   mint,
+    //   tssKeypair.publicKey
+    // );
 
-    await mintTo(
-      connection,
-      tssKeypair,
-      mint,
-      userTokenAccount.address,
-      tssKeypair.publicKey,
-      100 * LAMPORTS_PER_SOL
-    );
+    // await mintTo(
+    //   connection,
+    //   tssKeypair,
+    //   mint,
+    //   userTokenAccount.address,
+    //   tssKeypair.publicKey,
+    //   100 * LAMPORTS_PER_SOL
+    // );
 
     console.log("PDA funded successfully.");
 
@@ -251,6 +251,9 @@ export const solanaSetup = async ({
         type: "gatewayProgram",
       },
     ],
+    env: {
+      gatewayProgram,
+    },
   };
 };
 

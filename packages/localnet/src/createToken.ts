@@ -1,8 +1,16 @@
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from "@solana/spl-token";
+
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { deployOpts } from "./deployOpts";
+import { tssKeypair } from "./solanaSetup";
 
 export const createToken = async (
   addresses: any,
@@ -10,7 +18,8 @@ export const createToken = async (
   symbol: string,
   isGasToken: boolean,
   chainID: string,
-  decimals: number
+  decimals: number,
+  gatewayProgram?: any
 ) => {
   let erc20;
 
@@ -44,6 +53,12 @@ export const createToken = async (
       gatewayZEVM.target,
       deployOpts
     );
+
+  let splAddress;
+
+  if (chainID === "901" && !isGasToken) {
+    splAddress = await createSolanaSPL(gatewayProgram);
+  }
 
   await zrc20.waitForDeployment();
 
@@ -94,8 +109,19 @@ export const createToken = async (
     }
   }
 
+  let asset;
+
+  if (isGasToken) {
+    asset = "";
+  } else if (chainID === "901") {
+    asset = splAddress;
+    console.log("!!!");
+  } else {
+    asset = (erc20 as any).target;
+  }
+
   foreignCoins.push({
-    asset: isGasToken ? "" : (erc20 as any).target,
+    asset,
     coin_type: isGasToken ? "Gas" : "ERC20",
     decimals: 18,
     foreign_chain_id: chainID,
@@ -155,4 +181,33 @@ export const createToken = async (
     Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
     deployOpts
   );
+};
+
+const createSolanaSPL = async (gatewayProgram: any) => {
+  const mint = await createMint(
+    gatewayProgram.provider.connection,
+    tssKeypair,
+    tssKeypair.publicKey,
+    null,
+    9
+  );
+  console.log(`Created new SPL token: ${mint.toBase58()}`);
+
+  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+    gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    tssKeypair.publicKey
+  );
+
+  await mintTo(
+    gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    userTokenAccount.address,
+    tssKeypair.publicKey,
+    100 * LAMPORTS_PER_SOL
+  );
+
+  return mint.toBase58();
 };

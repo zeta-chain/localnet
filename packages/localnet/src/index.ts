@@ -88,19 +88,53 @@ export const initLocalnet = async ({
     tss,
   };
 
-  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5", 18);
+  await createToken(
+    addresses,
+    contractsEthereum.custody,
+    "ETH",
+    true,
+    "5",
+    18,
+    null
+  );
   await createToken(
     addresses,
     contractsEthereum.custody,
     "USDC",
     false,
     "5",
-    18
+    18,
+    null
   );
-  await createToken(addresses, contractsBNB.custody, "BNB", true, "97", 18);
-  await createToken(addresses, contractsBNB.custody, "USDC", false, "97", 18);
-  await createToken(addresses, null, "SOL", true, "901", 9);
-  await createToken(addresses, null, "SUI", true, "103", 9);
+  await createToken(
+    addresses,
+    contractsBNB.custody,
+    "BNB",
+    true,
+    "97",
+    18,
+    null
+  );
+  await createToken(
+    addresses,
+    contractsBNB.custody,
+    "USDC",
+    false,
+    "97",
+    18,
+    null
+  );
+  await createToken(addresses, null, "SOL", true, "901", 9, null);
+  await createToken(
+    addresses,
+    null,
+    "USDC",
+    false,
+    "901",
+    9,
+    solanaEnv.env.gatewayProgram
+  );
+  await createToken(addresses, null, "SUI", true, "103", 9, null);
 
   const evmContracts = {
     5: contractsEthereum,
@@ -275,6 +309,18 @@ export const initLocalnet = async ({
         }
       })
       .filter(Boolean),
+    ...Object.entries(foreignCoins)
+      .map(([key, value]) => {
+        if (value.foreign_chain_id === "901" && value.asset) {
+          return {
+            address: value.asset,
+            chain: "solana",
+            type: `SPL-20 ${value.symbol}`,
+          };
+        }
+      })
+      .filter(Boolean),
+
     {
       address: await protocolContracts.tss.getAddress(),
       chain: "zetachain",
