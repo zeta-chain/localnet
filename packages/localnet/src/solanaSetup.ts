@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import * as bip39 from "bip39";
 import { exec } from "child_process";
 import { ec as EC } from "elliptic";
@@ -9,6 +9,14 @@ import * as fs from "fs";
 import * as os from "os";
 import path from "path";
 import util from "util";
+import {
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+  transfer,
+  getAccount,
+} from "@solana/spl-token";
+import { sha256 } from "js-sha256";
 
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { MNEMONIC } from "./suiSetup";
@@ -41,9 +49,16 @@ process.env.ANCHOR_PROVIDER_URL = "http://localhost:8899";
 
 const ec = new EC("secp256k1");
 
-export const tssKeyPair = ec.keyFromPrivate(
-  "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8"
-);
+const tssKeyHex =
+  "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8";
+
+export const tssKeyPair = ec.keyFromPrivate(tssKeyHex);
+
+const seed = new Uint8Array(
+  sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))
+).slice(0, 32);
+
+const tssKeypair = Keypair.fromSeed(seed);
 
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
@@ -116,6 +131,8 @@ export const solanaSetup = async ({ handlers }: any) => {
       20_000_000_000_000
     );
 
+    await connection.requestAirdrop(tssKeypair.publicKey, 20_000_000_000_000);
+
     await connection.confirmTransaction(
       {
         blockhash: latestBlockhash.blockhash,
@@ -177,6 +194,31 @@ export const solanaSetup = async ({ handlers }: any) => {
       commitment: "confirmed",
     });
 
+    const mint = await createMint(
+      connection,
+      tssKeypair,
+      tssKeypair.publicKey,
+      null,
+      9
+    );
+    console.log(`Created new token: ${mint.toBase58()}`);
+
+    const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      tssKeypair,
+      mint,
+      tssKeypair.publicKey
+    );
+
+    await mintTo(
+      connection,
+      tssKeypair,
+      mint,
+      userTokenAccount.address,
+      tssKeypair.publicKey,
+      100 * LAMPORTS_PER_SOL
+    );
+
     console.log("PDA funded successfully.");
 
     // Start monitoring program transactions
@@ -188,13 +230,16 @@ export const solanaSetup = async ({ handlers }: any) => {
     }
     throw error;
   }
-  return [
-    {
-      address: gatewayProgram.programId.toBase58(),
-      chain: "solana",
-      type: "gatewayProgram",
-    },
-  ];
+
+  return {
+    addresses: [
+      {
+        address: gatewayProgram.programId.toBase58(),
+        chain: "solana",
+        type: "gatewayProgram",
+      },
+    ],
+  };
 };
 
 export const solanaMonitorTransactions = async ({ handlers }: any) => {
