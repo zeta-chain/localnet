@@ -1,9 +1,10 @@
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from "@solana/spl-token";
+import { BN } from "@coral-xyz/anchor";
 
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
@@ -57,7 +58,7 @@ export const createToken = async (
   let splAddress;
 
   if (chainID === "901" && !isGasToken) {
-    splAddress = await createSolanaSPL(solana);
+    splAddress = await createSolanaSPL(solana, symbol);
   }
 
   await zrc20.waitForDeployment();
@@ -115,7 +116,6 @@ export const createToken = async (
     asset = "";
   } else if (chainID === "901") {
     asset = splAddress;
-    console.log("!!!");
   } else {
     asset = (erc20 as any).target;
   }
@@ -183,7 +183,7 @@ export const createToken = async (
   );
 };
 
-const createSolanaSPL = async (env: any) => {
+const createSolanaSPL = async (env: any, symbol: string) => {
   const mint = await createMint(
     env.gatewayProgram.provider.connection,
     tssKeypair,
@@ -225,19 +225,80 @@ const createSolanaSPL = async (env: any) => {
     100 * LAMPORTS_PER_SOL
   );
 
-  console.log("tssTokenAccount", tssTokenAccount);
-  console.log("userTokenAccount", userTokenAccount);
+  const GATEWAY_PROGRAM_ID = env.gatewayProgram.programId;
+  console.log("Gateway Program ID:", GATEWAY_PROGRAM_ID.toBase58());
 
-  const tokenAccountInfo =
-    await env.gatewayProgram.provider.connection.getAccountInfo(
-      userTokenAccount.address
-    );
+  const [gatewayPDA] = await PublicKey.findProgramAddress(
+    [Buffer.from("meta")],
+    GATEWAY_PROGRAM_ID
+  );
 
-  if (tokenAccountInfo) {
-    console.log("Token Program Address:", tokenAccountInfo.owner.toBase58());
-  } else {
-    console.log("Token account not found.");
-  }
+  const gatewayTokenAccount = await getOrCreateAssociatedTokenAccount(
+    env.gatewayProgram.provider.connection,
+    // whoever you want to pay for creation (often the same keypair as the authority or payer)
+    tssKeypair,
+    mint,
+    gatewayPDA, // This is the "owner" of the ATA
+    true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
+  );
+
+  whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser);
+
+  console.log("gatewayTokenAccount", gatewayTokenAccount.address.toBase58());
+
+  console.log(`TSS ${symbol} token account: ${tssTokenAccount.address}`);
+  console.log(
+    `Default user ${symbol} token account: ${userTokenAccount.address}`
+  );
 
   return mint.toBase58();
+};
+
+const whitelistSPLToken = async (
+  gatewayProgram: any,
+  mintPublicKey: PublicKey,
+  authorityKeypair: any
+) => {
+  // 1) Get the Gateway PDA
+  const [gatewayPDA] = await PublicKey.findProgramAddress(
+    [Buffer.from("meta", "utf-8")],
+    gatewayProgram.programId
+  );
+
+  // 2) Fetch the PDA data to ensure authority check
+  const pdaAccountData = await gatewayProgram.account.pda.fetch(gatewayPDA);
+  console.log("🚀 Gateway PDA Authority:", pdaAccountData.authority.toBase58());
+
+  if (!pdaAccountData.authority.equals(authorityKeypair.publicKey)) {
+    console.error(
+      "❌ Error: The provided signer is NOT the authority of the Gateway PDA."
+    );
+    process.exit(1);
+  }
+
+  // 3) Compute Whitelist Entry PDA
+  const [whitelistEntryPDA] = await PublicKey.findProgramAddress(
+    [Buffer.from("whitelist"), mintPublicKey.toBuffer()],
+    gatewayProgram.programId
+  );
+
+  console.log(
+    "Whitelisting SPL Token. Whitelist Entry PDA:",
+    whitelistEntryPDA.toBase58()
+  );
+
+  // 4) Call whitelistSplMint with a zero signature => direct authority sign
+  await gatewayProgram.methods
+    .whitelistSplMint(new Uint8Array(64).fill(0), 0, new BN(0))
+    .accounts({
+      authority: authorityKeypair.publicKey, // must match pda.authority
+      pda: gatewayPDA,
+      whitelistEntry: whitelistEntryPDA,
+      whitelistCandidate: mintPublicKey,
+      systemProgram: SystemProgram.programId,
+    })
+    .signers([authorityKeypair])
+    .rpc();
+
+  console.log(`✅ Whitelisted SPL Token: ${mintPublicKey.toBase58()}`);
 };

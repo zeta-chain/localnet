@@ -274,6 +274,11 @@ export const initLocalnet = async ({
   );
 
   const res = [
+    {
+      address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      chain: "solana",
+      type: "tokenProgram",
+    },
     ...Object.entries(protocolContracts)
       .filter(([, value]) => value.target !== undefined)
       .map(([key, value]) => {

@@ -162,6 +162,19 @@ export const solanaSetup = async ({
       "confirmed"
     );
 
+    const airdropTssSig = await connection.requestAirdrop(
+      tssKeypair.publicKey,
+      20_000_000_000_000
+    );
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: airdropTssSig,
+      },
+      "confirmed"
+    );
+
     const anchorProvider = new anchor.AnchorProvider(
       connection,
       new anchor.Wallet(payer),
@@ -290,11 +303,12 @@ export const solanaMonitorTransactions = async ({
                   instruction.data,
                   "base58"
                 );
-
+                console.log(decodedInstruction);
                 if (decodedInstruction) {
                   if (
                     decodedInstruction.name === "deposit_and_call" ||
-                    decodedInstruction.name === "deposit"
+                    decodedInstruction.name === "deposit" ||
+                    decodedInstruction.name === "deposit_spl_token"
                   ) {
                     const data = decodedInstruction.data as any;
                     const amount = data.amount.toString();
@@ -330,6 +344,10 @@ export const solanaMonitorTransactions = async ({
                         protocolContracts,
                         provider,
                       });
+                    } else if (
+                      decodedInstruction.name === "deposit_spl_token"
+                    ) {
+                      console.log("Deposit SPL token");
                     }
                   }
                 }

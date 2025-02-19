@@ -78,14 +78,34 @@ const solanaDepositAndCall = async (args: any) => {
     provider
   );
 
-  await gatewayProgram.methods
-    .depositAndCall(
-      new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
-      ethers.getBytes(args.receiver),
-      Buffer.from(encodedParameters)
-    )
-    .accounts({})
-    .rpc();
+  const receiverBytes = ethers.getBytes(args.receiver);
+
+  if (args.mint && args.from) {
+    await gatewayProgram.methods
+      .depositSplTokenAndCall(
+        args.amount,
+        receiverBytes,
+        Buffer.from(encodedParameters)
+      )
+      .accounts({
+        signer: provider.wallet.publicKey,
+        from: args.from,
+        to: "",
+        mintAccount: args.mint,
+        tokenProgram: args.tokenProgram,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+  } else {
+    await gatewayProgram.methods
+      .depositAndCall(
+        new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
+        ethers.getBytes(args.receiver),
+        Buffer.from(encodedParameters)
+      )
+      .accounts({})
+      .rpc();
+  }
 };
 
 export const solanaDepositAndCallTask = task(
@@ -97,4 +117,11 @@ export const solanaDepositAndCallTask = task(
   .addParam("amount", "Amount to deposit and call")
   .addParam("types", `The types of the parameters (example: '["string"]')`)
   .addVariadicPositionalParam("values", "The values of the parameters")
-  .addOptionalParam("mnemonic", "Mnemonic for generating a keypair");
+  .addOptionalParam("mnemonic", "Mnemonic for generating a keypair")
+  .addOptionalParam("mint", "SPL token mint address")
+  .addOptionalParam("from", "SPL token account from which tokens are withdrawn")
+  .addOptionalParam(
+    "tokenProgram",
+    "SPL token program",
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+  );

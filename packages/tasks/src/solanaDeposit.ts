@@ -25,12 +25,21 @@ const solanaDeposit = async (args: any) => {
   );
 
   const receiverBytes = ethers.getBytes(args.receiver);
-
+  console.log({
+    signer: provider.wallet.publicKey,
+    from: args.from,
+    to: args.to,
+    mintAccount: args.mint,
+    tokenProgram: args.tokenProgram,
+    systemProgram: anchor.web3.SystemProgram.programId,
+  });
   if (args.mint && args.from && args.to) {
     await gatewayProgram.methods
-      .depositSplToken(args.amount, receiverBytes)
+      .depositSplToken(
+        new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
+        receiverBytes
+      )
       .accounts({
-        // pda: pda,
         signer: provider.wallet.publicKey,
         from: args.from,
         to: args.to,
@@ -61,4 +70,8 @@ export const solanaDepositTask = task(
   .addOptionalParam("mint", "SPL token mint address")
   .addOptionalParam("from", "SPL token account from which tokens are withdrawn")
   .addOptionalParam("to", "SPL token account that belongs to the PDA")
-  .addOptionalParam("tokenProgram", "SPL token program");
+  .addOptionalParam(
+    "tokenProgram",
+    "SPL token program",
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+  );
