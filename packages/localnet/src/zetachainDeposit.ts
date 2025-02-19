@@ -27,7 +27,7 @@ export const zetachainDeposit = async ({
     logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
-
+  throw new Error("deposit error");
   const zrc20 = foreignCoin.zrc20_contract_address;
   const tx = await protocolContracts.gatewayZEVM
     .connect(fungibleModuleSigner)

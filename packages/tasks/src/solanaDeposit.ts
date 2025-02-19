@@ -25,14 +25,7 @@ const solanaDeposit = async (args: any) => {
   );
 
   const receiverBytes = ethers.getBytes(args.receiver);
-  console.log({
-    from: args.from,
-    mintAccount: args.mint,
-    signer: provider.wallet.publicKey,
-    systemProgram: anchor.web3.SystemProgram.programId,
-    to: args.to,
-    tokenProgram: args.tokenProgram,
-  });
+
   if (args.mint && args.from && args.to) {
     await gatewayProgram.methods
       .depositSplToken(

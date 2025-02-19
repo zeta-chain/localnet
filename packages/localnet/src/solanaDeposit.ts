@@ -39,7 +39,8 @@ export const solanaDeposit = async ({
       fungibleModuleSigner,
       protocolContracts,
     });
-  } catch (e) {
+  } catch (err) {
+    logErr("7001", `Error depositing: ${err}`);
     const { revertGasFee } = await zetachainSwapToCoverGas({
       amount,
       asset,
@@ -55,6 +56,11 @@ export const solanaDeposit = async ({
     const revertAmount = BigInt(amount) - revertGasFee;
 
     const receiver = ethers.toUtf8String(sender);
-    await solanaWithdraw(receiver, revertAmount);
+    await solanaWithdraw({
+      recipient: receiver,
+      amount: revertAmount,
+      mint: asset === ethers.ZeroAddress ? null : asset,
+      decimals: 9,
+    });
   }
 };
