@@ -56,6 +56,11 @@ export const solanaDepositAndCall = async ({
     const revertAmount = BigInt(amount) - revertGasFee;
 
     const receiver = ethers.toUtf8String(sender);
-    await solanaWithdraw(receiver, revertAmount);
+    await solanaWithdraw({
+      recipient: receiver,
+      amount: revertAmount,
+      mint: asset === ethers.ZeroAddress ? null : asset,
+      decimals: 9,
+    });
   }
 };

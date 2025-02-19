@@ -306,7 +306,8 @@ export const solanaMonitorTransactions = async ({
                   if (
                     decodedInstruction.name === "deposit_and_call" ||
                     decodedInstruction.name === "deposit" ||
-                    decodedInstruction.name === "deposit_spl_token"
+                    decodedInstruction.name === "deposit_spl_token" ||
+                    decodedInstruction.name === "deposit_spl_token_and_call"
                   ) {
                     const data = decodedInstruction.data as any;
                     const amount = data.amount.toString();
@@ -352,6 +353,23 @@ export const solanaMonitorTransactions = async ({
                         transaction.transaction.message.accountKeys[splIndex];
                       args[3] = asset.toString();
                       solanaDeposit({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
+                    } else if (
+                      decodedInstruction.name === "deposit_spl_token_and_call"
+                    ) {
+                      const splIndex =
+                        transaction.transaction.message.instructions[0]
+                          .accounts[3];
+                      const asset =
+                        transaction.transaction.message.accountKeys[splIndex];
+                      args[3] = asset.toString();
+                      solanaDepositAndCall({
                         args,
                         deployer,
                         foreignCoins,
