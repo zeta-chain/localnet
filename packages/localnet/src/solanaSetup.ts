@@ -281,7 +281,7 @@ export const solanaMonitorTransactions = async ({
             signatureInfo.signature,
             { commitment: "confirmed" }
           );
-
+          console.log(transaction);
           if (transaction) {
             for (const instruction of transaction.transaction.message
               .instructions) {
