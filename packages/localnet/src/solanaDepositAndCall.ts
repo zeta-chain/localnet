@@ -57,10 +57,10 @@ export const solanaDepositAndCall = async ({
 
     const receiver = ethers.toUtf8String(sender);
     await solanaWithdraw({
-      recipient: receiver,
       amount: revertAmount,
-      mint: asset === ethers.ZeroAddress ? null : asset,
       decimals: 9,
+      mint: asset === ethers.ZeroAddress ? null : asset,
+      recipient: receiver,
     });
   }
 };

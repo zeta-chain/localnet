@@ -1,13 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
 
+import { log, logErr } from "./log";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, tssKeyPair } from "./solanaSetup";
-import { log, logErr } from "./log";
 
 export const solanaWithdraw = async ({
   recipient,
@@ -15,10 +15,12 @@ export const solanaWithdraw = async ({
   mint,
   decimals,
 }: {
-  recipient: string; // recipient base58 address
-  amount: bigint; // amount in smallest units (e.g. lamports, or SPL raw amount)
-  mint?: string; // optional SPL token mint base58 address
-  decimals?: number; // optional SPL token decimals
+  // recipient base58 address
+  amount: bigint;
+  // optional SPL token mint base58 address
+  decimals?: number; // amount in smallest units (e.g. lamports, or SPL raw amount)
+  mint?: string;
+  recipient: string; // optional SPL token decimals
 }) => {
   try {
     const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
@@ -132,15 +134,15 @@ export const solanaWithdraw = async ({
           nonce
         )
         .accounts({
+          associatedTokenProgram,
+          mintAccount: mintPubkey,
           pda: pdaAccount,
           pdaAta: pdaATA,
-          mintAccount: mintPubkey,
-          recipientAta: recipientATA,
           recipient: recipientPubkey,
+          recipientAta: recipientATA,
           signer: payer.publicKey,
           systemProgram,
           tokenProgram,
-          associatedTokenProgram,
         })
         .rpc();
 
