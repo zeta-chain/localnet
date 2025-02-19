@@ -18,7 +18,9 @@ export const zetachainDeposit = async ({
         coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
   } else {
-    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
+    foreignCoin = foreignCoins.find(
+      (coin: any) => coin.asset === asset.toString()
+    );
   }
 
   if (!foreignCoin) {

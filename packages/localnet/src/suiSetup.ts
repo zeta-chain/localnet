@@ -190,7 +190,6 @@ const waitForConfirmation = async (
     });
 
     if (status.effects?.status?.status === "success") {
-      console.log("Transaction fully confirmed:", status);
       return status;
     }
 

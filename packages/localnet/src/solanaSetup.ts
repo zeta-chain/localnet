@@ -281,7 +281,6 @@ export const solanaMonitorTransactions = async ({
             signatureInfo.signature,
             { commitment: "confirmed" }
           );
-          console.log(transaction);
           if (transaction) {
             for (const instruction of transaction.transaction.message
               .instructions) {
@@ -303,7 +302,6 @@ export const solanaMonitorTransactions = async ({
                   instruction.data,
                   "base58"
                 );
-                console.log(decodedInstruction);
                 if (decodedInstruction) {
                   if (
                     decodedInstruction.name === "deposit_and_call" ||
@@ -347,7 +345,20 @@ export const solanaMonitorTransactions = async ({
                     } else if (
                       decodedInstruction.name === "deposit_spl_token"
                     ) {
-                      console.log("Deposit SPL token");
+                      const splIndex =
+                        transaction.transaction.message.instructions[0]
+                          .accounts[3];
+                      const asset =
+                        transaction.transaction.message.accountKeys[splIndex];
+                      args[3] = asset.toString();
+                      solanaDeposit({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
                     }
                   }
                 }
