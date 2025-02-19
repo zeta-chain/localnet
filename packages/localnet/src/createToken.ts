@@ -228,5 +228,16 @@ const createSolanaSPL = async (env: any) => {
   console.log("tssTokenAccount", tssTokenAccount);
   console.log("userTokenAccount", userTokenAccount);
 
+  const tokenAccountInfo =
+    await env.gatewayProgram.provider.connection.getAccountInfo(
+      userTokenAccount.address
+    );
+
+  if (tokenAccountInfo) {
+    console.log("Token Program Address:", tokenAccountInfo.owner.toBase58());
+  } else {
+    console.log("Token account not found.");
+  }
+
   return mint.toBase58();
 };

@@ -184,6 +184,8 @@ export const solanaSetup = async ({
       gatewayProgram.programId
     );
 
+    console.log("Gateway PDA account:", pdaAccount.toBase58());
+
     const fundTx = new anchor.web3.Transaction().add(
       anchor.web3.SystemProgram.transfer({
         fromPubkey: payer.publicKey,

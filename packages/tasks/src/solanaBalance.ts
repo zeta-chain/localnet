@@ -21,9 +21,7 @@ const solanaBalance = async (args: any) => {
   const tokenAccount = tokenAccounts.value[0].account;
   const tokenAmount = tokenAccount.data.parsed.info.tokenAmount;
 
-  console.log(
-    `Token balance: ${tokenAmount.uiAmount} ${tokenAmount.uiAmountString}`
-  );
+  console.log(`Token balance: ${tokenAmount.uiAmount} `);
 };
 
 export const solanaBalanceTask = task(
