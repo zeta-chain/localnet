@@ -88,12 +88,12 @@ const solanaDepositAndCall = async (args: any) => {
         Buffer.from(encodedParameters)
       )
       .accounts({
-        signer: provider.wallet.publicKey,
         from: args.from,
-        to: "",
         mintAccount: args.mint,
-        tokenProgram: args.tokenProgram,
+        signer: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
+        to: "",
+        tokenProgram: args.tokenProgram,
       })
       .rpc();
   } else {

@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { task } from "hardhat/config";
 import { PublicKey } from "@solana/web3.js";
+import { task } from "hardhat/config";
 
 const solanaBalance = async (args: any) => {
   const connection = new anchor.web3.Connection("http://localhost:8899");

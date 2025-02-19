@@ -6,14 +6,14 @@ import { ec as EC } from "elliptic";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 import * as fs from "fs";
+import { sha256 } from "js-sha256";
 import * as os from "os";
 import path from "path";
 import util from "util";
-import { sha256 } from "js-sha256";
-import { solanaDeposit } from "./solanaDeposit";
-import { solanaDepositAndCall } from "./solanaDepositAndCall";
 
 import Gateway_IDL from "./solana/idl/gateway.json";
+import { solanaDeposit } from "./solanaDeposit";
+import { solanaDepositAndCall } from "./solanaDepositAndCall";
 import { MNEMONIC } from "./suiSetup";
 
 const execAsync = util.promisify(exec);
@@ -234,8 +234,8 @@ export const solanaSetup = async ({
       },
     ],
     env: {
-      gatewayProgram,
       defaultSolanaUser: defaultSolanaUserKeypair,
+      gatewayProgram,
     },
   };
 };

@@ -1,10 +1,10 @@
+import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
+import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
-import { ethers, Signer } from "ethers";
-import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
-import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
+import { ethers, Signer } from "ethers";
 
 import { deployOpts } from "./deployOpts";
 

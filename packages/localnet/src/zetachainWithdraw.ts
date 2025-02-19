@@ -6,8 +6,8 @@ import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
 import { log } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
-import { zetachainOnRevert } from "./zetachainOnRevert";
 import { suiWithdraw } from "./suiWithdraw";
+import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdraw = async ({
   evmContracts,
@@ -29,8 +29,8 @@ export const zetachainWithdraw = async ({
   fungibleModuleSigner: any;
   gatewayZEVM: any;
   provider: ethers.JsonRpcProvider;
-  tss: any;
   suiEnv: any;
+  tss: any;
 }) => {
   log("7001", "Gateway: 'Withdrawn' event emitted");
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;

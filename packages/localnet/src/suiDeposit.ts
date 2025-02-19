@@ -1,8 +1,9 @@
+import { ethers } from "ethers";
+
 import { log } from "./log";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
-import { ethers } from "ethers";
 
 export const suiDeposit = async ({
   deployer,

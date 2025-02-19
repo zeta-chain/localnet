@@ -26,12 +26,12 @@ const solanaDeposit = async (args: any) => {
 
   const receiverBytes = ethers.getBytes(args.receiver);
   console.log({
-    signer: provider.wallet.publicKey,
     from: args.from,
-    to: args.to,
     mintAccount: args.mint,
-    tokenProgram: args.tokenProgram,
+    signer: provider.wallet.publicKey,
     systemProgram: anchor.web3.SystemProgram.programId,
+    to: args.to,
+    tokenProgram: args.tokenProgram,
   });
   if (args.mint && args.from && args.to) {
     await gatewayProgram.methods
@@ -40,12 +40,12 @@ const solanaDeposit = async (args: any) => {
         receiverBytes
       )
       .accounts({
-        signer: provider.wallet.publicKey,
         from: args.from,
-        to: args.to,
         mintAccount: args.mint,
-        tokenProgram: args.tokenProgram,
+        signer: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
+        to: args.to,
+        tokenProgram: args.tokenProgram,
       })
       .rpc();
   } else {

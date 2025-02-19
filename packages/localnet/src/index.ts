@@ -4,13 +4,13 @@ import { createToken } from "./createToken";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";
+import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
 import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
+import { zetachainSetup } from "./zetachainSetup";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
-import { zetachainSetup } from "./zetachainSetup";
-import { evmSetup } from "./evmSetup";
 const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 const foreignCoins: any[] = [];
@@ -156,8 +156,8 @@ export const initLocalnet = async ({
       fungibleModuleSigner,
       gatewayZEVM: protocolContracts.gatewayZEVM,
       provider,
-      tss,
       suiEnv: suiEnv?.env,
+      tss,
     });
   });
 

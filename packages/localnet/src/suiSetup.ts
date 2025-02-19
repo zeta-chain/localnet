@@ -5,6 +5,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
+
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
 
@@ -142,10 +143,10 @@ export const suiSetup = async ({
 
   pollEvents({
     client,
-    moduleId,
     deployer,
     foreignCoins,
     fungibleModuleSigner,
+    moduleId,
     protocolContracts,
     provider,
   });
@@ -170,9 +171,9 @@ export const suiSetup = async ({
     ],
     env: {
       client,
+      gatewayObjectId,
       keypair,
       moduleId,
-      gatewayObjectId,
       withdrawCapObjectId,
     },
   };
@@ -232,21 +233,21 @@ const pollEvents = async ({
           const { amount, receiver, sender, payload } = event.parsedJson as any;
           if (event.type === DEPOSIT_EVENT_TYPE) {
             suiDeposit({
+              args: { amount, payload, receiver, sender },
               deployer,
               foreignCoins,
               fungibleModuleSigner,
               protocolContracts,
               provider,
-              args: { amount, receiver, sender, payload },
             });
           } else if (event.type === DEPOSIT_AND_CALL_EVENT_TYPE) {
             suiDepositAndCall({
+              args: { amount, payload, receiver, sender },
               deployer,
               foreignCoins,
               fungibleModuleSigner,
               protocolContracts,
               provider,
-              args: { amount, receiver, sender, payload },
             });
           }
         }

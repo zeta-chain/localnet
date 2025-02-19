@@ -1,11 +1,10 @@
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from "@solana/spl-token";
-import { BN } from "@coral-xyz/anchor";
-
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
@@ -293,9 +292,9 @@ const whitelistSPLToken = async (
     .accounts({
       authority: authorityKeypair.publicKey, // must match pda.authority
       pda: gatewayPDA,
-      whitelistEntry: whitelistEntryPDA,
-      whitelistCandidate: mintPublicKey,
       systemProgram: SystemProgram.programId,
+      whitelistCandidate: mintPublicKey,
+      whitelistEntry: whitelistEntryPDA,
     })
     .signers([authorityKeypair])
     .rpc();
