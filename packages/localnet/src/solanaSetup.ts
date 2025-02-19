@@ -363,12 +363,14 @@ export const solanaMonitorTransactions = async ({
                     } else if (
                       decodedInstruction.name === "deposit_spl_token_and_call"
                     ) {
+                      const message = data.message.toString();
                       const splIndex =
                         transaction.transaction.message.instructions[0]
                           .accounts[3];
                       const asset =
                         transaction.transaction.message.accountKeys[splIndex];
                       args[3] = asset.toString();
+                      args.push(message);
                       solanaDepositAndCall({
                         args,
                         deployer,

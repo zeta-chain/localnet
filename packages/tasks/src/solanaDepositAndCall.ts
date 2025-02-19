@@ -80,10 +80,10 @@ const solanaDepositAndCall = async (args: any) => {
 
   const receiverBytes = ethers.getBytes(args.receiver);
 
-  if (args.mint && args.from) {
+  if (args.mint && args.from && args.to) {
     await gatewayProgram.methods
       .depositSplTokenAndCall(
-        args.amount,
+        new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
         receiverBytes,
         Buffer.from(encodedParameters)
       )
@@ -92,7 +92,7 @@ const solanaDepositAndCall = async (args: any) => {
         mintAccount: args.mint,
         signer: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
-        to: "",
+        to: args.to,
         tokenProgram: args.tokenProgram,
       })
       .rpc();
@@ -119,6 +119,7 @@ export const solanaDepositAndCallTask = task(
   .addVariadicPositionalParam("values", "The values of the parameters")
   .addOptionalParam("mnemonic", "Mnemonic for generating a keypair")
   .addOptionalParam("mint", "SPL token mint address")
+  .addOptionalParam("to", "SPL token account that belongs to the PDA")
   .addOptionalParam("from", "SPL token account from which tokens are withdrawn")
   .addOptionalParam(
     "tokenProgram",
