@@ -125,9 +125,18 @@ export const solanaSetup = async ({ handlers }: any) => {
       "confirmed"
     );
 
-    await connection.requestAirdrop(
+    const defaultLocalnetUserKeypairAirdrop = await connection.requestAirdrop(
       defaultLocalnetUserKeypair.publicKey,
       20_000_000_000_000
+    );
+
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: defaultLocalnetUserKeypairAirdrop,
+      },
+      "confirmed"
     );
 
     const defaultSolanaUserKeypairAirdrop = await connection.requestAirdrop(
