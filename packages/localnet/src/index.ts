@@ -10,6 +10,7 @@ import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers, NonceManager, Signer } from "ethers";
 
+import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { createToken } from "./createToken";
 import { deployOpts } from "./deployOpts";
 import { evmCall } from "./evmCall";
@@ -26,8 +27,6 @@ import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
-
-const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 const foreignCoins: any[] = [];
 
@@ -413,8 +412,8 @@ export const initLocalnet = async ({
       fungibleModuleSigner,
       gatewayZEVM: protocolContracts.gatewayZEVM,
       provider,
-      tss,
       suiEnv: (await suiEnv).env,
+      tss,
     });
   });
 

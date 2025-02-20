@@ -10,8 +10,8 @@ import * as os from "os";
 import path from "path";
 import util from "util";
 
+import { MNEMONIC } from "./constants";
 import Gateway_IDL from "./solana/idl/gateway.json";
-import { MNEMONIC } from "./suiSetup";
 
 const execAsync = util.promisify(exec);
 

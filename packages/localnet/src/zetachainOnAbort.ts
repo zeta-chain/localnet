@@ -1,5 +1,5 @@
-import { ethers } from "ethers";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { ethers } from "ethers";
 
 import { log, logErr } from "./log";
 
