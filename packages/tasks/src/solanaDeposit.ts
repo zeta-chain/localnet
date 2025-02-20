@@ -59,7 +59,10 @@ export const solanaDepositTask = task(
 )
   .addParam("receiver", "Address to deposit to")
   .addParam("amount", "Amount to deposit")
-  .addOptionalParam("mnemonic", "Mnemonic for generating a keypair")
+  .addOptionalParam(
+    "mnemonic",
+    "Mnemonic to derive the keypair for signing the transaction instead of using the default account"
+  )
   .addOptionalParam("mint", "SPL token mint address")
   .addOptionalParam("from", "SPL token account from which tokens are withdrawn")
   .addOptionalParam("to", "SPL token account that belongs to the PDA")
