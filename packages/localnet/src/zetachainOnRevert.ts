@@ -108,7 +108,7 @@ export const zetachainOnRevert = async ({
         "7001",
         `Token transfer to revertAddress ${revertAddress} failed: ${err}`
       );
-      zetachainOnAbort({
+      await zetachainOnAbort({
         abortAddress,
         amount,
         asset,
