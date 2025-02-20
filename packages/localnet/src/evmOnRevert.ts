@@ -77,18 +77,23 @@ export const evmOnRevert = async ({
   } else {
     const isGas = asset === ethers.ZeroAddress;
     const gasOrAsset = isGas ? "gas" : asset;
-    log(
-      chainID,
-      `callOnRevert is false, transferring amount ${amount} of ${gasOrAsset} tokens to revertAddress ${revertAddress}`
-    );
+    log(chainID, `callOnRevert is false`);
+    let revertReceiver = revertAddress;
+    if (revertAddress === ethers.ZeroAddress) {
+      logErr(
+        chainID,
+        `revertAddress is zero, transferring ${amount} of ${gasOrAsset} tokens to sender ${sender}`
+      );
+      revertReceiver = sender;
+    }
     if (isGas) {
       await tss.sendTransaction({
-        to: revertAddress,
+        to: revertReceiver,
         value: amount,
       });
     } else {
       const assetContract = new ethers.Contract(asset, ZRC20.abi, tss);
-      const transferTx = await assetContract.transfer(revertAddress, amount);
+      const transferTx = await assetContract.transfer(revertReceiver, amount);
       await transferTx.wait();
     }
   }

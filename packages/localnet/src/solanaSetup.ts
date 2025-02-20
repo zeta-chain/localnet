@@ -10,8 +10,8 @@ import * as os from "os";
 import path from "path";
 import util from "util";
 
+import { MNEMONIC } from "./constants";
 import Gateway_IDL from "./solana/idl/gateway.json";
-import { MNEMONIC } from "./suiSetup";
 
 const execAsync = util.promisify(exec);
 
@@ -125,9 +125,18 @@ export const solanaSetup = async ({ handlers }: any) => {
       "confirmed"
     );
 
-    await connection.requestAirdrop(
+    const defaultLocalnetUserKeypairAirdrop = await connection.requestAirdrop(
       defaultLocalnetUserKeypair.publicKey,
       20_000_000_000_000
+    );
+
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: defaultLocalnetUserKeypairAirdrop,
+      },
+      "confirmed"
     );
 
     const defaultSolanaUserKeypairAirdrop = await connection.requestAirdrop(

@@ -6,13 +6,12 @@ import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 
+import { MNEMONIC } from "./constants";
+
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
 const FAUCET_URL = "http://127.0.0.1:9123";
 const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
-
-export const MNEMONIC =
-  "grape subway rack mean march bubble carry avoid muffin consider thing street";
 
 const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);
@@ -141,23 +140,32 @@ export const suiSetup = async ({ handlers }: any) => {
     withdrawCapObjectId as string
   );
 
-  return [
-    {
-      address: moduleId,
-      chain: "sui",
-      type: "gatewayModuleID",
+  return {
+    addresses: [
+      {
+        address: moduleId,
+        chain: "sui",
+        type: "gatewayModuleID",
+      },
+      {
+        address: gatewayObjectId,
+        chain: "sui",
+        type: "gatewayObjectId",
+      },
+      {
+        address: user.mnemonic,
+        chain: "sui",
+        type: "userMnemonic",
+      },
+    ],
+    env: {
+      client,
+      gatewayObjectId,
+      keypair,
+      moduleId,
+      withdrawCapObjectId,
     },
-    {
-      address: gatewayObjectId,
-      chain: "sui",
-      type: "gatewayObjectId",
-    },
-    {
-      address: user.mnemonic,
-      chain: "sui",
-      type: "userMnemonic",
-    },
-  ];
+  };
 };
 const waitForConfirmation = async (
   client: SuiClient,
@@ -184,7 +192,7 @@ const waitForConfirmation = async (
 
 const pollEvents = async (
   client: SuiClient,
-  packageId: string,
+  moduleId: string,
   handlers: any,
   keypair: Ed25519Keypair,
   gatewayObjectId: string,
@@ -192,8 +200,8 @@ const pollEvents = async (
 ) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
-  const DEPOSIT_EVENT_TYPE = `${packageId}::gateway::DepositEvent`;
-  const DEPOSIT_AND_CALL_EVENT_TYPE = `${packageId}::gateway::DepositAndCallEvent`;
+  const DEPOSIT_EVENT_TYPE = `${moduleId}::gateway::DepositEvent`;
+  const DEPOSIT_AND_CALL_EVENT_TYPE = `${moduleId}::gateway::DepositAndCallEvent`;
 
   while (true) {
     try {
@@ -204,7 +212,7 @@ const pollEvents = async (
         query: {
           MoveEventModule: {
             module: "gateway",
-            package: packageId,
+            package: moduleId,
           },
         },
       });
@@ -219,7 +227,7 @@ const pollEvents = async (
               event: event.parsedJson,
               gatewayObjectId,
               keypair,
-              packageId,
+              moduleId,
               receiver,
               sender,
               withdrawCapObjectId,
@@ -231,7 +239,7 @@ const pollEvents = async (
               event: event.parsedJson,
               gatewayObjectId,
               keypair,
-              packageId,
+              moduleId,
               payload,
               receiver,
               sender,
