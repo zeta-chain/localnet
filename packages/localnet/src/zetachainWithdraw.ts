@@ -53,16 +53,14 @@ export const zetachainWithdraw = async ({
 
     if (isSolana) {
       const receiverAddress = ethers.toUtf8String(receiver);
-<<<<<<< HEAD
       await solanaWithdraw({
-        recipient: receiverAddress,
         amount: amount,
-        mint: asset, // FIX THIS
+        // FIX THIS
         decimals: 9,
+
+        mint: asset,
+        recipient: receiverAddress,
       });
-=======
-      await solanaWithdraw(receiverAddress, amount);
->>>>>>> main
     } else if (isSui) {
       await suiWithdraw({
         amount,

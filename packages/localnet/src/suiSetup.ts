@@ -6,9 +6,9 @@ import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 
+import { MNEMONIC } from "./constants";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
-import { MNEMONIC } from "./constants";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
