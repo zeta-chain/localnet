@@ -125,7 +125,7 @@ export const initLocalnet = async ({
     null
   );
   await createToken(addresses, null, "SOL", true, "901", 9, null);
-  await createToken(addresses, null, "USDC", false, "901", 9, solanaEnv.env);
+  await createToken(addresses, null, "USDC", false, "901", 9, solanaEnv?.env);
   await createToken(addresses, null, "SUI", true, "103", 9, null);
 
   const evmContracts = {

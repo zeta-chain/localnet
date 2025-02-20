@@ -9,6 +9,7 @@ import * as fs from "fs";
 import { MNEMONIC } from "./constants";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
+import { isSuiAvailable } from "./isSuiAvailable";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
@@ -30,6 +31,9 @@ export const suiSetup = async ({
   protocolContracts,
   provider,
 }: any) => {
+  if (!(await isSuiAvailable())) {
+    return;
+  }
   const client = new SuiClient({ url: NODE_RPC });
 
   const user = generateAccount(MNEMONIC);

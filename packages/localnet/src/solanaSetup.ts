@@ -15,6 +15,7 @@ import { MNEMONIC } from "./constants";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
+import { isSolanaAvailable } from "./isSolanaAvailable";
 
 const execAsync = util.promisify(exec);
 
@@ -84,6 +85,9 @@ export const solanaSetup = async ({
   protocolContracts,
   provider,
 }: any) => {
+  if (!(await isSolanaAvailable())) {
+    return;
+  }
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
   console.log(
     `Default Solana user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`

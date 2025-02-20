@@ -21,6 +21,10 @@ export const createToken = async (
   decimals: number,
   solana?: any
 ) => {
+  if (chainID === "901" && !solana) {
+    return;
+  }
+
   let erc20;
 
   const {
