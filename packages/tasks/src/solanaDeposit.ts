@@ -40,4 +40,7 @@ export const solanaDepositTask = task(
 )
   .addParam("receiver", "Address to deposit to")
   .addParam("amount", "Amount to deposit")
-  .addOptionalParam("mnemonic", "Mnemonic for generating a keypair");
+  .addOptionalParam(
+    "mnemonic",
+    "Mnemonic to derive the keypair for signing the transaction instead of using the default account"
+  );

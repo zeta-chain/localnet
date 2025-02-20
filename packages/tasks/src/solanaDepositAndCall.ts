@@ -97,4 +97,7 @@ export const solanaDepositAndCallTask = task(
   .addParam("amount", "Amount to deposit and call")
   .addParam("types", `The types of the parameters (example: '["string"]')`)
   .addVariadicPositionalParam("values", "The values of the parameters")
-  .addOptionalParam("mnemonic", "Mnemonic for generating a keypair");
+  .addOptionalParam(
+    "mnemonic",
+    "Mnemonic to derive the keypair for signing the transaction instead of using the default account"
+  );
