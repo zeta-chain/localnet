@@ -7,9 +7,9 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 
 import { MNEMONIC } from "./constants";
+import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
-import { isSuiAvailable } from "./isSuiAvailable";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
