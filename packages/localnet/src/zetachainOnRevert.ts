@@ -82,7 +82,7 @@ export const zetachainOnRevert = async ({
     } catch (err) {
       const error = `onRevert failed: ${err}`;
       logErr("7001", error);
-      zetachainOnAbort({
+      await zetachainOnAbort({
         abortAddress,
         amount,
         asset,

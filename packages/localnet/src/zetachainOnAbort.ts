@@ -36,7 +36,7 @@ export const zetachainOnAbort = async ({
       }
     } else {
       log("7001", `Transferring tokens to abortAddress ${abortAddress}`);
-      if (asset !== ethers.ZeroAddress) {
+      if (asset !== ethers.ZeroAddress && amount > 0) {
         const transferTx = await assetContract.transfer(abortAddress, amount);
         await transferTx.wait();
       }
