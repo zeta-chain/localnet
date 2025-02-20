@@ -38,6 +38,10 @@ export const zetachainWithdraw = async ({
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
 
+  let asset = foreignCoins.find(
+    (coin: any) => coin.zrc20_contract_address === zrc20
+  ).asset;
+
   try {
     (tss as NonceManager).reset();
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
@@ -49,7 +53,12 @@ export const zetachainWithdraw = async ({
 
     if (isSolana) {
       const receiverAddress = ethers.toUtf8String(receiver);
-      await solanaWithdraw(receiverAddress, amount);
+      await solanaWithdraw({
+        recipient: receiverAddress,
+        amount: amount,
+        mint: asset, // FIX THIS
+        decimals: 9,
+      });
     } else if (isSui) {
       await suiWithdraw({
         amount,

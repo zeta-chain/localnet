@@ -1,5 +1,6 @@
 import { ethers, NonceManager } from "ethers";
 
+import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { createToken } from "./createToken";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
@@ -11,7 +12,6 @@ import { zetachainCall } from "./zetachainCall";
 import { zetachainSetup } from "./zetachainSetup";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
-const FUNGIBLE_MODULE_ADDRESS = "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
 const foreignCoins: any[] = [];
 
