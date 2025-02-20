@@ -1718,10 +1718,10 @@
   dependencies:
     dotenv "^16.1.4"
 
-"@zetachain/protocol-contracts@11.0.0-rc5":
-  version "11.0.0-rc5"
-  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-11.0.0-rc5.tgz#b55119e6cade29c4f266eb029d8879b968f87f63"
-  integrity sha512-+bjeTvSzuchWEIxrZ7IbOb8ERhZ+PtgmyOSSFcwhhyAOonYxNlM+1M/mSNAk5i3cdZyJTINzhk7H603/RQSeqA==
+"@zetachain/protocol-contracts@11.0.0":
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-11.0.0.tgz#4889044ae2f5db3f38d052a869775d17798f273e"
+  integrity sha512-BKkLLru4ZJzOh0G2kBYqzjzvb6nvH8c/FlT0Py4f5TAMnrw4h5PnhKMJbWjznv+e2LJ/I9PPpCeqB9zPfGoJPA==
   dependencies:
     "@openzeppelin/contracts" "^5.0.2"
     "@openzeppelin/contracts-upgradeable" "^5.0.2"
