@@ -292,10 +292,10 @@ export const initLocalnet = async ({
     console.error("Solana CLI not available. Skipping setup.");
   }
 
-  let suiEnv: any = {};
+  let suiEnv: any = null;
 
   if (isSuiAvailable()) {
-    suiEnv = suiSetup({
+    suiEnv = await suiSetup({
       handlers: {
         deposit: (args: any) => {
           suiDeposit({
@@ -530,7 +530,7 @@ export const initLocalnet = async ({
   );
 
   return [
-    ...(await suiEnv).addresses,
+    ...(suiEnv ? suiEnv.addresses : []),
     ...(await solanaAddresses),
     ...Object.entries(protocolContracts)
       .filter(([_, value]) => value.target !== undefined)
