@@ -41,7 +41,6 @@ export const solanaDepositAndCall = async ({
       provider,
     });
   } catch (e) {
-    console.log(e);
     const { revertGasFee } = await zetachainSwapToCoverGas({
       amount,
       asset,
