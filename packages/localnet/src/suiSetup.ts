@@ -7,6 +7,9 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 
 import { MNEMONIC } from "./constants";
+import { isSuiAvailable } from "./isSuiAvailable";
+import { suiDeposit } from "./suiDeposit";
+import { suiDepositAndCall } from "./suiDepositAndCall";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
@@ -21,7 +24,16 @@ const generateAccount = (mnemonic: string) => {
   return { keypair, mnemonic };
 };
 
-export const suiSetup = async ({ handlers }: any) => {
+export const suiSetup = async ({
+  deployer,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+}: any) => {
+  if (!(await isSuiAvailable())) {
+    return;
+  }
   const client = new SuiClient({ url: NODE_RPC });
 
   const user = generateAccount(MNEMONIC);
@@ -131,14 +143,15 @@ export const suiSetup = async ({ handlers }: any) => {
     throw new Error("Failed to get gateway object ID");
   }
 
-  pollEvents(
+  pollEvents({
     client,
+    deployer,
+    foreignCoins,
+    fungibleModuleSigner,
     moduleId,
-    handlers,
-    keypair,
-    gatewayObjectId,
-    withdrawCapObjectId as string
-  );
+    protocolContracts,
+    provider,
+  });
 
   return {
     addresses: [
@@ -180,7 +193,6 @@ const waitForConfirmation = async (
     });
 
     if (status.effects?.status?.status === "success") {
-      console.log("Transaction fully confirmed:", status);
       return status;
     }
 
@@ -190,14 +202,15 @@ const waitForConfirmation = async (
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
 
-const pollEvents = async (
-  client: SuiClient,
-  moduleId: string,
-  handlers: any,
-  keypair: Ed25519Keypair,
-  gatewayObjectId: string,
-  withdrawCapObjectId: string
-) => {
+const pollEvents = async ({
+  client,
+  moduleId,
+  deployer,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+}: any) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
   const DEPOSIT_EVENT_TYPE = `${moduleId}::gateway::DepositEvent`;
@@ -205,7 +218,7 @@ const pollEvents = async (
 
   while (true) {
     try {
-      const { data, hasNextPage, nextCursor } = await client.queryEvents({
+      const { data, hasNextPage, nextCursor }: any = await client.queryEvents({
         cursor: currentCursor || null,
         limit: 50,
         order: "ascending",
@@ -221,29 +234,22 @@ const pollEvents = async (
         for (const event of data) {
           const { amount, receiver, sender, payload } = event.parsedJson as any;
           if (event.type === DEPOSIT_EVENT_TYPE) {
-            handlers.deposit({
-              amount,
-              client,
-              event: event.parsedJson,
-              gatewayObjectId,
-              keypair,
-              moduleId,
-              receiver,
-              sender,
-              withdrawCapObjectId,
+            suiDeposit({
+              args: { amount, payload, receiver, sender },
+              deployer,
+              foreignCoins,
+              fungibleModuleSigner,
+              protocolContracts,
+              provider,
             });
           } else if (event.type === DEPOSIT_AND_CALL_EVENT_TYPE) {
-            handlers.depositAndCall({
-              amount,
-              client,
-              event: event.parsedJson,
-              gatewayObjectId,
-              keypair,
-              moduleId,
-              payload,
-              receiver,
-              sender,
-              withdrawCapObjectId,
+            suiDepositAndCall({
+              args: { amount, payload, receiver, sender },
+              deployer,
+              foreignCoins,
+              fungibleModuleSigner,
+              protocolContracts,
+              provider,
             });
           }
         }

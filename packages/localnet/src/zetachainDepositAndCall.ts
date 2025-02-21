@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
 
@@ -30,8 +31,12 @@ export const zetachainDepositAndCall = async ({
 
   const context = {
     chainID,
-    origin: ["901", "103"].includes(chainID) ? sender : ethers.ZeroAddress,
-    sender: ["901", "103"].includes(chainID) ? ethers.ZeroAddress : sender,
+    origin: [NetworkID.Solana, NetworkID.Sui].includes(chainID)
+      ? sender
+      : ethers.ZeroAddress,
+    sender: [NetworkID.Solana, NetworkID.Sui].includes(chainID)
+      ? ethers.ZeroAddress
+      : sender,
   };
   log(
     "7001",

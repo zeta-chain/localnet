@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
@@ -11,12 +12,12 @@ export const solanaDepositAndCall = async ({
   args,
   fungibleModuleSigner,
   foreignCoins,
-  chainID,
   deployer,
 }: any) => {
+  const chainID = NetworkID.Solana;
   const [sender, , amount, asset] = args;
   try {
-    log("901", "Gateway Deposit and call executed");
+    log(NetworkID.Solana, "Gateway Deposit and call executed");
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find(
@@ -55,6 +56,11 @@ export const solanaDepositAndCall = async ({
     const revertAmount = BigInt(amount) - revertGasFee;
 
     const receiver = ethers.toUtf8String(sender);
-    await solanaWithdraw(receiver, revertAmount);
+    await solanaWithdraw({
+      amount: revertAmount,
+      decimals: 9,
+      mint: asset === ethers.ZeroAddress ? null : asset,
+      recipient: receiver,
+    });
   }
 };

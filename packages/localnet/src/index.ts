@@ -1,30 +1,15 @@
-import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
-import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
-import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
-import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
-import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
-import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
-import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
-import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
-import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
-import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
-import { ethers, NonceManager, Signer } from "ethers";
+import { ethers, NonceManager } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
+import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "./constants";
 import { createToken } from "./createToken";
-import { deployOpts } from "./deployOpts";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";
-import { isSolanaAvailable } from "./isSolanaAvailable";
-import { isSuiAvailable } from "./isSuiAvailable";
-import { solanaDeposit } from "./solanaDeposit";
-import { solanaDepositAndCall } from "./solanaDepositAndCall";
+import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
-import { suiDeposit } from "./suiDeposit";
-import { suiDepositAndCall } from "./suiDepositAndCall";
 import { suiSetup } from "./suiSetup";
 import { zetachainCall } from "./zetachainCall";
+import { zetachainSetup } from "./zetachainSetup";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
 
@@ -35,226 +20,6 @@ const foreignCoins: any[] = [];
   return this.toString();
 };
 
-const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
-  const uniswapFactory = new ethers.ContractFactory(
-    UniswapV2Factory.abi,
-    UniswapV2Factory.bytecode,
-    deployer
-  );
-  const uniswapRouterFactory = new ethers.ContractFactory(
-    UniswapV2Router02.abi,
-    UniswapV2Router02.bytecode,
-    deployer
-  );
-
-  const uniswapFactoryInstance = await uniswapFactory.deploy(
-    await deployer.getAddress(),
-    deployOpts
-  );
-
-  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
-    await uniswapFactoryInstance.getAddress(),
-    await wzeta.getAddress(),
-    deployOpts
-  );
-
-  return { uniswapFactoryInstance, uniswapRouterInstance };
-};
-
-const prepareZetaChain = async (
-  deployer: Signer,
-  wzetaAddress: any,
-  uniswapFactoryAddress: string,
-  uniswapRouterAddress: string
-) => {
-  const systemContractFactory = new ethers.ContractFactory(
-    SystemContract.abi,
-    SystemContract.bytecode,
-    deployer
-  );
-  const systemContract: any = await systemContractFactory.deploy(
-    wzetaAddress,
-    uniswapFactoryAddress,
-    uniswapRouterAddress,
-    deployOpts
-  );
-
-  const gatewayZEVMFactory = new ethers.ContractFactory(
-    GatewayZEVM.abi,
-    GatewayZEVM.bytecode,
-    deployer
-  );
-  const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
-
-  const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
-  const gatewayZEVMInitFragment =
-    gatewayZEVMInterface.getFunction("initialize");
-  const gatewayZEVMInitData = gatewayZEVMInterface.encodeFunctionData(
-    gatewayZEVMInitFragment as ethers.FunctionFragment,
-    [wzetaAddress, await deployer.getAddress()]
-  );
-
-  const proxyZEVMFactory = new ethers.ContractFactory(
-    ERC1967Proxy.abi,
-    ERC1967Proxy.bytecode,
-    deployer
-  );
-  const proxyZEVM = (await proxyZEVMFactory.deploy(
-    gatewayZEVMImpl.target,
-    gatewayZEVMInitData,
-    deployOpts
-  )) as any;
-
-  const gatewayZEVM = new ethers.Contract(
-    proxyZEVM.target,
-    GatewayZEVM.abi,
-    deployer
-  );
-  return { gatewayZEVM, systemContract };
-};
-
-const prepareEVM = async (deployer: Signer, tss: Signer) => {
-  const testERC20Factory = new ethers.ContractFactory(
-    TestERC20.abi,
-    TestERC20.bytecode,
-    deployer
-  );
-  const testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
-
-  const gatewayEVMFactory = new ethers.ContractFactory(
-    GatewayEVM.abi,
-    GatewayEVM.bytecode,
-    deployer
-  );
-  const gatewayEVMImpl = await gatewayEVMFactory.deploy(deployOpts);
-
-  const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
-  const gatewayEVMInitFragment = gatewayEVMInterface.getFunction("initialize");
-  const gatewayEVMInitdata = gatewayEVMInterface.encodeFunctionData(
-    gatewayEVMInitFragment as ethers.FunctionFragment,
-    [await tss.getAddress(), testEVMZeta.target, await deployer.getAddress()]
-  );
-
-  const proxyEVMFactory = new ethers.ContractFactory(
-    ERC1967Proxy.abi,
-    ERC1967Proxy.bytecode,
-    deployer
-  );
-
-  const proxyEVM = (await proxyEVMFactory.deploy(
-    gatewayEVMImpl.target,
-    gatewayEVMInitdata,
-    deployOpts
-  )) as any;
-
-  const gatewayEVM = new ethers.Contract(
-    proxyEVM.target,
-    GatewayEVM.abi,
-    deployer
-  );
-
-  const zetaConnectorFactory = new ethers.ContractFactory(
-    ZetaConnectorNonNative.abi,
-    ZetaConnectorNonNative.bytecode,
-    deployer
-  );
-  const zetaConnectorImpl = await zetaConnectorFactory.deploy(deployOpts);
-
-  const custodyFactory = new ethers.ContractFactory(
-    Custody.abi,
-    Custody.bytecode,
-    deployer
-  );
-  const custodyImpl = await custodyFactory.deploy(deployOpts);
-
-  const zetaConnectorProxy = new ethers.Contract(
-    zetaConnectorImpl.target,
-    ZetaConnectorNonNative.abi,
-    deployer
-  );
-
-  const custodyProxy = new ethers.Contract(
-    custodyImpl.target,
-    Custody.abi,
-    deployer
-  );
-
-  // Temporarily disable
-  //
-  // await zetaConnectorProxy.initialize(
-  //   gatewayEVM.target,
-  //   testEVMZeta.target,
-  //   await tss.getAddress(),
-  //   await deployer.getAddress(),
-  //   deployOpts
-  // );
-
-  await custodyProxy.initialize(
-    gatewayEVM.target,
-    await tss.getAddress(),
-    await deployer.getAddress(),
-    deployOpts
-  );
-
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setCustody(custodyImpl.target, deployOpts);
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setConnector(zetaConnectorImpl.target, deployOpts);
-
-  return {
-    custody: custodyProxy,
-    gatewayEVM,
-    testEVMZeta,
-    zetaConnector: zetaConnectorProxy,
-  };
-};
-
-const deployProtocolContracts = async (
-  deployer: Signer,
-  tss: Signer,
-  fungibleModuleSigner: Signer
-) => {
-  const weth9Factory = new ethers.ContractFactory(
-    WETH9.abi,
-    WETH9.bytecode,
-    deployer
-  );
-  const wzeta = await weth9Factory.deploy(deployOpts);
-
-  const { uniswapFactoryInstance, uniswapRouterInstance } =
-    await prepareUniswap(deployer, tss, wzeta);
-  const { systemContract, gatewayZEVM } = await prepareZetaChain(
-    deployer,
-    wzeta.target,
-    await uniswapFactoryInstance.getAddress(),
-    await uniswapRouterInstance.getAddress()
-  );
-
-  await (wzeta as any)
-    .connect(fungibleModuleSigner)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
-  await (wzeta as any)
-    .connect(fungibleModuleSigner)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
-
-  return {
-    gatewayZEVM,
-    systemContract,
-    tss,
-    uniswapFactoryInstance,
-    uniswapRouterInstance,
-    wzeta,
-  };
-};
-
 export const initLocalnet = async ({
   port,
   exitOnError,
@@ -262,69 +27,6 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
 }) => {
-  let solanaAddresses: any = [];
-  if (isSolanaAvailable()) {
-    solanaAddresses = solanaSetup({
-      handlers: {
-        deposit: (args: any) =>
-          solanaDeposit({
-            args,
-            chainID: "901",
-            deployer,
-            foreignCoins,
-            fungibleModuleSigner,
-            protocolContracts,
-            provider,
-          }),
-        depositAndCall: (args: any) =>
-          solanaDepositAndCall({
-            args,
-            chainID: "901",
-            deployer,
-            foreignCoins,
-            fungibleModuleSigner,
-            protocolContracts,
-            provider,
-          }),
-      },
-    });
-  } else {
-    console.error("Solana CLI not available. Skipping setup.");
-  }
-
-  let suiEnv: any = null;
-
-  if (isSuiAvailable()) {
-    suiEnv = await suiSetup({
-      handlers: {
-        deposit: (args: any) => {
-          suiDeposit({
-            args,
-            asset: ethers.ZeroAddress,
-            chainID: "103",
-            deployer,
-            foreignCoins,
-            fungibleModuleSigner,
-            protocolContracts,
-            provider,
-          });
-        },
-        depositAndCall: (args: any) => {
-          suiDepositAndCall({
-            args,
-            asset: ethers.ZeroAddress,
-            chainID: "103",
-            deployer,
-            foreignCoins,
-            fungibleModuleSigner,
-            protocolContracts,
-            provider,
-          });
-        },
-      },
-    });
-  }
-
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
   // anvil test mnemonic
@@ -351,15 +53,31 @@ export const initLocalnet = async ({
   );
   tss = tss.connect(provider);
 
-  const protocolContracts = await deployProtocolContracts(
+  const protocolContracts = await zetachainSetup(
     deployer,
     tss,
     fungibleModuleSigner
   );
 
-  const contractsEthereum = await prepareEVM(deployer, tss);
-
-  const contractsBNB = await prepareEVM(deployer, tss);
+  const [solanaEnv, suiEnv, contractsEthereum, contractsBNB] =
+    await Promise.all([
+      solanaSetup({
+        deployer,
+        foreignCoins,
+        fungibleModuleSigner,
+        protocolContracts,
+        provider,
+      }),
+      suiSetup({
+        deployer,
+        foreignCoins,
+        fungibleModuleSigner,
+        protocolContracts,
+        provider,
+      }),
+      evmSetup(deployer, tss),
+      evmSetup(deployer, tss),
+    ]);
 
   const addresses = {
     ...protocolContracts,
@@ -370,19 +88,61 @@ export const initLocalnet = async ({
     tss,
   };
 
-  await createToken(addresses, contractsEthereum.custody, "ETH", true, "5", 18);
+  await createToken(
+    addresses,
+    contractsEthereum.custody,
+    "ETH",
+    true,
+    NetworkID.Ethereum,
+    18,
+    null
+  );
   await createToken(
     addresses,
     contractsEthereum.custody,
     "USDC",
     false,
-    "5",
-    18
+    NetworkID.Ethereum,
+    18,
+    null
   );
-  await createToken(addresses, contractsBNB.custody, "BNB", true, "97", 18);
-  await createToken(addresses, contractsBNB.custody, "USDC", false, "97", 18);
-  await createToken(addresses, null, "SOL", true, "901", 9);
-  await createToken(addresses, null, "SUI", true, "103", 9);
+  await createToken(
+    addresses,
+    contractsBNB.custody,
+    "BNB",
+    true,
+    NetworkID.BNB,
+    18,
+    null
+  );
+  await createToken(
+    addresses,
+    contractsBNB.custody,
+    "USDC",
+    false,
+    NetworkID.BNB,
+    18,
+    null
+  );
+  await createToken(
+    addresses,
+    null,
+    "SOL",
+    true,
+    NetworkID.Solana,
+    9,
+    solanaEnv?.env
+  );
+  await createToken(
+    addresses,
+    null,
+    "USDC",
+    false,
+    NetworkID.Solana,
+    9,
+    solanaEnv?.env
+  );
+  await createToken(addresses, null, "SUI", true, NetworkID.Sui, 9, null);
 
   const evmContracts = {
     5: contractsEthereum,
@@ -412,7 +172,7 @@ export const initLocalnet = async ({
       fungibleModuleSigner,
       gatewayZEVM: protocolContracts.gatewayZEVM,
       provider,
-      suiEnv: (await suiEnv).env,
+      suiEnv: suiEnv?.env,
       tss,
     });
   });
@@ -437,7 +197,7 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      chainID: "5",
+      chainID: NetworkID.Ethereum,
       deployer,
       exitOnError,
       foreignCoins,
@@ -450,7 +210,7 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
-      chainID: "5",
+      chainID: NetworkID.Ethereum,
       custody: contractsEthereum.custody,
       deployer,
       exitOnError,
@@ -468,7 +228,7 @@ export const initLocalnet = async ({
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
-        chainID: "5",
+        chainID: NetworkID.Ethereum,
         custody: contractsEthereum.custody,
         deployer,
         exitOnError,
@@ -485,7 +245,7 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      chainID: "97",
+      chainID: NetworkID.BNB,
       deployer,
       foreignCoins,
       fungibleModuleSigner,
@@ -497,7 +257,7 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
-      chainID: "97",
+      chainID: NetworkID.BNB,
       custody: contractsBNB.custody,
       deployer,
       exitOnError,
@@ -515,7 +275,7 @@ export const initLocalnet = async ({
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
-        chainID: "97",
+        chainID: NetworkID.BNB,
         custody: contractsBNB.custody,
         deployer,
         exitOnError,
@@ -529,11 +289,14 @@ export const initLocalnet = async ({
     }
   );
 
-  return [
-    ...(suiEnv ? suiEnv.addresses : []),
-    ...(await solanaAddresses),
+  const res = [
+    {
+      address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      chain: "solana",
+      type: "tokenProgram",
+    },
     ...Object.entries(protocolContracts)
-      .filter(([_, value]) => value.target !== undefined)
+      .filter(([, value]) => value.target !== undefined)
       .map(([key, value]) => {
         return {
           address: value.target,
@@ -549,12 +312,30 @@ export const initLocalnet = async ({
       };
     }),
     ...Object.entries(foreignCoins)
-      .map(([key, value]) => {
-        if (value.asset) {
+      .map(([, value]) => {
+        if (
+          value.asset &&
+          (value.foreign_chain_id === NetworkID.Ethereum ||
+            value.foreign_chain_id === NetworkID.BNB)
+        ) {
           return {
             address: value.asset,
-            chain: value.foreign_chain_id === "5" ? "ethereum" : "bnb",
+            chain:
+              value.foreign_chain_id === NetworkID.Ethereum
+                ? "ethereum"
+                : "bnb",
             type: `ERC-20 ${value.symbol}`,
+          };
+        }
+      })
+      .filter(Boolean),
+    ...Object.entries(foreignCoins)
+      .map(([key, value]) => {
+        if (value.foreign_chain_id === NetworkID.Solana && value.asset) {
+          return {
+            address: value.asset,
+            chain: "solana",
+            type: `SPL-20 ${value.symbol}`,
           };
         }
       })
@@ -579,4 +360,9 @@ export const initLocalnet = async ({
       };
     }),
   ];
+
+  if (suiEnv) res.push(...suiEnv.addresses);
+  if (solanaEnv) res.push(...solanaEnv.addresses);
+
+  return res;
 };

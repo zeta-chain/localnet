@@ -1,6 +1,7 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log } from "./log";
 
 export const suiWithdraw = async ({
@@ -33,7 +34,7 @@ export const suiWithdraw = async ({
     transaction: tx,
   });
   log(
-    "103",
+    NetworkID.Sui,
     `Withdrawing ${ethers.formatUnits(
       amount,
       9

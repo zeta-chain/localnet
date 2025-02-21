@@ -6,12 +6,16 @@ import { ec as EC } from "elliptic";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 import * as fs from "fs";
+import { sha256 } from "js-sha256";
 import * as os from "os";
 import path from "path";
 import util from "util";
 
 import { MNEMONIC } from "./constants";
+import { isSolanaAvailable } from "./isSolanaAvailable";
 import Gateway_IDL from "./solana/idl/gateway.json";
+import { solanaDeposit } from "./solanaDeposit";
+import { solanaDepositAndCall } from "./solanaDepositAndCall";
 
 const execAsync = util.promisify(exec);
 
@@ -41,9 +45,16 @@ process.env.ANCHOR_PROVIDER_URL = "http://localhost:8899";
 
 const ec = new EC("secp256k1");
 
-export const tssKeyPair = ec.keyFromPrivate(
-  "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8"
-);
+const tssKeyHex =
+  "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8";
+
+export const tssKeyPair = ec.keyFromPrivate(tssKeyHex);
+
+const seed = new Uint8Array(
+  sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))
+).slice(0, 32);
+
+export const tssKeypair = Keypair.fromSeed(seed);
 
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
@@ -67,7 +78,16 @@ export const keypairFromMnemonic = async (
   return Keypair.fromSeed(seedSlice);
 };
 
-export const solanaSetup = async ({ handlers }: any) => {
+export const solanaSetup = async ({
+  deployer,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+}: any) => {
+  if (!(await isSolanaAvailable())) {
+    return;
+  }
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
   console.log(
     `Default Solana user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`
@@ -116,6 +136,8 @@ export const solanaSetup = async ({ handlers }: any) => {
       20_000_000_000_000
     );
 
+    await connection.requestAirdrop(tssKeypair.publicKey, 20_000_000_000_000);
+
     await connection.confirmTransaction(
       {
         blockhash: latestBlockhash.blockhash,
@@ -153,12 +175,25 @@ export const solanaSetup = async ({ handlers }: any) => {
       "confirmed"
     );
 
-    const provider = new anchor.AnchorProvider(
+    const airdropTssSig = await connection.requestAirdrop(
+      tssKeypair.publicKey,
+      20_000_000_000_000
+    );
+    await connection.confirmTransaction(
+      {
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        signature: airdropTssSig,
+      },
+      "confirmed"
+    );
+
+    const anchorProvider = new anchor.AnchorProvider(
       connection,
       new anchor.Wallet(payer),
       {}
     );
-    anchor.setProvider(provider);
+    anchor.setProvider(anchorProvider);
 
     const deployCommand = `solana program deploy --program-id ${gatewayKeypairPath} ${gatewaySoPath} --url localhost`;
 
@@ -175,6 +210,8 @@ export const solanaSetup = async ({ handlers }: any) => {
       gatewayProgram.programId
     );
 
+    console.log("Gateway PDA account:", pdaAccount.toBase58());
+
     const fundTx = new anchor.web3.Transaction().add(
       anchor.web3.SystemProgram.transfer({
         fromPubkey: payer.publicKey,
@@ -186,10 +223,13 @@ export const solanaSetup = async ({ handlers }: any) => {
       commitment: "confirmed",
     });
 
-    console.log("PDA funded successfully.");
-
-    // Start monitoring program transactions
-    solanaMonitorTransactions({ handlers });
+    solanaMonitorTransactions({
+      deployer,
+      foreignCoins,
+      fungibleModuleSigner,
+      protocolContracts,
+      provider,
+    });
   } catch (error: any) {
     console.error(`Error setting up Solana: ${error.message}`);
     if (error.logs) {
@@ -197,16 +237,29 @@ export const solanaSetup = async ({ handlers }: any) => {
     }
     throw error;
   }
-  return [
-    {
-      address: gatewayProgram.programId.toBase58(),
-      chain: "solana",
-      type: "gatewayProgram",
+
+  return {
+    addresses: [
+      {
+        address: gatewayProgram.programId.toBase58(),
+        chain: "solana",
+        type: "gatewayProgram",
+      },
+    ],
+    env: {
+      defaultSolanaUser: defaultSolanaUserKeypair,
+      gatewayProgram,
     },
-  ];
+  };
 };
 
-export const solanaMonitorTransactions = async ({ handlers }: any) => {
+export const solanaMonitorTransactions = async ({
+  deployer,
+  foreignCoins,
+  fungibleModuleSigner,
+  protocolContracts,
+  provider,
+}: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
   const connection = gatewayProgram.provider.connection;
 
@@ -241,7 +294,6 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
             signatureInfo.signature,
             { commitment: "confirmed" }
           );
-
           if (transaction) {
             for (const instruction of transaction.transaction.message
               .instructions) {
@@ -263,11 +315,12 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                   instruction.data,
                   "base58"
                 );
-
                 if (decodedInstruction) {
                   if (
                     decodedInstruction.name === "deposit_and_call" ||
-                    decodedInstruction.name === "deposit"
+                    decodedInstruction.name === "deposit" ||
+                    decodedInstruction.name === "deposit_spl_token" ||
+                    decodedInstruction.name === "deposit_spl_token_and_call"
                   ) {
                     const data = decodedInstruction.data as any;
                     const amount = data.amount.toString();
@@ -286,9 +339,60 @@ export const solanaMonitorTransactions = async ({ handlers }: any) => {
                     if (decodedInstruction.name === "deposit_and_call") {
                       const message = data.message.toString();
                       args.push(message);
-                      handlers.depositAndCall(args);
+                      solanaDepositAndCall({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
                     } else if (decodedInstruction.name === "deposit") {
-                      handlers.deposit(args);
+                      solanaDeposit({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
+                    } else if (
+                      decodedInstruction.name === "deposit_spl_token"
+                    ) {
+                      const mintAccountIndex = 3;
+                      const splIndex =
+                        transaction.transaction.message.instructions[0]
+                          .accounts[mintAccountIndex];
+                      const asset =
+                        transaction.transaction.message.accountKeys[splIndex];
+                      args[3] = asset.toString();
+                      solanaDeposit({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
+                    } else if (
+                      decodedInstruction.name === "deposit_spl_token_and_call"
+                    ) {
+                      const message = data.message.toString();
+                      const splIndex =
+                        transaction.transaction.message.instructions[0]
+                          .accounts[3];
+                      const asset =
+                        transaction.transaction.message.accountKeys[splIndex];
+                      args[3] = asset.toString();
+                      args.push(message);
+                      solanaDepositAndCall({
+                        args,
+                        deployer,
+                        foreignCoins,
+                        fungibleModuleSigner,
+                        protocolContracts,
+                        provider,
+                      });
                     }
                   }
                 }

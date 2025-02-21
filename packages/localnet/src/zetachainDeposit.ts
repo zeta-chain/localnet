@@ -18,14 +18,15 @@ export const zetachainDeposit = async ({
         coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
   } else {
-    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
+    foreignCoin = foreignCoins.find(
+      (coin: any) => coin.asset === asset.toString()
+    );
   }
 
   if (!foreignCoin) {
     logErr("7001", `Foreign coin not found for asset: ${asset}`);
     return;
   }
-
   const zrc20 = foreignCoin.zrc20_contract_address;
   const tx = await protocolContracts.gatewayZEVM
     .connect(fungibleModuleSigner)

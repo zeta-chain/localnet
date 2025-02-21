@@ -1,5 +1,6 @@
 export { localnetCheckTask } from "./check";
 export { localnetTask } from "./localnet";
+export { solanaBalanceTask } from "./solanaBalance";
 export { solanaDepositTask } from "./solanaDeposit";
 export { solanaDepositAndCallTask } from "./solanaDepositAndCall";
 export { localnetStopTask } from "./stop";

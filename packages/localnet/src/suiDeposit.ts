@@ -1,11 +1,12 @@
+import { ethers } from "ethers";
+
+import { NetworkID } from "./constants";
 import { log } from "./log";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const suiDeposit = async ({
-  asset,
-  chainID,
   deployer,
   foreignCoins,
   fungibleModuleSigner,
@@ -13,8 +14,10 @@ export const suiDeposit = async ({
   provider,
   args,
 }: any) => {
+  const asset = ethers.ZeroAddress;
+  const chainID = NetworkID.Sui;
   try {
-    log("103", `Gateway deposit event, ${JSON.stringify(args.event)}`);
+    log(chainID, `Gateway deposit event, ${JSON.stringify(args.event)}`);
     await zetachainDeposit({
       args: [null, args.receiver, args.amount, asset],
       chainID,

@@ -24,13 +24,32 @@ const solanaDeposit = async (args: any) => {
     provider
   );
 
-  await gatewayProgram.methods
-    .deposit(
-      new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
-      ethers.getBytes(args.receiver)
-    )
-    .accounts({})
-    .rpc();
+  const receiverBytes = ethers.getBytes(args.receiver);
+
+  if (args.mint && args.from && args.to) {
+    await gatewayProgram.methods
+      .depositSplToken(
+        new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
+        receiverBytes
+      )
+      .accounts({
+        from: args.from,
+        mintAccount: args.mint,
+        signer: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        to: args.to,
+        tokenProgram: args.tokenProgram,
+      })
+      .rpc();
+  } else {
+    await gatewayProgram.methods
+      .deposit(
+        new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
+        receiverBytes
+      )
+      .accounts({})
+      .rpc();
+  }
 };
 
 export const solanaDepositTask = task(
@@ -43,4 +62,12 @@ export const solanaDepositTask = task(
   .addOptionalParam(
     "mnemonic",
     "Mnemonic to derive the keypair for signing the transaction instead of using the default account"
+  )
+  .addOptionalParam("mint", "SPL token mint address")
+  .addOptionalParam("from", "SPL token account from which tokens are withdrawn")
+  .addOptionalParam("to", "SPL token account that belongs to the PDA")
+  .addOptionalParam(
+    "tokenProgram",
+    "SPL token program",
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
   );
