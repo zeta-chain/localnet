@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log } from "./log";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDeposit } from "./zetachainDeposit";
@@ -14,9 +15,9 @@ export const suiDeposit = async ({
   args,
 }: any) => {
   const asset = ethers.ZeroAddress;
-  const chainID = "103";
+  const chainID = NetworkID.Sui;
   try {
-    log("103", `Gateway deposit event, ${JSON.stringify(args.event)}`);
+    log(chainID, `Gateway deposit event, ${JSON.stringify(args.event)}`);
     await zetachainDeposit({
       args: [null, args.receiver, args.amount, asset],
       chainID,

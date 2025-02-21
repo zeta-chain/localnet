@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
@@ -13,10 +14,10 @@ export const solanaDepositAndCall = async ({
   foreignCoins,
   deployer,
 }: any) => {
-  const chainID = "901";
+  const chainID = NetworkID.Solana;
   const [sender, , amount, asset] = args;
   try {
-    log("901", "Gateway Deposit and call executed");
+    log(NetworkID.Solana, "Gateway Deposit and call executed");
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find(

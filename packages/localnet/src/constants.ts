@@ -3,3 +3,11 @@ export const FUNGIBLE_MODULE_ADDRESS =
 
 export const MNEMONIC =
   "grape subway rack mean march bubble carry avoid muffin consider thing street";
+
+export const NetworkID = {
+  BNB: "97",
+  Ethereum: "5",
+  Solana: "901",
+  Sui: "103",
+  ZetaChain: "7000",
+};

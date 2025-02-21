@@ -1,6 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { ethers, NonceManager } from "ethers";
+import { ethers, fromTwos, NonceManager } from "ethers";
 
+import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
@@ -48,10 +49,8 @@ export const zetachainWithdraw = async ({
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
     const isERC20orZETA = coinType === 2n;
-    const isSolana = chainID === "901";
-    const isSui = chainID === "103";
 
-    if (isSolana) {
+    if (chainID === NetworkID.Solana) {
       const receiverAddress = ethers.toUtf8String(receiver);
       await solanaWithdraw({
         amount: amount,
@@ -61,7 +60,7 @@ export const zetachainWithdraw = async ({
         mint: asset,
         recipient: receiverAddress,
       });
-    } else if (isSui) {
+    } else if (chainID === NetworkID.Sui) {
       await suiWithdraw({
         amount,
         sender: receiver,

@@ -1,6 +1,6 @@
 import { ethers, NonceManager } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
+import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "./constants";
 import { createToken } from "./createToken";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
@@ -93,7 +93,7 @@ export const initLocalnet = async ({
     contractsEthereum.custody,
     "ETH",
     true,
-    "5",
+    NetworkID.Ethereum,
     18,
     null
   );
@@ -102,7 +102,7 @@ export const initLocalnet = async ({
     contractsEthereum.custody,
     "USDC",
     false,
-    "5",
+    NetworkID.Ethereum,
     18,
     null
   );
@@ -111,7 +111,7 @@ export const initLocalnet = async ({
     contractsBNB.custody,
     "BNB",
     true,
-    "97",
+    NetworkID.BNB,
     18,
     null
   );
@@ -120,13 +120,29 @@ export const initLocalnet = async ({
     contractsBNB.custody,
     "USDC",
     false,
-    "97",
+    NetworkID.BNB,
     18,
     null
   );
-  await createToken(addresses, null, "SOL", true, "901", 9, null);
-  await createToken(addresses, null, "USDC", false, "901", 9, solanaEnv?.env);
-  await createToken(addresses, null, "SUI", true, "103", 9, null);
+  await createToken(
+    addresses,
+    null,
+    "SOL",
+    true,
+    NetworkID.Solana,
+    9,
+    solanaEnv?.env
+  );
+  await createToken(
+    addresses,
+    null,
+    "USDC",
+    false,
+    NetworkID.Solana,
+    9,
+    solanaEnv?.env
+  );
+  await createToken(addresses, null, "SUI", true, NetworkID.Sui, 9, null);
 
   const evmContracts = {
     5: contractsEthereum,
@@ -181,7 +197,7 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      chainID: "5",
+      chainID: NetworkID.Ethereum,
       deployer,
       exitOnError,
       foreignCoins,
@@ -194,7 +210,7 @@ export const initLocalnet = async ({
   contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
-      chainID: "5",
+      chainID: NetworkID.Ethereum,
       custody: contractsEthereum.custody,
       deployer,
       exitOnError,
@@ -212,7 +228,7 @@ export const initLocalnet = async ({
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
-        chainID: "5",
+        chainID: NetworkID.Ethereum,
         custody: contractsEthereum.custody,
         deployer,
         exitOnError,
@@ -229,7 +245,7 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      chainID: "97",
+      chainID: NetworkID.BNB,
       deployer,
       foreignCoins,
       fungibleModuleSigner,
@@ -241,7 +257,7 @@ export const initLocalnet = async ({
   contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
-      chainID: "97",
+      chainID: NetworkID.BNB,
       custody: contractsBNB.custody,
       deployer,
       exitOnError,
@@ -259,7 +275,7 @@ export const initLocalnet = async ({
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
-        chainID: "97",
+        chainID: NetworkID.BNB,
         custody: contractsBNB.custody,
         deployer,
         exitOnError,
@@ -299,11 +315,15 @@ export const initLocalnet = async ({
       .map(([, value]) => {
         if (
           value.asset &&
-          (value.foreign_chain_id === "5" || value.foreign_chain_id === "97")
+          (value.foreign_chain_id === NetworkID.Ethereum ||
+            value.foreign_chain_id === NetworkID.BNB)
         ) {
           return {
             address: value.asset,
-            chain: value.foreign_chain_id === "5" ? "ethereum" : "bnb",
+            chain:
+              value.foreign_chain_id === NetworkID.Ethereum
+                ? "ethereum"
+                : "bnb",
             type: `ERC-20 ${value.symbol}`,
           };
         }
@@ -311,7 +331,7 @@ export const initLocalnet = async ({
       .filter(Boolean),
     ...Object.entries(foreignCoins)
       .map(([key, value]) => {
-        if (value.foreign_chain_id === "901" && value.asset) {
+        if (value.foreign_chain_id === NetworkID.Solana && value.asset) {
           return {
             address: value.asset,
             chain: "solana",

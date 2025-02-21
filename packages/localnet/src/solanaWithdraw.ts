@@ -5,6 +5,7 @@ import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, tssKeyPair } from "./solanaSetup";
@@ -77,7 +78,7 @@ export const solanaWithdraw = async ({
         .rpc();
 
       log(
-        "901",
+        NetworkID.Solana,
         `Executing Gateway withdraw (SOL): Sending ${ethers.formatUnits(
           amount,
           9
@@ -147,7 +148,7 @@ export const solanaWithdraw = async ({
         .rpc();
 
       log(
-        "901",
+        NetworkID.Solana,
         `Executing Gateway withdrawSplToken: sent ${ethers.formatUnits(
           amount,
           decimals
@@ -156,6 +157,6 @@ SPL tokens (mint = ${mint}) to ${recipient}`
       );
     }
   } catch (err) {
-    logErr("901", `Error executing Gateway withdraw: ${err}`);
+    logErr(NetworkID.Solana, `Error executing Gateway withdraw: ${err}`);
   }
 };

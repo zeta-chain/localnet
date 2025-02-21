@@ -9,6 +9,7 @@ import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/Test
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { tssKeypair } from "./solanaSetup";
 
@@ -21,7 +22,7 @@ export const createToken = async (
   decimals: number,
   solanaEnv?: any
 ) => {
-  if (chainID === "901" && !solanaEnv) {
+  if (chainID === NetworkID.Solana && !solanaEnv) {
     return;
   }
 
@@ -55,13 +56,6 @@ export const createToken = async (
       gatewayZEVM.target,
       deployOpts
     );
-
-  let splAddress;
-
-  if (chainID === "901" && !isGasToken) {
-    splAddress = await createSolanaSPL(solanaEnv, symbol);
-  }
-
   await zrc20.waitForDeployment();
 
   let asset;
@@ -74,7 +68,7 @@ export const createToken = async (
       .connect(fungibleModuleSigner)
       .setGasPrice(chainID, 1);
     asset = "";
-  } else if (chainID === "901") {
+  } else if (chainID === NetworkID.Solana) {
     asset = await createSolanaSPL(solanaEnv, symbol);
   } else {
     asset = await createERC20(deployer, custody, symbol, tss);
