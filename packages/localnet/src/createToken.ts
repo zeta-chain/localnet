@@ -195,7 +195,7 @@ const createSolanaSPL = async (env: any, symbol: string) => {
     true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
   );
 
-  whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser);
+  await whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser);
 
   console.log("gatewayTokenAccount", gatewayTokenAccount.address.toBase58());
 
