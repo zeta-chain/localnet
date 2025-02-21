@@ -25,8 +25,6 @@ export const createToken = async (
     return;
   }
 
-  let erc20;
-
   const {
     fungibleModuleSigner,
     deployer,
@@ -66,6 +64,8 @@ export const createToken = async (
 
   await zrc20.waitForDeployment();
 
+  let asset;
+
   if (isGasToken) {
     (systemContract as any)
       .connect(fungibleModuleSigner)
@@ -73,54 +73,11 @@ export const createToken = async (
     (systemContract as any)
       .connect(fungibleModuleSigner)
       .setGasPrice(chainID, 1);
-  } else {
-    const erc20Factory = new ethers.ContractFactory(
-      TestERC20.abi,
-      TestERC20.bytecode,
-      deployer
-    );
-    if (custody) {
-      erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
-      await erc20.waitForDeployment();
-      const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
-
-      await (erc20 as any)
-        .connect(deployer)
-        .approve(custody.target, ethers.MaxUint256, deployOpts);
-
-      await (erc20 as any)
-        .connect(deployer)
-        .mint(
-          custody.target,
-          ethers.parseUnits("1000000", erc20Decimals),
-          deployOpts
-        );
-      await (erc20 as any)
-        .connect(deployer)
-        .mint(
-          tss.getAddress(),
-          ethers.parseUnits("1000000", erc20Decimals),
-          deployOpts
-        );
-      await (erc20 as any)
-        .connect(deployer)
-        .mint(
-          await deployer.getAddress(),
-          ethers.parseUnits("1000000", erc20Decimals),
-          deployOpts
-        );
-      await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
-    }
-  }
-
-  let asset;
-
-  if (isGasToken) {
     asset = "";
   } else if (chainID === "901") {
-    asset = splAddress;
+    asset = await createSolanaSPL(solanaEnv, symbol);
   } else {
-    asset = (erc20 as any).target;
+    asset = await createERC20(deployer, custody, symbol, tss);
   }
 
   foreignCoins.push({
@@ -238,10 +195,9 @@ const createSolanaSPL = async (env: any, symbol: string) => {
 
   const gatewayTokenAccount = await getOrCreateAssociatedTokenAccount(
     env.gatewayProgram.provider.connection,
-    // whoever you want to pay for creation (often the same keypair as the authority or payer)
     tssKeypair,
     mint,
-    gatewayPDA, // This is the "owner" of the ATA
+    gatewayPDA,
     true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
   );
 
@@ -262,13 +218,11 @@ const whitelistSPLToken = async (
   mintPublicKey: PublicKey,
   authorityKeypair: any
 ) => {
-  // 1) Get the Gateway PDA
   const [gatewayPDA] = await PublicKey.findProgramAddress(
     [Buffer.from("meta", "utf-8")],
     gatewayProgram.programId
   );
 
-  // 2) Fetch the PDA data to ensure authority check
   const pdaAccountData = await gatewayProgram.account.pda.fetch(gatewayPDA);
   console.log("🚀 Gateway PDA Authority:", pdaAccountData.authority.toBase58());
 
@@ -279,7 +233,6 @@ const whitelistSPLToken = async (
     process.exit(1);
   }
 
-  // 3) Compute Whitelist Entry PDA
   const [whitelistEntryPDA] = await PublicKey.findProgramAddress(
     [Buffer.from("whitelist"), mintPublicKey.toBuffer()],
     gatewayProgram.programId
@@ -290,11 +243,10 @@ const whitelistSPLToken = async (
     whitelistEntryPDA.toBase58()
   );
 
-  // 4) Call whitelistSplMint with a zero signature => direct authority sign
   await gatewayProgram.methods
     .whitelistSplMint(new Uint8Array(64).fill(0), 0, new BN(0))
     .accounts({
-      authority: authorityKeypair.publicKey, // must match pda.authority
+      authority: authorityKeypair.publicKey,
       pda: gatewayPDA,
       systemProgram: SystemProgram.programId,
       whitelistCandidate: mintPublicKey,
@@ -304,4 +256,48 @@ const whitelistSPLToken = async (
     .rpc();
 
   console.log(`✅ Whitelisted SPL Token: ${mintPublicKey.toBase58()}`);
+};
+
+const createERC20 = async (
+  deployer: any,
+  custody: any,
+  symbol: any,
+  tss: any
+) => {
+  const erc20Factory = new ethers.ContractFactory(
+    TestERC20.abi,
+    TestERC20.bytecode,
+    deployer
+  );
+  const erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
+  await erc20.waitForDeployment();
+  const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
+
+  await (erc20 as any)
+    .connect(deployer)
+    .approve(custody.target, ethers.MaxUint256, deployOpts);
+
+  await (erc20 as any)
+    .connect(deployer)
+    .mint(
+      custody.target,
+      ethers.parseUnits("1000000", erc20Decimals),
+      deployOpts
+    );
+  await (erc20 as any)
+    .connect(deployer)
+    .mint(
+      tss.getAddress(),
+      ethers.parseUnits("1000000", erc20Decimals),
+      deployOpts
+    );
+  await (erc20 as any)
+    .connect(deployer)
+    .mint(
+      await deployer.getAddress(),
+      ethers.parseUnits("1000000", erc20Decimals),
+      deployOpts
+    );
+  await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
+  return erc20.target;
 };
