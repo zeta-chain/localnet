@@ -19,9 +19,9 @@ export const createToken = async (
   isGasToken: boolean,
   chainID: string,
   decimals: number,
-  solana?: any
+  solanaEnv?: any
 ) => {
-  if (chainID === "901" && !solana) {
+  if (chainID === "901" && !solanaEnv) {
     return;
   }
 
@@ -61,7 +61,7 @@ export const createToken = async (
   let splAddress;
 
   if (chainID === "901" && !isGasToken) {
-    splAddress = await createSolanaSPL(solana, symbol);
+    splAddress = await createSolanaSPL(solanaEnv, symbol);
   }
 
   await zrc20.waitForDeployment();
