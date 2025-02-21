@@ -359,9 +359,10 @@ export const solanaMonitorTransactions = async ({
                     } else if (
                       decodedInstruction.name === "deposit_spl_token"
                     ) {
+                      const mintAccountIndex = 3;
                       const splIndex =
                         transaction.transaction.message.instructions[0]
-                          .accounts[3];
+                          .accounts[mintAccountIndex];
                       const asset =
                         transaction.transaction.message.accountKeys[splIndex];
                       args[3] = asset.toString();
