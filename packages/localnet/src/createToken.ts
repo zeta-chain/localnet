@@ -14,7 +14,7 @@ import { deployOpts } from "./deployOpts";
 import { tssKeypair } from "./solanaSetup";
 
 export const createToken = async (
-  addresses: any,
+  contracts: any,
   custody: any,
   symbol: string,
   isGasToken: boolean,
@@ -26,17 +26,14 @@ export const createToken = async (
     return;
   }
 
+  const { fungibleModuleSigner, deployer, foreignCoins, tss } = contracts;
   const {
-    fungibleModuleSigner,
-    deployer,
-    foreignCoins,
-    tss,
     systemContract,
     gatewayZEVM,
     uniswapFactoryInstance,
     uniswapRouterInstance,
     wzeta,
-  } = addresses;
+  } = contracts.zetachainContracts;
 
   const zrc20Factory = new ethers.ContractFactory(
     ZRC20.abi,
