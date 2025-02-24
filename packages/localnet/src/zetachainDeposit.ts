@@ -4,8 +4,7 @@ import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
 
 export const zetachainDeposit = async ({
-  protocolContracts,
-  fungibleModuleSigner,
+  zetachainContracts,
   foreignCoins,
   args,
   chainID,
@@ -28,8 +27,8 @@ export const zetachainDeposit = async ({
     return;
   }
   const zrc20 = foreignCoin.zrc20_contract_address;
-  const tx = await protocolContracts.gatewayZEVM
-    .connect(fungibleModuleSigner)
+  const tx = await zetachainContracts.gatewayZEVM
+    .connect(zetachainContracts.fungibleModuleSigner)
     .deposit(zrc20, amount, receiver, deployOpts);
   await tx.wait();
   log("7001", `Deposited ${amount} of ${zrc20} tokens to ${receiver}`);

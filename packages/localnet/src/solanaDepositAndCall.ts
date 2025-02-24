@@ -8,9 +8,8 @@ import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const solanaDepositAndCall = async ({
   provider,
-  protocolContracts,
+  zetachainContracts,
   args,
-  fungibleModuleSigner,
   foreignCoins,
   deployer,
 }: any) => {
@@ -36,8 +35,7 @@ export const solanaDepositAndCall = async ({
       args,
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
+      zetachainContracts,
       provider,
     });
   } catch (e) {
@@ -47,9 +45,8 @@ export const solanaDepositAndCall = async ({
       chainID,
       deployer,
       foreignCoins,
-      fungibleModuleSigner,
       gasLimit: 200000,
-      protocolContracts,
+      zetachainContracts,
       provider,
     });
 

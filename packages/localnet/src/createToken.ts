@@ -15,24 +15,23 @@ import { tssKeypair } from "./solanaSetup";
 
 export const createToken = async (
   contracts: any,
-  custody: any,
   symbol: string,
   isGasToken: boolean,
   chainID: string,
-  decimals: number,
-  solanaEnv?: any
+  decimals: number
 ) => {
-  if (chainID === NetworkID.Solana && !solanaEnv) {
+  if (chainID === NetworkID.Solana && !contracts.solanaContracts) {
     return;
   }
 
-  const { fungibleModuleSigner, deployer, foreignCoins, tss } = contracts;
+  const { deployer, foreignCoins, tss } = contracts;
   const {
     systemContract,
     gatewayZEVM,
     uniswapFactoryInstance,
     uniswapRouterInstance,
     wzeta,
+    fungibleModuleSigner,
   } = contracts.zetachainContracts;
 
   const zrc20Factory = new ethers.ContractFactory(
@@ -65,10 +64,24 @@ export const createToken = async (
       .connect(fungibleModuleSigner)
       .setGasPrice(chainID, 1);
     asset = "";
-  } else if (chainID === NetworkID.Solana) {
-    asset = await createSolanaSPL(solanaEnv, symbol);
   } else {
-    asset = await createERC20(deployer, custody, symbol, tss);
+    if (chainID === NetworkID.Solana) {
+      asset = await createSolanaSPL(contracts.solanaContracts.env, symbol);
+    } else if (chainID === NetworkID.Ethereum) {
+      asset = await createERC20(
+        deployer,
+        contracts.ethereumContracts.custody,
+        symbol,
+        tss
+      );
+    } else if (chainID === NetworkID.BNB) {
+      asset = await createERC20(
+        deployer,
+        contracts.bnbContracts.custody,
+        symbol,
+        tss
+      );
+    }
   }
 
   foreignCoins.push({

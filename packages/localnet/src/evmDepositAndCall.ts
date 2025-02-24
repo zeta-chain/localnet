@@ -10,10 +10,9 @@ import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 export const evmDepositAndCall = async ({
   tss,
   provider,
-  protocolContracts,
+  zetachainContracts,
   args,
   deployer,
-  fungibleModuleSigner,
   foreignCoins,
   exitOnError = false,
   chainID,
@@ -26,9 +25,8 @@ export const evmDepositAndCall = async ({
   deployer: any;
   exitOnError: boolean;
   foreignCoins: any[];
-  fungibleModuleSigner: any;
   gatewayEVM: any;
-  protocolContracts: any;
+  zetachainContracts: any;
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
@@ -54,8 +52,7 @@ export const evmDepositAndCall = async ({
       args,
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
+      zetachainContracts,
       provider,
     });
   } catch (err: any) {
@@ -72,9 +69,8 @@ export const evmDepositAndCall = async ({
         chainID,
         deployer,
         foreignCoins,
-        fungibleModuleSigner,
         gasLimit,
-        protocolContracts,
+        zetachainContracts,
         provider,
       }
     );
@@ -106,7 +102,7 @@ export const evmDepositAndCall = async ({
         amount: amount,
         asset: zrc20,
         chainID,
-        fungibleModuleSigner,
+        fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
         outgoing: false,
         provider,
         revertMessage: revertMessage,

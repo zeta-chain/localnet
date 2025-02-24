@@ -28,7 +28,7 @@ export const suiSetup = async ({
   deployer,
   foreignCoins,
   fungibleModuleSigner,
-  protocolContracts,
+  zetachainContracts,
   provider,
 }: any) => {
   if (!(await isSuiAvailable())) {
@@ -151,7 +151,7 @@ export const suiSetup = async ({
     gatewayObjectId,
     keypair,
     moduleId,
-    protocolContracts,
+    zetachainContracts,
     provider,
     withdrawCapObjectId,
   });

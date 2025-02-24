@@ -11,11 +11,10 @@ export const suiDeposit = async ({
   client,
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
   gatewayObjectId,
   keypair,
   moduleId,
-  protocolContracts,
+  zetachainContracts,
   provider,
   withdrawCapObjectId,
 }: any) => {
@@ -27,8 +26,7 @@ export const suiDeposit = async ({
       args: [null, event.receiver, event.amount, asset],
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
+      zetachainContracts,
     });
   } catch (e) {
     const { revertGasFee } = await zetachainSwapToCoverGas({
@@ -37,9 +35,8 @@ export const suiDeposit = async ({
       chainID,
       deployer,
       foreignCoins,
-      fungibleModuleSigner,
       gasLimit: 200000,
-      protocolContracts,
+      zetachainContracts,
       provider,
     });
     const revertAmount = BigInt(event.amount) - revertGasFee;

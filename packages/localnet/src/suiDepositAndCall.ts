@@ -15,7 +15,7 @@ export const suiDepositAndCall = async ({
   gatewayObjectId,
   keypair,
   moduleId,
-  protocolContracts,
+  zetachainContracts,
   provider,
   withdrawCapObjectId,
 }: any) => {
@@ -32,7 +32,7 @@ export const suiDepositAndCall = async ({
       chainID,
       foreignCoins,
       fungibleModuleSigner,
-      protocolContracts,
+      zetachainContracts,
       provider,
     });
   } catch (e) {
@@ -44,7 +44,7 @@ export const suiDepositAndCall = async ({
       foreignCoins,
       fungibleModuleSigner,
       gasLimit: 200000,
-      protocolContracts,
+      zetachainContracts,
       provider,
     });
     const revertAmount = BigInt(event.amount) - revertGasFee;

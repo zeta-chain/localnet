@@ -10,10 +10,9 @@ import { zetachainOnAbort } from "./zetachainOnAbort";
 export const evmDeposit = async ({
   tss,
   provider,
-  protocolContracts,
+  zetachainContracts,
   args,
   deployer,
-  fungibleModuleSigner,
   foreignCoins,
   exitOnError = false,
   chainID,
@@ -26,9 +25,8 @@ export const evmDeposit = async ({
   deployer: any;
   exitOnError?: boolean;
   foreignCoins: any[];
-  fungibleModuleSigner: any;
   gatewayEVM: any;
-  protocolContracts: any;
+  zetachainContracts: any;
   provider: ethers.JsonRpcProvider;
   tss: any;
 }) => {
@@ -52,8 +50,7 @@ export const evmDeposit = async ({
       args,
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
+      zetachainContracts,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -79,11 +76,11 @@ export const evmDeposit = async ({
         gasZRC20,
         gasFee,
         amount,
-        await fungibleModuleSigner.getAddress(),
+        await zetachainContracts.fungibleModuleSigner.getAddress(),
         zrc20Contract,
         provider,
-        protocolContracts.wzeta.target,
-        protocolContracts.uniswapRouterInstance.target
+        zetachainContracts.wzeta.target,
+        zetachainContracts.uniswapRouterInstance.target
       );
     }
     revertAmount = amount - revertGasFee;
@@ -111,7 +108,7 @@ export const evmDeposit = async ({
         amount,
         asset: zrc20,
         chainID,
-        fungibleModuleSigner,
+        fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
         outgoing: false,
         provider,
         revertMessage: revertMessage,
