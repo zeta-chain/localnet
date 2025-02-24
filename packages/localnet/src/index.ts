@@ -59,7 +59,7 @@ export const initLocalnet = async ({
     fungibleModuleSigner
   );
 
-  const [solanaEnv, suiEnv, ethereumContracts, bnbContracts] =
+  const [solanaContracts, suiContracts, ethereumContracts, bnbContracts] =
     await Promise.all([
       solanaSetup({
         deployer,
@@ -79,17 +79,20 @@ export const initLocalnet = async ({
       evmSetup(deployer, tss),
     ]);
 
-  const addresses = {
-    ...zetachainContracts,
+  const contracts = {
     deployer,
     foreignCoins,
     fungibleModuleSigner,
-    zetachainContracts,
     tss,
+    zetachainContracts,
+    solanaContracts,
+    suiContracts,
+    ethereumContracts,
+    bnbContracts,
   };
 
   await createToken(
-    addresses,
+    contracts,
     ethereumContracts.custody,
     "ETH",
     true,
@@ -98,7 +101,7 @@ export const initLocalnet = async ({
     null
   );
   await createToken(
-    addresses,
+    contracts,
     ethereumContracts.custody,
     "USDC",
     false,
@@ -107,7 +110,7 @@ export const initLocalnet = async ({
     null
   );
   await createToken(
-    addresses,
+    contracts,
     bnbContracts.custody,
     "BNB",
     true,
@@ -116,7 +119,7 @@ export const initLocalnet = async ({
     null
   );
   await createToken(
-    addresses,
+    contracts,
     bnbContracts.custody,
     "USDC",
     false,
@@ -125,24 +128,24 @@ export const initLocalnet = async ({
     null
   );
   await createToken(
-    addresses,
+    contracts,
     null,
     "SOL",
     true,
     NetworkID.Solana,
     9,
-    solanaEnv?.env
+    solanaContracts?.env
   );
   await createToken(
-    addresses,
+    contracts,
     null,
     "USDC",
     false,
     NetworkID.Solana,
     9,
-    solanaEnv?.env
+    solanaContracts?.env
   );
-  await createToken(addresses, null, "SUI", true, NetworkID.Sui, 9, null);
+  await createToken(contracts, null, "SUI", true, NetworkID.Sui, 9, null);
 
   const evmContracts = {
     5: ethereumContracts,
@@ -174,7 +177,7 @@ export const initLocalnet = async ({
         fungibleModuleSigner,
         gatewayZEVM: zetachainContracts.gatewayZEVM,
         provider,
-        suiEnv: suiEnv?.env,
+        suiEnv: suiContracts?.env,
         tss,
       });
     }
@@ -364,8 +367,8 @@ export const initLocalnet = async ({
     }),
   ];
 
-  if (suiEnv) res.push(...suiEnv.addresses);
-  if (solanaEnv) res.push(...solanaEnv.addresses);
+  if (suiContracts) res.push(...suiContracts.addresses);
+  if (solanaContracts) res.push(...solanaContracts.addresses);
 
   return res;
 };
