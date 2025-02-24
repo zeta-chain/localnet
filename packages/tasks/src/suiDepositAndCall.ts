@@ -91,6 +91,15 @@ const suiDepositAndCall = async (args: any) => {
     signer: keypair,
     transaction: tx,
   });
+
+  const event = result.events?.find((evt) =>
+    evt.type.includes("gateway::DepositAndCallEvent")
+  );
+  if (event) {
+    console.log("Event:", event.parsedJson);
+  } else {
+    console.log("No Deposit Event found.");
+  }
 };
 
 export const suiDepositAndCallTask = task(

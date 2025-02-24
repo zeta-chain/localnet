@@ -148,9 +148,12 @@ export const suiSetup = async ({
     deployer,
     foreignCoins,
     fungibleModuleSigner,
+    gatewayObjectId,
+    keypair,
     moduleId,
     protocolContracts,
     provider,
+    withdrawCapObjectId,
   });
 
   return {
@@ -202,55 +205,34 @@ const waitForConfirmation = async (
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
 
-const pollEvents = async ({
-  client,
-  moduleId,
-  deployer,
-  foreignCoins,
-  fungibleModuleSigner,
-  protocolContracts,
-  provider,
-}: any) => {
+const pollEvents = async (context: any) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
-  const DEPOSIT_EVENT_TYPE = `${moduleId}::gateway::DepositEvent`;
-  const DEPOSIT_AND_CALL_EVENT_TYPE = `${moduleId}::gateway::DepositAndCallEvent`;
+  const DEPOSIT_EVENT = `${context.moduleId}::gateway::DepositEvent`;
+  const DEPOSIT_AND_CALL_EVENT = `${context.moduleId}::gateway::DepositAndCallEvent`;
 
   while (true) {
     try {
-      const { data, hasNextPage, nextCursor }: any = await client.queryEvents({
-        cursor: currentCursor || null,
-        limit: 50,
-        order: "ascending",
-        query: {
-          MoveEventModule: {
-            module: "gateway",
-            package: moduleId,
+      const { data, hasNextPage, nextCursor }: any =
+        await context.client.queryEvents({
+          cursor: currentCursor || null,
+          limit: 50,
+          order: "ascending",
+          query: {
+            MoveEventModule: {
+              module: "gateway",
+              package: context.moduleId,
+            },
           },
-        },
-      });
+        });
 
       if (data.length > 0) {
-        for (const event of data) {
-          const { amount, receiver, sender, payload } = event.parsedJson as any;
-          if (event.type === DEPOSIT_EVENT_TYPE) {
-            suiDeposit({
-              args: { amount, payload, receiver, sender },
-              deployer,
-              foreignCoins,
-              fungibleModuleSigner,
-              protocolContracts,
-              provider,
-            });
-          } else if (event.type === DEPOSIT_AND_CALL_EVENT_TYPE) {
-            suiDepositAndCall({
-              args: { amount, payload, receiver, sender },
-              deployer,
-              foreignCoins,
-              fungibleModuleSigner,
-              protocolContracts,
-              provider,
-            });
+        for (const eventData of data) {
+          const event = eventData.parsedJson;
+          if (eventData.type === DEPOSIT_EVENT) {
+            suiDeposit({ event, ...context });
+          } else if (eventData.type === DEPOSIT_AND_CALL_EVENT) {
+            suiDepositAndCall({ event, ...context });
           }
         }
 

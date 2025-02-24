@@ -7,19 +7,24 @@ import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const suiDeposit = async ({
+  event,
+  client,
   deployer,
   foreignCoins,
   fungibleModuleSigner,
+  gatewayObjectId,
+  keypair,
+  moduleId,
   protocolContracts,
   provider,
-  args,
+  withdrawCapObjectId,
 }: any) => {
   const asset = ethers.ZeroAddress;
   const chainID = NetworkID.Sui;
   try {
-    log(chainID, `Gateway deposit event, ${JSON.stringify(args.event)}`);
+    log(chainID, `Gateway deposit event, ${JSON.stringify(event)}`);
     await zetachainDeposit({
-      args: [null, args.receiver, args.amount, asset],
+      args: [null, event.receiver, event.amount, asset],
       chainID,
       foreignCoins,
       fungibleModuleSigner,
@@ -27,7 +32,7 @@ export const suiDeposit = async ({
     });
   } catch (e) {
     const { revertGasFee } = await zetachainSwapToCoverGas({
-      amount: args.amount,
+      amount: event.amount,
       asset,
       chainID,
       deployer,
@@ -37,16 +42,16 @@ export const suiDeposit = async ({
       protocolContracts,
       provider,
     });
-    const revertAmount = BigInt(args.amount) - revertGasFee;
+    const revertAmount = BigInt(event.amount) - revertGasFee;
     if (revertAmount > 0) {
       await suiWithdraw({
         amount: revertAmount,
-        client: args.client,
-        gatewayObjectId: args.gatewayObjectId,
-        keypair: args.keypair,
-        moduleId: args.moduleId,
-        sender: args.sender,
-        withdrawCapObjectId: args.withdrawCapObjectId,
+        client: client,
+        gatewayObjectId: gatewayObjectId,
+        keypair: keypair,
+        moduleId: moduleId,
+        sender: event.sender,
+        withdrawCapObjectId: withdrawCapObjectId,
       });
     } else {
       console.error(
