@@ -7,23 +7,28 @@ import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const suiDepositAndCall = async ({
+  event,
+  client,
   deployer,
   foreignCoins,
   fungibleModuleSigner,
+  gatewayObjectId,
+  keypair,
+  moduleId,
   protocolContracts,
   provider,
-  args,
+  withdrawCapObjectId,
 }: any) => {
   const asset = ethers.ZeroAddress;
   const chainID = NetworkID.Sui;
   try {
     log(
       NetworkID.Sui,
-      `Gateway deposit and call event, ${JSON.stringify(args.event)}`
+      `Gateway deposit and call event, ${JSON.stringify(event)}`
     );
-    const message = ethers.hexlify(new Uint8Array(args.payload));
+    const message = ethers.hexlify(new Uint8Array(event.payload));
     await zetachainDepositAndCall({
-      args: [args.sender, args.receiver, args.amount, asset, message],
+      args: [event.sender, event.receiver, event.amount, asset, message],
       chainID,
       foreignCoins,
       fungibleModuleSigner,
@@ -32,7 +37,7 @@ export const suiDepositAndCall = async ({
     });
   } catch (e) {
     const { revertGasFee } = await zetachainSwapToCoverGas({
-      amount: args.amount,
+      amount: event.amount,
       asset,
       chainID,
       deployer,
@@ -42,16 +47,16 @@ export const suiDepositAndCall = async ({
       protocolContracts,
       provider,
     });
-    const revertAmount = BigInt(args.amount) - revertGasFee;
+    const revertAmount = BigInt(event.amount) - revertGasFee;
     if (revertAmount > 0) {
       await suiWithdraw({
         amount: revertAmount,
-        client: args.client,
-        gatewayObjectId: args.gatewayObjectId,
-        keypair: args.keypair,
-        moduleId: args.moduleId,
-        sender: args.sender,
-        withdrawCapObjectId: args.withdrawCapObjectId,
+        client: client,
+        gatewayObjectId: gatewayObjectId,
+        keypair: keypair,
+        moduleId: moduleId,
+        sender: event.sender,
+        withdrawCapObjectId: withdrawCapObjectId,
       });
     } else {
       console.error(
