@@ -34,8 +34,8 @@ export const evmCall = async ({
       asset: ethers.ZeroAddress,
       chainID,
       fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
-      provider,
       outgoing: false,
+      provider,
       revertMessage: revertMessage,
       sender,
     });

@@ -80,12 +80,12 @@ export const evmDeposit = async ({
         amount: revertAmount,
         asset,
         chainID,
+        contracts,
         err,
         isGas,
         revertOptions,
         sender,
         token,
-        contracts,
       });
     } else {
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort

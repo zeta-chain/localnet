@@ -1,9 +1,9 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
+import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
-import { NetworkID } from "./constants";
 
 export const evmOnRevert = async ({
   revertOptions,

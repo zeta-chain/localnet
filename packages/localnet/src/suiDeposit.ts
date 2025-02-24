@@ -36,8 +36,8 @@ export const suiDeposit = async ({
       deployer,
       foreignCoins,
       gasLimit: 200000,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
     const revertAmount = BigInt(event.amount) - revertGasFee;
     if (revertAmount > 0) {

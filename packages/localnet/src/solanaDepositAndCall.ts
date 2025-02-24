@@ -35,8 +35,8 @@ export const solanaDepositAndCall = async ({
       args,
       chainID,
       foreignCoins,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
   } catch (e) {
     const { revertGasFee } = await zetachainSwapToCoverGas({
@@ -46,8 +46,8 @@ export const solanaDepositAndCall = async ({
       deployer,
       foreignCoins,
       gasLimit: 200000,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
 
     const revertAmount = BigInt(amount) - revertGasFee;

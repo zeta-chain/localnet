@@ -36,8 +36,8 @@ export const evmDepositAndCall = async ({
       args,
       chainID,
       foreignCoins,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -54,8 +54,8 @@ export const evmDepositAndCall = async ({
         deployer,
         foreignCoins,
         gasLimit,
-        zetachainContracts,
         provider,
+        zetachainContracts,
       }
     );
     const revertAmount = amount - revertGasFee;
@@ -64,9 +64,9 @@ export const evmDepositAndCall = async ({
         amount: revertAmount,
         asset,
         chainID,
+        contracts,
         err,
         isGas,
-        contracts,
         revertOptions,
         sender,
         token,

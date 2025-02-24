@@ -151,9 +151,9 @@ export const suiSetup = async ({
     gatewayObjectId,
     keypair,
     moduleId,
-    zetachainContracts,
     provider,
     withdrawCapObjectId,
+    zetachainContracts,
   });
 
   return {

@@ -50,29 +50,29 @@ export const initLocalnet = async ({
       solanaSetup({
         deployer,
         foreignCoins,
-        zetachainContracts,
         provider,
+        zetachainContracts,
       }),
       suiSetup({
         deployer,
         foreignCoins,
-        zetachainContracts,
         provider,
+        zetachainContracts,
       }),
       evmSetup(deployer, tss),
       evmSetup(deployer, tss),
     ]);
 
   const contracts = {
+    bnbContracts,
     deployer,
+    ethereumContracts,
     foreignCoins,
-    tss,
     provider,
-    zetachainContracts,
     solanaContracts,
     suiContracts,
-    ethereumContracts,
-    bnbContracts,
+    tss,
+    zetachainContracts,
   };
 
   await Promise.all([
@@ -106,8 +106,8 @@ export const initLocalnet = async ({
   ethereumContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
-      contracts,
       chainID: NetworkID.Ethereum,
+      contracts,
       exitOnError,
     });
   });
@@ -116,8 +116,8 @@ export const initLocalnet = async ({
     evmDeposit({
       args,
       chainID: NetworkID.Ethereum,
-      exitOnError,
       contracts,
+      exitOnError,
     });
   });
 
@@ -127,8 +127,8 @@ export const initLocalnet = async ({
       evmDepositAndCall({
         args,
         chainID: NetworkID.Ethereum,
-        exitOnError,
         contracts,
+        exitOnError,
       });
     }
   );
@@ -139,8 +139,8 @@ export const initLocalnet = async ({
       chainID: NetworkID.BNB,
       deployer,
       foreignCoins,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
   });
 
@@ -148,8 +148,8 @@ export const initLocalnet = async ({
     evmDeposit({
       args,
       chainID: NetworkID.BNB,
-      exitOnError,
       contracts,
+      exitOnError,
     });
   });
 
@@ -159,8 +159,8 @@ export const initLocalnet = async ({
       evmDepositAndCall({
         args,
         chainID: NetworkID.BNB,
-        exitOnError,
         contracts,
+        exitOnError,
       });
     }
   );

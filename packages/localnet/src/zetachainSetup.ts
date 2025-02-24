@@ -5,8 +5,8 @@ import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
-import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 
+import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { deployOpts } from "./deployOpts";
 
 export const zetachainSetup = async (
@@ -92,13 +92,13 @@ export const zetachainSetup = async (
     .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
 
   return {
+    fungibleModuleSigner,
     gatewayZEVM,
     systemContract,
     tss,
     uniswapFactoryInstance,
     uniswapRouterInstance,
     wzeta,
-    fungibleModuleSigner,
   };
 };
 

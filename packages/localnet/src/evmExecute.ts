@@ -1,8 +1,8 @@
 import { BigNumberish, ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { log } from "./log";
-import { NetworkID } from "./constants";
 
 export const evmExecute = async ({
   sender,
@@ -15,10 +15,10 @@ export const evmExecute = async ({
 }: {
   amount: BigNumberish;
   callOptions: any;
+  contracts: any;
   message: any;
   receiver: any;
   sender: any;
-  contracts: any;
   zrc20: any;
 }) => {
   const chainID = contracts.foreignCoins.find(

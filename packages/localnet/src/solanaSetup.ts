@@ -225,8 +225,8 @@ export const solanaSetup = async ({
     solanaMonitorTransactions({
       deployer,
       foreignCoins,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
   } catch (error: any) {
     console.error(`Error setting up Solana: ${error.message}`);
@@ -340,16 +340,16 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        zetachainContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (decodedInstruction.name === "deposit") {
                       solanaDeposit({
                         args,
                         deployer,
                         foreignCoins,
-                        zetachainContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (
                       decodedInstruction.name === "deposit_spl_token"
@@ -365,8 +365,8 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        zetachainContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (
                       decodedInstruction.name === "deposit_spl_token_and_call"
@@ -383,8 +383,8 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        zetachainContracts,
                         provider,
+                        zetachainContracts,
                       });
                     }
                   }

@@ -47,8 +47,8 @@ export const solanaDeposit = async ({
       deployer,
       foreignCoins,
       gasLimit: 200000,
-      zetachainContracts,
       provider,
+      zetachainContracts,
     });
 
     const revertAmount = BigInt(amount) - revertGasFee;

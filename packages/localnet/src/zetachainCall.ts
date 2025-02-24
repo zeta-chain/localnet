@@ -11,8 +11,8 @@ export const zetachainCall = async ({
   exitOnError = false,
 }: {
   args: any;
-  exitOnError: boolean;
   contracts: any;
+  exitOnError: boolean;
 }) => {
   const {
     provider,
@@ -28,10 +28,10 @@ export const zetachainCall = async ({
     await evmExecute({
       amount: 0,
       callOptions,
+      contracts,
       message,
       receiver,
       sender,
-      contracts,
       zrc20,
     });
   } catch (err: any) {
