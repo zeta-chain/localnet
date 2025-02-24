@@ -1,5 +1,5 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { ethers, fromTwos, NonceManager } from "ethers";
+import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
@@ -11,28 +11,17 @@ import { suiWithdraw } from "./suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdraw = async ({
-  evmContracts,
-  tss,
-  provider,
-  gatewayZEVM,
+  contracts,
   args,
-  fungibleModuleSigner,
-  deployer,
-  foreignCoins,
-  suiEnv,
   exitOnError = false,
-}: {
-  args: any;
-  deployer: any;
-  evmContracts: any;
-  exitOnError: boolean;
-  foreignCoins: any[];
-  fungibleModuleSigner: any;
-  gatewayZEVM: any;
-  provider: ethers.JsonRpcProvider;
-  suiEnv: any;
-  tss: any;
-}) => {
+}: any) => {
+  const {
+    foreignCoins,
+    deployer,
+    tss,
+    provider,
+    zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
+  } = contracts;
   log("7001", "Gateway: 'Withdrawn' event emitted");
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
   const chainID = foreignCoins.find(
@@ -62,12 +51,16 @@ export const zetachainWithdraw = async ({
       await suiWithdraw({
         amount,
         sender: receiver,
-        ...suiEnv,
+        ...contracts.suiContracts,
       });
     } else {
       if (isGasToken) {
         await evmTSSTransfer({ args, foreignCoins, tss });
       } else if (isERC20orZETA) {
+        const evmContracts =
+          chainID === NetworkID.Ethereum
+            ? contracts.ethereumContracts
+            : contracts.bnbContracts;
         await evmCustodyWithdraw({ args, evmContracts, foreignCoins, tss });
       }
     }

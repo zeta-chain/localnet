@@ -4,6 +4,9 @@ export const FUNGIBLE_MODULE_ADDRESS =
 export const MNEMONIC =
   "grape subway rack mean march bubble carry avoid muffin consider thing street";
 
+export const anvilTestMnemonic =
+  "test test test test test test test test test test test junk";
+
 export const NetworkID = {
   BNB: "97",
   Ethereum: "5",

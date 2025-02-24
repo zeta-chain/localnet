@@ -25,7 +25,7 @@ export const evmCustodyWithdraw = async ({
     const amount = args[4];
     const receiver = args[2];
 
-    const tx = await evmContracts[foreign_chain_id].custody
+    const tx = await evmContracts.custody
       .connect(tss)
       .withdraw(receiver, asset, amount, deployOpts);
     await tx.wait();

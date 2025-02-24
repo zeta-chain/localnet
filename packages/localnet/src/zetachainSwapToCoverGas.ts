@@ -10,9 +10,8 @@ export const zetachainSwapToCoverGas = async ({
   asset,
   chainID,
   deployer,
-  fungibleModuleSigner,
   provider,
-  protocolContracts,
+  zetachainContracts,
   gasLimit,
 }: any) => {
   let foreignCoin;
@@ -49,11 +48,11 @@ export const zetachainSwapToCoverGas = async ({
       gasZRC20,
       gasFee,
       amount,
-      await fungibleModuleSigner.getAddress(),
+      await zetachainContracts.fungibleModuleSigner.getAddress(),
       zrc20Contract,
       provider,
-      protocolContracts.wzeta.target,
-      protocolContracts.uniswapRouterInstance.target
+      zetachainContracts.wzeta.target,
+      zetachainContracts.uniswapRouterInstance.target
     );
   }
   return { isGas, revertGasFee, token, zrc20 };

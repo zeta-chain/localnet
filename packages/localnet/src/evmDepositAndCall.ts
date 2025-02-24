@@ -1,4 +1,3 @@
-import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { evmOnRevert } from "./evmOnRevert";
@@ -8,40 +7,26 @@ import { zetachainOnAbort } from "./zetachainOnAbort";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const evmDepositAndCall = async ({
-  tss,
-  provider,
-  protocolContracts,
   args,
-  deployer,
-  fungibleModuleSigner,
-  foreignCoins,
   exitOnError = false,
   chainID,
+  foreignCoins,
+  deployer,
+  provider,
+  zetachainContracts,
   gatewayEVM,
-  custody,
-}: {
-  args: any;
-  chainID: string;
-  custody: any;
-  deployer: any;
-  exitOnError: boolean;
-  foreignCoins: any[];
-  fungibleModuleSigner: any;
-  gatewayEVM: any;
-  protocolContracts: any;
-  provider: ethers.JsonRpcProvider;
-  tss: any;
-}) => {
+}: any) => {
   log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
 
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
-      (coin) => coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
+      (coin: any) =>
+        coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
   } else {
-    foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
+    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
   }
 
   if (!foreignCoin) {
@@ -54,9 +39,8 @@ export const evmDepositAndCall = async ({
       args,
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
       provider,
+      zetachainContracts,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -72,10 +56,9 @@ export const evmDepositAndCall = async ({
         chainID,
         deployer,
         foreignCoins,
-        fungibleModuleSigner,
         gasLimit,
-        protocolContracts,
         provider,
+        zetachainContracts,
       }
     );
     const revertAmount = amount - revertGasFee;
@@ -84,15 +67,12 @@ export const evmDepositAndCall = async ({
         amount: revertAmount,
         asset,
         chainID,
-        custody,
         err,
         gatewayEVM,
         isGas,
-        provider,
         revertOptions,
         sender,
         token,
-        tss,
       });
     } else {
       log(
@@ -106,7 +86,7 @@ export const evmDepositAndCall = async ({
         amount: amount,
         asset: zrc20,
         chainID,
-        fungibleModuleSigner,
+        fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
         outgoing: false,
         provider,
         revertMessage: revertMessage,

@@ -6,13 +6,24 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
+import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { deployOpts } from "./deployOpts";
 
 export const zetachainSetup = async (
   deployer: Signer,
   tss: Signer,
-  fungibleModule: Signer
+  provider: any
 ) => {
+  // impersonate and fund fungible module account
+  await provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]);
+  await provider.send("anvil_setBalance", [
+    FUNGIBLE_MODULE_ADDRESS,
+    ethers.parseEther("100000").toString(),
+  ]);
+  const fungibleModuleSigner = await provider.getSigner(
+    FUNGIBLE_MODULE_ADDRESS
+  );
+
   const weth9Factory = new ethers.ContractFactory(
     WETH9.abi,
     WETH9.bytecode,
@@ -68,10 +79,10 @@ export const zetachainSetup = async (
   );
 
   await (wzeta as any)
-    .connect(fungibleModule)
+    .connect(fungibleModuleSigner)
     .deposit({ ...deployOpts, value: ethers.parseEther("10") });
   await (wzeta as any)
-    .connect(fungibleModule)
+    .connect(fungibleModuleSigner)
     .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
   await (wzeta as any)
     .connect(deployer)
@@ -81,6 +92,7 @@ export const zetachainSetup = async (
     .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
 
   return {
+    fungibleModuleSigner,
     gatewayZEVM,
     systemContract,
     tss,

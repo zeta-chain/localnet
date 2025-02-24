@@ -81,8 +81,7 @@ export const keypairFromMnemonic = async (
 export const solanaSetup = async ({
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
-  protocolContracts,
+  zetachainContracts,
   provider,
 }: any) => {
   if (!(await isSolanaAvailable())) {
@@ -226,9 +225,8 @@ export const solanaSetup = async ({
     solanaMonitorTransactions({
       deployer,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
       provider,
+      zetachainContracts,
     });
   } catch (error: any) {
     console.error(`Error setting up Solana: ${error.message}`);
@@ -256,8 +254,7 @@ export const solanaSetup = async ({
 export const solanaMonitorTransactions = async ({
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
-  protocolContracts,
+  zetachainContracts,
   provider,
 }: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
@@ -343,18 +340,16 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (decodedInstruction.name === "deposit") {
                       solanaDeposit({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (
                       decodedInstruction.name === "deposit_spl_token"
@@ -370,9 +365,8 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (
                       decodedInstruction.name === "deposit_spl_token_and_call"
@@ -389,9 +383,8 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     }
                   }
