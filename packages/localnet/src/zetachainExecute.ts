@@ -6,11 +6,13 @@ import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainExecute = async ({
   args,
-  contracts,
   chainID,
+  deployer,
+  foreignCoins,
+  zetachainContracts,
+  provider,
   exitOnError = false,
 }: any) => {
-  const { deployer, provider, zetachainContracts, foreignCoins } = contracts;
   const [sender, receiver, message, revertOptions] = args;
   const [, , abortAddress, revertMessage] = revertOptions;
   try {

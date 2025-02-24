@@ -1,10 +1,7 @@
-import { ethers, NonceManager } from "ethers";
+import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
-import { NetworkID } from "./constants";
+import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { createToken } from "./createToken";
-import { evmCall } from "./evmCall";
-import { evmDeposit } from "./evmDeposit";
-import { evmDepositAndCall } from "./evmDepositAndCall";
 import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
 import { suiSetup } from "./suiSetup";
@@ -29,19 +26,20 @@ export const initLocalnet = async ({
 }) => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
-  // anvil test mnemonic
-  const phrase = "test test test test test test test test test test test junk";
 
-  // use 1st anvil account for deployer and admin
-  let deployer = new NonceManager(ethers.Wallet.fromPhrase(phrase, provider));
-  deployer = deployer.connect(provider);
+  let deployer = new NonceManager(
+    HDNodeWallet.fromMnemonic(
+      Mnemonic.fromPhrase(anvilTestMnemonic),
+      `m/44'/60'/0'/0/0`
+    )
+  ).connect(provider);
 
-  // use 2nd anvil account for tss
-  const mnemonic = ethers.Mnemonic.fromPhrase(phrase);
   let tss = new NonceManager(
-    ethers.HDNodeWallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${1}`)
-  );
-  tss = tss.connect(provider);
+    HDNodeWallet.fromMnemonic(
+      Mnemonic.fromPhrase(anvilTestMnemonic),
+      `m/44'/60'/0'/0/1`
+    )
+  ).connect(provider);
 
   const zetachainContracts = await zetachainSetup(deployer, tss, provider);
 
@@ -59,8 +57,24 @@ export const initLocalnet = async ({
         provider,
         zetachainContracts,
       }),
-      evmSetup(deployer, tss),
-      evmSetup(deployer, tss),
+      evmSetup({
+        chainID: NetworkID.Ethereum,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        tss,
+        zetachainContracts,
+      }),
+      evmSetup({
+        chainID: NetworkID.BNB,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        tss,
+        zetachainContracts,
+      }),
     ]);
 
   const contracts = {
@@ -85,84 +99,16 @@ export const initLocalnet = async ({
     createToken(contracts, "SUI", true, NetworkID.Sui, 9),
   ]);
 
-  zetachainContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    zetachainCall({ args, contracts, exitOnError });
-  });
-
-  zetachainContracts.gatewayZEVM.on(
-    "Withdrawn",
-    async (...args: Array<any>) => {
-      zetachainWithdraw({ args, contracts, exitOnError });
-    }
+  zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
+    zetachainCall({ args, contracts, exitOnError })
   );
 
-  zetachainContracts.gatewayZEVM.on(
-    "WithdrawnAndCalled",
-    async (...args: Array<any>) => {
-      zetachainWithdrawAndCall({ args, contracts, exitOnError });
-    }
+  zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
+    zetachainWithdraw({ args, contracts, exitOnError })
   );
 
-  ethereumContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await evmCall({
-      args,
-      chainID: NetworkID.Ethereum,
-      contracts,
-      exitOnError,
-    });
-  });
-
-  ethereumContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    evmDeposit({
-      args,
-      chainID: NetworkID.Ethereum,
-      contracts,
-      exitOnError,
-    });
-  });
-
-  ethereumContracts.gatewayEVM.on(
-    "DepositedAndCalled",
-    async (...args: Array<any>) => {
-      evmDepositAndCall({
-        args,
-        chainID: NetworkID.Ethereum,
-        contracts,
-        exitOnError,
-      });
-    }
-  );
-
-  bnbContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await evmCall({
-      args,
-      chainID: NetworkID.BNB,
-      deployer,
-      foreignCoins,
-      provider,
-      zetachainContracts,
-    });
-  });
-
-  bnbContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    evmDeposit({
-      args,
-      chainID: NetworkID.BNB,
-      contracts,
-      exitOnError,
-    });
-  });
-
-  bnbContracts.gatewayEVM.on(
-    "DepositedAndCalled",
-    async (...args: Array<any>) => {
-      evmDepositAndCall({
-        args,
-        chainID: NetworkID.BNB,
-        contracts,
-        exitOnError,
-      });
-    }
+  zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
+    zetachainWithdrawAndCall({ args, contracts, exitOnError })
   );
 
   const res = [

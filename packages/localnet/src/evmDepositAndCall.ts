@@ -10,9 +10,12 @@ export const evmDepositAndCall = async ({
   args,
   exitOnError = false,
   chainID,
-  contracts,
+  foreignCoins,
+  deployer,
+  provider,
+  zetachainContracts,
+  gatewayEVM,
 }: any) => {
-  const { foreignCoins, deployer, provider, zetachainContracts } = contracts;
   log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
 
@@ -64,8 +67,8 @@ export const evmDepositAndCall = async ({
         amount: revertAmount,
         asset,
         chainID,
-        contracts,
         err,
+        gatewayEVM,
         isGas,
         revertOptions,
         sender,

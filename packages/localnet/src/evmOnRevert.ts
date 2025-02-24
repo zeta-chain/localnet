@@ -9,17 +9,15 @@ export const evmOnRevert = async ({
   revertOptions,
   asset,
   amount,
-  contracts,
   isGas,
   token,
   chainID,
   sender,
+  custody,
+  provider,
+  tss,
+  gatewayEVM,
 }: any) => {
-  const { custody, provider, tss } = contracts;
-  const gatewayEVM =
-    chainID === NetworkID.Ethereum
-      ? contracts.ethereumContracts.gatewayEVM
-      : contracts.bnbContracts.gatewayEVM;
   const [revertAddress, callOnRevert, , revertMessage] = revertOptions;
   const revertContext = { amount, asset, revertMessage, sender };
   if (callOnRevert) {

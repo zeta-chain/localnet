@@ -8,19 +8,17 @@ import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const evmDeposit = async ({
-  contracts,
   args,
-  exitOnError = false,
+  deployer,
+  foreignCoins,
+  gatewayEVM,
+  provider,
+  custody,
+  tss,
+  zetachainContracts,
   chainID,
+  exitOnError = false,
 }: any) => {
-  const {
-    custody,
-    deployer,
-    foreignCoins,
-    gatewayEVM,
-    provider,
-    zetachainContracts,
-  } = contracts;
   log(chainID, "Gateway: 'Deposited' event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
@@ -80,12 +78,14 @@ export const evmDeposit = async ({
         amount: revertAmount,
         asset,
         chainID,
-        contracts,
+        custody,
         err,
         isGas,
+        provider,
         revertOptions,
         sender,
         token,
+        tss,
       });
     } else {
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort

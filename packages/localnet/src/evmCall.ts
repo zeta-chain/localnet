@@ -7,17 +7,23 @@ import { zetachainOnAbort } from "./zetachainOnAbort";
 export const evmCall = async ({
   args,
   chainID,
-  contracts,
+  zetachainContracts,
+  provider,
+  deployer,
+  foreignCoins,
   exitOnError = false,
 }: any) => {
-  const { zetachainContracts, provider } = contracts;
   log(chainID, "Gateway: 'Called' event emitted");
   const sender = args[0];
   try {
     zetachainExecute({
       args,
       chainID,
-      contracts,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      provider,
+      zetachainContracts,
     });
   } catch (err: any) {
     if (exitOnError) {
