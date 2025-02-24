@@ -53,26 +53,26 @@ export const initLocalnet = async ({
   );
   tss = tss.connect(provider);
 
-  const protocolContracts = await zetachainSetup(
+  const zetachainContracts = await zetachainSetup(
     deployer,
     tss,
     fungibleModuleSigner
   );
 
-  const [solanaEnv, suiEnv, contractsEthereum, contractsBNB] =
+  const [solanaEnv, suiEnv, ethereumContracts, bnbContracts] =
     await Promise.all([
       solanaSetup({
         deployer,
         foreignCoins,
         fungibleModuleSigner,
-        protocolContracts,
+        zetachainContracts,
         provider,
       }),
       suiSetup({
         deployer,
         foreignCoins,
         fungibleModuleSigner,
-        protocolContracts,
+        zetachainContracts,
         provider,
       }),
       evmSetup(deployer, tss),
@@ -80,17 +80,17 @@ export const initLocalnet = async ({
     ]);
 
   const addresses = {
-    ...protocolContracts,
+    ...zetachainContracts,
     deployer,
     foreignCoins,
     fungibleModuleSigner,
-    protocolContracts,
+    zetachainContracts,
     tss,
   };
 
   await createToken(
     addresses,
-    contractsEthereum.custody,
+    ethereumContracts.custody,
     "ETH",
     true,
     NetworkID.Ethereum,
@@ -99,7 +99,7 @@ export const initLocalnet = async ({
   );
   await createToken(
     addresses,
-    contractsEthereum.custody,
+    ethereumContracts.custody,
     "USDC",
     false,
     NetworkID.Ethereum,
@@ -108,7 +108,7 @@ export const initLocalnet = async ({
   );
   await createToken(
     addresses,
-    contractsBNB.custody,
+    bnbContracts.custody,
     "BNB",
     true,
     NetworkID.BNB,
@@ -117,7 +117,7 @@ export const initLocalnet = async ({
   );
   await createToken(
     addresses,
-    contractsBNB.custody,
+    bnbContracts.custody,
     "USDC",
     false,
     NetworkID.BNB,
@@ -145,39 +145,42 @@ export const initLocalnet = async ({
   await createToken(addresses, null, "SUI", true, NetworkID.Sui, 9, null);
 
   const evmContracts = {
-    5: contractsEthereum,
-    97: contractsBNB,
+    5: ethereumContracts,
+    97: bnbContracts,
   };
 
-  protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
+  zetachainContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
     zetachainCall({
       args,
       evmContracts,
       exitOnError,
       foreignCoins,
       fungibleModuleSigner,
-      gatewayZEVM: protocolContracts.gatewayZEVM,
+      gatewayZEVM: zetachainContracts.gatewayZEVM,
       provider,
       tss,
     });
   });
 
-  protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    zetachainWithdraw({
-      args,
-      deployer,
-      evmContracts,
-      exitOnError,
-      foreignCoins,
-      fungibleModuleSigner,
-      gatewayZEVM: protocolContracts.gatewayZEVM,
-      provider,
-      suiEnv: suiEnv?.env,
-      tss,
-    });
-  });
+  zetachainContracts.gatewayZEVM.on(
+    "Withdrawn",
+    async (...args: Array<any>) => {
+      zetachainWithdraw({
+        args,
+        deployer,
+        evmContracts,
+        exitOnError,
+        foreignCoins,
+        fungibleModuleSigner,
+        gatewayZEVM: zetachainContracts.gatewayZEVM,
+        provider,
+        suiEnv: suiEnv?.env,
+        tss,
+      });
+    }
+  );
 
-  protocolContracts.gatewayZEVM.on(
+  zetachainContracts.gatewayZEVM.on(
     "WithdrawnAndCalled",
     async (...args: Array<any>) => {
       zetachainWithdrawAndCall({
@@ -187,14 +190,14 @@ export const initLocalnet = async ({
         exitOnError,
         foreignCoins,
         fungibleModuleSigner,
-        gatewayZEVM: protocolContracts.gatewayZEVM,
+        gatewayZEVM: zetachainContracts.gatewayZEVM,
         provider,
         tss,
       });
     }
   );
 
-  contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
+  ethereumContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
       chainID: NetworkID.Ethereum,
@@ -202,87 +205,87 @@ export const initLocalnet = async ({
       exitOnError,
       foreignCoins,
       fungibleModuleSigner,
-      protocolContracts,
+      protocolContracts: zetachainContracts,
       provider,
     });
   });
 
-  contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+  ethereumContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
       chainID: NetworkID.Ethereum,
-      custody: contractsEthereum.custody,
+      custody: ethereumContracts.custody,
       deployer,
       exitOnError,
       foreignCoins,
       fungibleModuleSigner,
-      gatewayEVM: contractsEthereum.gatewayEVM,
-      protocolContracts,
+      gatewayEVM: ethereumContracts.gatewayEVM,
+      protocolContracts: zetachainContracts,
       provider,
       tss,
     });
   });
 
-  contractsEthereum.gatewayEVM.on(
+  ethereumContracts.gatewayEVM.on(
     "DepositedAndCalled",
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
         chainID: NetworkID.Ethereum,
-        custody: contractsEthereum.custody,
+        custody: ethereumContracts.custody,
         deployer,
         exitOnError,
         foreignCoins,
         fungibleModuleSigner,
-        gatewayEVM: contractsEthereum.gatewayEVM,
-        protocolContracts,
+        gatewayEVM: ethereumContracts.gatewayEVM,
+        protocolContracts: zetachainContracts,
         provider,
         tss,
       });
     }
   );
 
-  contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
+  bnbContracts.gatewayEVM.on("Called", async (...args: Array<any>) => {
     return await evmCall({
       args,
       chainID: NetworkID.BNB,
       deployer,
       foreignCoins,
       fungibleModuleSigner,
-      protocolContracts,
+      protocolContracts: zetachainContracts,
       provider,
     });
   });
 
-  contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+  bnbContracts.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
     evmDeposit({
       args,
       chainID: NetworkID.BNB,
-      custody: contractsBNB.custody,
+      custody: bnbContracts.custody,
       deployer,
       exitOnError,
       foreignCoins,
       fungibleModuleSigner,
-      gatewayEVM: contractsBNB.gatewayEVM,
-      protocolContracts,
+      gatewayEVM: bnbContracts.gatewayEVM,
+      protocolContracts: zetachainContracts,
       provider,
       tss,
     });
   });
 
-  contractsBNB.gatewayEVM.on(
+  bnbContracts.gatewayEVM.on(
     "DepositedAndCalled",
     async (...args: Array<any>) => {
       evmDepositAndCall({
         args,
         chainID: NetworkID.BNB,
-        custody: contractsBNB.custody,
+        custody: bnbContracts.custody,
         deployer,
         exitOnError,
         foreignCoins,
         fungibleModuleSigner,
-        gatewayEVM: contractsBNB.gatewayEVM,
-        protocolContracts,
+        gatewayEVM: bnbContracts.gatewayEVM,
+        protocolContracts: zetachainContracts,
         provider,
         tss,
       });
@@ -295,7 +298,7 @@ export const initLocalnet = async ({
       chain: "solana",
       type: "tokenProgram",
     },
-    ...Object.entries(protocolContracts)
+    ...Object.entries(zetachainContracts)
       .filter(([, value]) => value.target !== undefined)
       .map(([key, value]) => {
         return {
@@ -341,18 +344,18 @@ export const initLocalnet = async ({
       })
       .filter(Boolean),
     {
-      address: await protocolContracts.tss.getAddress(),
+      address: await zetachainContracts.tss.getAddress(),
       chain: "zetachain",
       type: "tss",
     },
-    ...Object.entries(contractsEthereum).map(([key, value]) => {
+    ...Object.entries(ethereumContracts).map(([key, value]) => {
       return {
         address: value.target,
         chain: "ethereum",
         type: key,
       };
     }),
-    ...Object.entries(contractsBNB).map(([key, value]) => {
+    ...Object.entries(bnbContracts).map(([key, value]) => {
       return {
         address: value.target,
         chain: "bnb",
