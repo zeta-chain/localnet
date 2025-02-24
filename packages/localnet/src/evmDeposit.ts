@@ -8,35 +8,26 @@ import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const evmDeposit = async ({
-  tss,
-  provider,
-  zetachainContracts,
+  contracts,
   args,
-  deployer,
-  foreignCoins,
   exitOnError = false,
   chainID,
-  gatewayEVM,
-  custody,
-}: {
-  args: any;
-  chainID: string;
-  custody: any;
-  deployer: any;
-  exitOnError?: boolean;
-  foreignCoins: any[];
-  gatewayEVM: any;
-  zetachainContracts: any;
-  provider: ethers.JsonRpcProvider;
-  tss: any;
-}) => {
+}: any) => {
+  const {
+    custody,
+    deployer,
+    foreignCoins,
+    gatewayEVM,
+    provider,
+    zetachainContracts,
+  } = contracts;
   log(chainID, "Gateway: 'Deposited' event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
-    foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
+    foreignCoin = foreignCoins.find((coin: any) => coin.coin_type === "Gas");
   } else {
-    foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
+    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
   }
 
   if (!foreignCoin) {
@@ -67,7 +58,7 @@ export const evmDeposit = async ({
     let token = null;
     if (zrc20 !== gasZRC20) {
       token = foreignCoins.find(
-        (coin) => coin.zrc20_contract_address === zrc20
+        (coin: any) => coin.zrc20_contract_address === zrc20
       )?.asset;
       isGas = false;
       revertGasFee = await swapToCoverGas(
@@ -89,15 +80,12 @@ export const evmDeposit = async ({
         amount: revertAmount,
         asset,
         chainID,
-        custody,
         err,
-        gatewayEVM,
         isGas,
-        provider,
         revertOptions,
         sender,
         token,
-        tss,
+        contracts,
       });
     } else {
       // If the deposited amount is not enough to cover withdrawal fee, run onAbort

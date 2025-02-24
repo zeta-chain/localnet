@@ -1,4 +1,3 @@
-import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { evmOnRevert } from "./evmOnRevert";
@@ -8,38 +7,23 @@ import { zetachainOnAbort } from "./zetachainOnAbort";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const evmDepositAndCall = async ({
-  tss,
-  provider,
-  zetachainContracts,
   args,
-  deployer,
-  foreignCoins,
   exitOnError = false,
   chainID,
-  gatewayEVM,
-  custody,
-}: {
-  args: any;
-  chainID: string;
-  custody: any;
-  deployer: any;
-  exitOnError: boolean;
-  foreignCoins: any[];
-  gatewayEVM: any;
-  zetachainContracts: any;
-  provider: ethers.JsonRpcProvider;
-  tss: any;
-}) => {
+  contracts,
+}: any) => {
+  const { foreignCoins, deployer, provider, zetachainContracts } = contracts;
   log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
 
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
-      (coin) => coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
+      (coin: any) =>
+        coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
   } else {
-    foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
+    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
   }
 
   if (!foreignCoin) {
@@ -80,15 +64,12 @@ export const evmDepositAndCall = async ({
         amount: revertAmount,
         asset,
         chainID,
-        custody,
         err,
-        gatewayEVM,
         isGas,
-        provider,
+        contracts,
         revertOptions,
         sender,
         token,
-        tss,
       });
     } else {
       log(

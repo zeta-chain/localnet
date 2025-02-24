@@ -5,22 +5,12 @@ import { log, logErr } from "./log";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainExecute = async ({
-  provider,
-  zetachainContracts,
   args,
-  deployer,
-  foreignCoins,
+  contracts,
   chainID,
   exitOnError = false,
-}: {
-  args: any;
-  chainID: any;
-  deployer: any;
-  exitOnError?: any;
-  foreignCoins: any;
-  zetachainContracts: any;
-  provider: any;
-}) => {
+}: any) => {
+  const { deployer, provider, zetachainContracts, foreignCoins } = contracts;
   const [sender, receiver, message, revertOptions] = args;
   const [, , abortAddress, revertMessage] = revertOptions;
   try {

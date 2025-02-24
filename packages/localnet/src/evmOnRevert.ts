@@ -3,34 +3,23 @@ import { ethers, NonceManager } from "ethers";
 
 import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
+import { NetworkID } from "./constants";
 
 export const evmOnRevert = async ({
   revertOptions,
   asset,
   amount,
-  err,
-  provider,
-  tss,
+  contracts,
   isGas,
   token,
   chainID,
-  gatewayEVM,
-  custody,
   sender,
-}: {
-  amount: any;
-  asset: any;
-  chainID: string;
-  custody: any;
-  err: any;
-  gatewayEVM: any;
-  isGas: boolean;
-  provider: any;
-  revertOptions: any;
-  sender: string;
-  token: string;
-  tss: any;
-}) => {
+}: any) => {
+  const { custody, provider, tss } = contracts;
+  const gatewayEVM =
+    chainID === NetworkID.Ethereum
+      ? contracts.ethereumContracts.gatewayEVM
+      : contracts.bnbContracts.gatewayEVM;
   const [revertAddress, callOnRevert, , revertMessage] = revertOptions;
   const revertContext = { amount, asset, revertMessage, sender };
   if (callOnRevert) {

@@ -5,32 +5,19 @@ import { zetachainExecute } from "./zetachainExecute";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const evmCall = async ({
-  provider,
-  zetachainContracts,
   args,
-  foreignCoins,
   chainID,
+  contracts,
   exitOnError = false,
-  deployer,
-}: {
-  args: any;
-  chainID: string;
-  deployer: any;
-  exitOnError?: any;
-  foreignCoins: any;
-  zetachainContracts: any;
-  provider: any;
-}) => {
+}: any) => {
+  const { zetachainContracts, provider } = contracts;
   log(chainID, "Gateway: 'Called' event emitted");
   const sender = args[0];
   try {
     zetachainExecute({
       args,
       chainID,
-      deployer,
-      foreignCoins,
-      zetachainContracts,
-      provider,
+      contracts,
     });
   } catch (err: any) {
     if (exitOnError) {
@@ -47,8 +34,8 @@ export const evmCall = async ({
       asset: ethers.ZeroAddress,
       chainID,
       fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
-      outgoing: false,
       provider,
+      outgoing: false,
       revertMessage: revertMessage,
       sender,
     });

@@ -6,28 +6,21 @@ import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
 import { log, logErr } from "./log";
 import { zetachainOnRevert } from "./zetachainOnRevert";
+import { NetworkID } from "./constants";
 
 export const zetachainWithdrawAndCall = async ({
-  evmContracts,
-  tss,
-  provider,
-  gatewayZEVM,
   args,
-  fungibleModuleSigner,
-  deployer,
-  foreignCoins,
+  contracts,
   exitOnError = false,
-}: {
-  args: any;
-  deployer: any;
-  evmContracts: any;
-  exitOnError: boolean;
-  foreignCoins: any[];
-  fungibleModuleSigner: any;
-  gatewayZEVM: any;
-  provider: ethers.JsonRpcProvider;
-  tss: any;
-}) => {
+}: any) => {
+  const {
+    foreignCoins,
+    deployer,
+    tss,
+    provider,
+    zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
+  } = contracts;
+
   log("7001", "Gateway: 'WithdrawnAndCalled' event emitted");
   const [
     sender,
@@ -66,16 +59,18 @@ export const zetachainWithdrawAndCall = async ({
       await evmExecute({
         amount,
         callOptions,
-        evmContracts,
-        foreignCoins,
+        contracts,
         message,
-        provider,
         receiver,
         sender,
-        tss,
         zrc20,
       });
     } else {
+      const evmContracts =
+        chainID === NetworkID.Ethereum
+          ? contracts.ethereumContracts
+          : contracts.bnbContracts;
+
       await evmCustodyWithdrawAndCall({
         args,
         evmContracts,

@@ -26,9 +26,9 @@ export const evmCustodyWithdrawAndCall = async ({
     if (!foreignAsset) {
       throw new Error(`Foreign coin not found for ZRC20 address: ${zrc20}`);
     }
-    const { asset, foreign_chain_id } = foreignAsset;
+    const { asset } = foreignAsset;
 
-    const executeTx = await evmContracts[foreign_chain_id].custody
+    const executeTx = await evmContracts.custody
       .connect(tss)
       .withdrawAndCall(
         messageContext,
