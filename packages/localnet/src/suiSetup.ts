@@ -39,10 +39,6 @@ export const suiSetup = async ({
   const user = generateAccount(MNEMONIC);
   const address = user.keypair.toSuiAddress();
 
-  console.log("Generated new Sui account:");
-  console.log("Mnemonic:", user.mnemonic);
-  console.log("Address:", address);
-
   console.log("Requesting SUI from faucet...");
   requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address });
 
@@ -172,6 +168,11 @@ export const suiSetup = async ({
         address: user.mnemonic,
         chain: "sui",
         type: "userMnemonic",
+      },
+      {
+        address: user.keypair.toSuiAddress(),
+        chain: "sui",
+        type: "userAddress",
       },
     ],
     env: {

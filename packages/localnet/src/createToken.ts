@@ -66,7 +66,25 @@ export const createToken = async (
     asset = "";
   } else {
     if (chainID === NetworkID.Solana) {
-      asset = await createSolanaSPL(contracts.solanaContracts.env, symbol);
+      const [assetAddr, gateway, user] = await createSolanaSPL(
+        contracts.solanaContracts.env,
+        symbol
+      );
+      asset = assetAddr;
+      contracts.solanaContracts.addresses.push(
+        ...[
+          {
+            address: gateway,
+            chain: "solana",
+            type: `gatewayTokenAccount${symbol}`,
+          },
+          {
+            address: user,
+            chain: "solana",
+            type: `userTokenAccount${symbol}`,
+          },
+        ]
+      );
     } else if (chainID === NetworkID.Ethereum) {
       asset = await createERC20(
         deployer,
@@ -155,42 +173,8 @@ const createSolanaSPL = async (env: any, symbol: string) => {
     null,
     9
   );
-  console.log(`Created new SPL token: ${mint.toBase58()}`);
-
-  const tssTokenAccount = await getOrCreateAssociatedTokenAccount(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    tssKeypair.publicKey
-  );
-
-  await mintTo(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    tssTokenAccount.address,
-    tssKeypair.publicKey,
-    100 * LAMPORTS_PER_SOL
-  );
-
-  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    env.gatewayProgram.provider.connection,
-    env.defaultSolanaUser,
-    mint,
-    env.defaultSolanaUser.publicKey
-  );
-
-  await mintTo(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    userTokenAccount.address,
-    tssKeypair.publicKey,
-    100 * LAMPORTS_PER_SOL
-  );
 
   const GATEWAY_PROGRAM_ID = env.gatewayProgram.programId;
-  console.log("Gateway Program ID:", GATEWAY_PROGRAM_ID.toBase58());
 
   const [gatewayPDA] = await PublicKey.findProgramAddress(
     [Buffer.from("meta")],
@@ -205,16 +189,54 @@ const createSolanaSPL = async (env: any, symbol: string) => {
     true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
   );
 
-  await whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser);
-
-  console.log("gatewayTokenAccount", gatewayTokenAccount.address.toBase58());
-
-  console.log(`TSS ${symbol} token account: ${tssTokenAccount.address}`);
-  console.log(
-    `Default user ${symbol} token account: ${userTokenAccount.address}`
+  const tssTokenAccount = await getOrCreateAssociatedTokenAccount(
+    env.gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    tssKeypair.publicKey
   );
 
-  return mint.toBase58();
+  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+    env.gatewayProgram.provider.connection,
+    env.defaultSolanaUser,
+    mint,
+    env.defaultSolanaUser.publicKey
+  );
+
+  await mintTo(
+    env.gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    tssTokenAccount.address,
+    tssKeypair.publicKey,
+    100 * LAMPORTS_PER_SOL
+  );
+
+  await mintTo(
+    env.gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    userTokenAccount.address,
+    tssKeypair.publicKey,
+    100 * LAMPORTS_PER_SOL
+  );
+
+  await mintTo(
+    env.gatewayProgram.provider.connection,
+    tssKeypair,
+    mint,
+    gatewayTokenAccount.address,
+    tssKeypair.publicKey,
+    100 * LAMPORTS_PER_SOL
+  );
+
+  await whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser);
+
+  return [
+    mint.toBase58(),
+    gatewayTokenAccount.address.toBase58(),
+    userTokenAccount.address.toBase58(),
+  ];
 };
 
 const whitelistSPLToken = async (
