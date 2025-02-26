@@ -78,6 +78,26 @@ export const keypairFromMnemonic = async (
   return Keypair.fromSeed(seedSlice);
 };
 
+const airdrop = async (
+  connection: any,
+  keypair: any,
+  amount = 20_000_000_000_000
+) => {
+  const latestBlockhash = await connection.getLatestBlockhash();
+  const sig = await connection.requestAirdrop(payer.publicKey, amount);
+
+  await connection.requestAirdrop(keypair.publicKey, amount);
+
+  await connection.confirmTransaction(
+    {
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      signature: sig,
+    },
+    "confirmed"
+  );
+};
+
 export const solanaSetup = async ({
   deployer,
   foreignCoins,
@@ -128,64 +148,12 @@ export const solanaSetup = async ({
 
     const connection = gatewayProgram.provider.connection;
 
-    // Airdrop into the payer so it has enough SOL
-    const latestBlockhash = await connection.getLatestBlockhash();
-    const airdropSig = await connection.requestAirdrop(
-      payer.publicKey,
-      20_000_000_000_000
-    );
-
-    await connection.requestAirdrop(tssKeypair.publicKey, 20_000_000_000_000);
-
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: airdropSig,
-      },
-      "confirmed"
-    );
-
-    const defaultLocalnetUserKeypairAirdrop = await connection.requestAirdrop(
-      defaultLocalnetUserKeypair.publicKey,
-      20_000_000_000_000
-    );
-
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: defaultLocalnetUserKeypairAirdrop,
-      },
-      "confirmed"
-    );
-
-    const defaultSolanaUserKeypairAirdrop = await connection.requestAirdrop(
-      defaultSolanaUserKeypair.publicKey,
-      20_000_000_000_000
-    );
-
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: defaultSolanaUserKeypairAirdrop,
-      },
-      "confirmed"
-    );
-
-    const airdropTssSig = await connection.requestAirdrop(
-      tssKeypair.publicKey,
-      20_000_000_000_000
-    );
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: airdropTssSig,
-      },
-      "confirmed"
-    );
+    await Promise.all([
+      airdrop(connection, payer),
+      airdrop(connection, tssKeypair),
+      airdrop(connection, defaultLocalnetUserKeypair),
+      airdrop(connection, defaultSolanaUserKeypair),
+    ]);
 
     const anchorProvider = new anchor.AnchorProvider(
       connection,
