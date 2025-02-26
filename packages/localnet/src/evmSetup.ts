@@ -24,20 +24,26 @@ export const evmSetup = async ({
     TestERC20.bytecode,
     deployer
   );
-  const testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
 
   const gatewayEVMFactory = new ethers.ContractFactory(
     GatewayEVM.abi,
     GatewayEVM.bytecode,
     deployer
   );
-  const gatewayEVMImpl = await gatewayEVMFactory.deploy(deployOpts);
+
+  const [tssAddress, deployerAddress, testEVMZeta, gatewayEVMImpl] =
+    await Promise.all([
+      tss.getAddress(),
+      deployer.getAddress(),
+      testERC20Factory.deploy("zeta", "ZETA", deployOpts),
+      gatewayEVMFactory.deploy(deployOpts),
+    ]);
 
   const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
   const gatewayEVMInitFragment = gatewayEVMInterface.getFunction("initialize");
   const gatewayEVMInitdata = gatewayEVMInterface.encodeFunctionData(
     gatewayEVMInitFragment as ethers.FunctionFragment,
-    [await tss.getAddress(), testEVMZeta.target, await deployer.getAddress()]
+    [tssAddress, testEVMZeta.target, deployerAddress]
   );
 
   const proxyEVMFactory = new ethers.ContractFactory(
@@ -63,14 +69,17 @@ export const evmSetup = async ({
     ZetaConnectorNonNative.bytecode,
     deployer
   );
-  const zetaConnectorImpl = await zetaConnectorFactory.deploy(deployOpts);
 
   const custodyFactory = new ethers.ContractFactory(
     Custody.abi,
     Custody.bytecode,
     deployer
   );
-  const custodyImpl = await custodyFactory.deploy(deployOpts);
+
+  const [zetaConnectorImpl, custodyImpl] = await Promise.all([
+    zetaConnectorFactory.deploy(deployOpts),
+    custodyFactory.deploy(deployOpts),
+  ]);
 
   const zetaConnectorProxy = new ethers.Contract(
     zetaConnectorImpl.target,
@@ -94,22 +103,23 @@ export const evmSetup = async ({
   //   deployOpts
   // );
 
-  await custody.initialize(
-    gatewayEVM.target,
-    await tss.getAddress(),
-    await deployer.getAddress(),
-    deployOpts
-  );
-
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setCustody(custodyImpl.target, deployOpts);
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setConnector(zetaConnectorImpl.target, deployOpts);
+  await Promise.all([
+    custody.initialize(
+      gatewayEVM.target,
+      tssAddress,
+      deployerAddress,
+      deployOpts
+    ),
+    (gatewayEVM as any)
+      .connect(deployer)
+      .setCustody(custodyImpl.target, deployOpts),
+    (gatewayEVM as any)
+      .connect(deployer)
+      .setConnector(zetaConnectorImpl.target, deployOpts),
+  ]);
 
   gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await evmCall({
+    evmCall({
       args,
       chainID,
       deployer,
