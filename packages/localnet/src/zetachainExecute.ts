@@ -5,24 +5,14 @@ import { log, logErr } from "./log";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainExecute = async ({
-  provider,
-  protocolContracts,
   args,
-  deployer,
-  fungibleModuleSigner,
-  foreignCoins,
   chainID,
+  deployer,
+  foreignCoins,
+  zetachainContracts,
+  provider,
   exitOnError = false,
-}: {
-  args: any;
-  chainID: any;
-  deployer: any;
-  exitOnError?: any;
-  foreignCoins: any;
-  fungibleModuleSigner: any;
-  protocolContracts: any;
-  provider: any;
-}) => {
+}: any) => {
   const [sender, receiver, message, revertOptions] = args;
   const [, , abortAddress, revertMessage] = revertOptions;
   try {
@@ -43,8 +33,8 @@ export const zetachainExecute = async ({
         context
       )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
     );
-    const executeTx = await protocolContracts.gatewayZEVM
-      .connect(fungibleModuleSigner)
+    const executeTx = await zetachainContracts.gatewayZEVM
+      .connect(zetachainContracts.fungibleModuleSigner)
       .execute(context, zrc20, 0, receiver, message, deployOpts);
     await executeTx.wait();
     const logs = await provider.getLogs({
@@ -66,7 +56,7 @@ export const zetachainExecute = async ({
       amount: 0,
       asset: ethers.ZeroAddress,
       chainID,
-      fungibleModuleSigner,
+      fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
       outgoing: false,
       provider,
       revertMessage: revertMessage,

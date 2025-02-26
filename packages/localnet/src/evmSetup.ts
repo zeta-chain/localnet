@@ -6,27 +6,44 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import { ethers, Signer } from "ethers";
 
 import { deployOpts } from "./deployOpts";
+import { evmCall } from "./evmCall";
+import { evmDeposit } from "./evmDeposit";
+import { evmDepositAndCall } from "./evmDepositAndCall";
 
-export const evmSetup = async (deployer: Signer, tss: Signer) => {
+export const evmSetup = async ({
+  deployer,
+  tss,
+  chainID,
+  zetachainContracts,
+  exitOnError,
+  foreignCoins,
+  provider,
+}: any) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
     deployer
   );
-  const testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
 
   const gatewayEVMFactory = new ethers.ContractFactory(
     GatewayEVM.abi,
     GatewayEVM.bytecode,
     deployer
   );
-  const gatewayEVMImpl = await gatewayEVMFactory.deploy(deployOpts);
+
+  const [tssAddress, deployerAddress, testEVMZeta, gatewayEVMImpl] =
+    await Promise.all([
+      tss.getAddress(),
+      deployer.getAddress(),
+      testERC20Factory.deploy("zeta", "ZETA", deployOpts),
+      gatewayEVMFactory.deploy(deployOpts),
+    ]);
 
   const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
   const gatewayEVMInitFragment = gatewayEVMInterface.getFunction("initialize");
   const gatewayEVMInitdata = gatewayEVMInterface.encodeFunctionData(
     gatewayEVMInitFragment as ethers.FunctionFragment,
-    [await tss.getAddress(), testEVMZeta.target, await deployer.getAddress()]
+    [tssAddress, testEVMZeta.target, deployerAddress]
   );
 
   const proxyEVMFactory = new ethers.ContractFactory(
@@ -52,14 +69,17 @@ export const evmSetup = async (deployer: Signer, tss: Signer) => {
     ZetaConnectorNonNative.bytecode,
     deployer
   );
-  const zetaConnectorImpl = await zetaConnectorFactory.deploy(deployOpts);
 
   const custodyFactory = new ethers.ContractFactory(
     Custody.abi,
     Custody.bytecode,
     deployer
   );
-  const custodyImpl = await custodyFactory.deploy(deployOpts);
+
+  const [zetaConnectorImpl, custodyImpl] = await Promise.all([
+    zetaConnectorFactory.deploy(deployOpts),
+    custodyFactory.deploy(deployOpts),
+  ]);
 
   const zetaConnectorProxy = new ethers.Contract(
     zetaConnectorImpl.target,
@@ -67,7 +87,7 @@ export const evmSetup = async (deployer: Signer, tss: Signer) => {
     deployer
   );
 
-  const custodyProxy = new ethers.Contract(
+  const custody = new ethers.Contract(
     custodyImpl.target,
     Custody.abi,
     deployer
@@ -83,22 +103,63 @@ export const evmSetup = async (deployer: Signer, tss: Signer) => {
   //   deployOpts
   // );
 
-  await custodyProxy.initialize(
-    gatewayEVM.target,
-    await tss.getAddress(),
-    await deployer.getAddress(),
-    deployOpts
-  );
+  await Promise.all([
+    custody.initialize(
+      gatewayEVM.target,
+      tssAddress,
+      deployerAddress,
+      deployOpts
+    ),
+    (gatewayEVM as any)
+      .connect(deployer)
+      .setCustody(custodyImpl.target, deployOpts),
+    (gatewayEVM as any)
+      .connect(deployer)
+      .setConnector(zetaConnectorImpl.target, deployOpts),
+  ]);
 
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setCustody(custodyImpl.target, deployOpts);
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setConnector(zetaConnectorImpl.target, deployOpts);
+  gatewayEVM.on("Called", async (...args: Array<any>) => {
+    evmCall({
+      args,
+      chainID,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      provider,
+      zetachainContracts,
+    });
+  });
+
+  gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+    evmDeposit({
+      args,
+      chainID,
+      custody,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      gatewayEVM,
+      provider,
+      tss,
+      zetachainContracts,
+    });
+  });
+
+  gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
+    evmDepositAndCall({
+      args,
+      chainID,
+      deployer,
+      exitOnError: false,
+      foreignCoins,
+      gatewayEVM,
+      provider,
+      zetachainContracts,
+    });
+  });
 
   return {
-    custody: custodyProxy,
+    custody,
     gatewayEVM,
     testEVMZeta,
     zetaConnector: zetaConnectorProxy,

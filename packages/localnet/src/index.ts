@@ -1,10 +1,7 @@
-import { ethers, NonceManager } from "ethers";
+import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "./constants";
+import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { createToken } from "./createToken";
-import { evmCall } from "./evmCall";
-import { evmDeposit } from "./evmDeposit";
-import { evmDepositAndCall } from "./evmDepositAndCall";
 import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
 import { suiSetup } from "./suiSetup";
@@ -29,264 +26,89 @@ export const initLocalnet = async ({
 }) => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
-  // anvil test mnemonic
-  const phrase = "test test test test test test test test test test test junk";
 
-  // impersonate and fund fungible module account
-  await provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]);
-  await provider.send("anvil_setBalance", [
-    FUNGIBLE_MODULE_ADDRESS,
-    ethers.parseEther("100000").toString(),
-  ]);
-  const fungibleModuleSigner = await provider.getSigner(
-    FUNGIBLE_MODULE_ADDRESS
-  );
+  let deployer = new NonceManager(
+    HDNodeWallet.fromMnemonic(
+      Mnemonic.fromPhrase(anvilTestMnemonic),
+      `m/44'/60'/0'/0/0`
+    )
+  ).connect(provider);
 
-  // use 1st anvil account for deployer and admin
-  let deployer = new NonceManager(ethers.Wallet.fromPhrase(phrase, provider));
-  deployer = deployer.connect(provider);
-
-  // use 2nd anvil account for tss
-  const mnemonic = ethers.Mnemonic.fromPhrase(phrase);
   let tss = new NonceManager(
-    ethers.HDNodeWallet.fromMnemonic(mnemonic, `m/44'/60'/0'/0/${1}`)
-  );
-  tss = tss.connect(provider);
+    HDNodeWallet.fromMnemonic(
+      Mnemonic.fromPhrase(anvilTestMnemonic),
+      `m/44'/60'/0'/0/1`
+    )
+  ).connect(provider);
 
-  const protocolContracts = await zetachainSetup(
-    deployer,
-    tss,
-    fungibleModuleSigner
-  );
+  const zetachainContracts = await zetachainSetup(deployer, tss, provider);
 
-  const [solanaEnv, suiEnv, contractsEthereum, contractsBNB] =
+  const [solanaContracts, suiContracts, ethereumContracts, bnbContracts] =
     await Promise.all([
       solanaSetup({
         deployer,
         foreignCoins,
-        fungibleModuleSigner,
-        protocolContracts,
         provider,
+        zetachainContracts,
       }),
       suiSetup({
         deployer,
         foreignCoins,
-        fungibleModuleSigner,
-        protocolContracts,
         provider,
+        zetachainContracts,
       }),
-      evmSetup(deployer, tss),
-      evmSetup(deployer, tss),
+      evmSetup({
+        chainID: NetworkID.Ethereum,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        tss,
+        zetachainContracts,
+      }),
+      evmSetup({
+        chainID: NetworkID.BNB,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        tss,
+        zetachainContracts,
+      }),
     ]);
 
-  const addresses = {
-    ...protocolContracts,
+  const contracts = {
+    bnbContracts,
     deployer,
+    ethereumContracts,
     foreignCoins,
-    fungibleModuleSigner,
-    protocolContracts,
+    provider,
+    solanaContracts,
+    suiContracts,
     tss,
+    zetachainContracts,
   };
 
-  await createToken(
-    addresses,
-    contractsEthereum.custody,
-    "ETH",
-    true,
-    NetworkID.Ethereum,
-    18,
-    null
-  );
-  await createToken(
-    addresses,
-    contractsEthereum.custody,
-    "USDC",
-    false,
-    NetworkID.Ethereum,
-    18,
-    null
-  );
-  await createToken(
-    addresses,
-    contractsBNB.custody,
-    "BNB",
-    true,
-    NetworkID.BNB,
-    18,
-    null
-  );
-  await createToken(
-    addresses,
-    contractsBNB.custody,
-    "USDC",
-    false,
-    NetworkID.BNB,
-    18,
-    null
-  );
-  await createToken(
-    addresses,
-    null,
-    "SOL",
-    true,
-    NetworkID.Solana,
-    9,
-    solanaEnv?.env
-  );
-  await createToken(
-    addresses,
-    null,
-    "USDC",
-    false,
-    NetworkID.Solana,
-    9,
-    solanaEnv?.env
-  );
-  await createToken(addresses, null, "SUI", true, NetworkID.Sui, 9, null);
+  await Promise.all([
+    createToken(contracts, "ETH", true, NetworkID.Ethereum, 18),
+    createToken(contracts, "USDC", false, NetworkID.Ethereum, 18),
+    createToken(contracts, "BNB", true, NetworkID.BNB, 18),
+    createToken(contracts, "USDC", false, NetworkID.BNB, 18),
+    createToken(contracts, "SOL", true, NetworkID.Solana, 9),
+    createToken(contracts, "USDC", false, NetworkID.Solana, 9),
+    createToken(contracts, "SUI", true, NetworkID.Sui, 9),
+  ]);
 
-  const evmContracts = {
-    5: contractsEthereum,
-    97: contractsBNB,
-  };
-
-  protocolContracts.gatewayZEVM.on("Called", async (...args: Array<any>) => {
-    zetachainCall({
-      args,
-      evmContracts,
-      exitOnError,
-      foreignCoins,
-      fungibleModuleSigner,
-      gatewayZEVM: protocolContracts.gatewayZEVM,
-      provider,
-      tss,
-    });
-  });
-
-  protocolContracts.gatewayZEVM.on("Withdrawn", async (...args: Array<any>) => {
-    zetachainWithdraw({
-      args,
-      deployer,
-      evmContracts,
-      exitOnError,
-      foreignCoins,
-      fungibleModuleSigner,
-      gatewayZEVM: protocolContracts.gatewayZEVM,
-      provider,
-      suiEnv: suiEnv?.env,
-      tss,
-    });
-  });
-
-  protocolContracts.gatewayZEVM.on(
-    "WithdrawnAndCalled",
-    async (...args: Array<any>) => {
-      zetachainWithdrawAndCall({
-        args,
-        deployer,
-        evmContracts,
-        exitOnError,
-        foreignCoins,
-        fungibleModuleSigner,
-        gatewayZEVM: protocolContracts.gatewayZEVM,
-        provider,
-        tss,
-      });
-    }
+  zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
+    zetachainCall({ args, contracts, exitOnError })
   );
 
-  contractsEthereum.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await evmCall({
-      args,
-      chainID: NetworkID.Ethereum,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
-      provider,
-    });
-  });
-
-  contractsEthereum.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    evmDeposit({
-      args,
-      chainID: NetworkID.Ethereum,
-      custody: contractsEthereum.custody,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      fungibleModuleSigner,
-      gatewayEVM: contractsEthereum.gatewayEVM,
-      protocolContracts,
-      provider,
-      tss,
-    });
-  });
-
-  contractsEthereum.gatewayEVM.on(
-    "DepositedAndCalled",
-    async (...args: Array<any>) => {
-      evmDepositAndCall({
-        args,
-        chainID: NetworkID.Ethereum,
-        custody: contractsEthereum.custody,
-        deployer,
-        exitOnError,
-        foreignCoins,
-        fungibleModuleSigner,
-        gatewayEVM: contractsEthereum.gatewayEVM,
-        protocolContracts,
-        provider,
-        tss,
-      });
-    }
+  zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
+    zetachainWithdraw({ args, contracts, exitOnError })
   );
 
-  contractsBNB.gatewayEVM.on("Called", async (...args: Array<any>) => {
-    return await evmCall({
-      args,
-      chainID: NetworkID.BNB,
-      deployer,
-      foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
-      provider,
-    });
-  });
-
-  contractsBNB.gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    evmDeposit({
-      args,
-      chainID: NetworkID.BNB,
-      custody: contractsBNB.custody,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      fungibleModuleSigner,
-      gatewayEVM: contractsBNB.gatewayEVM,
-      protocolContracts,
-      provider,
-      tss,
-    });
-  });
-
-  contractsBNB.gatewayEVM.on(
-    "DepositedAndCalled",
-    async (...args: Array<any>) => {
-      evmDepositAndCall({
-        args,
-        chainID: NetworkID.BNB,
-        custody: contractsBNB.custody,
-        deployer,
-        exitOnError,
-        foreignCoins,
-        fungibleModuleSigner,
-        gatewayEVM: contractsBNB.gatewayEVM,
-        protocolContracts,
-        provider,
-        tss,
-      });
-    }
+  zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
+    zetachainWithdrawAndCall({ args, contracts, exitOnError })
   );
 
   const res = [
@@ -295,7 +117,7 @@ export const initLocalnet = async ({
       chain: "solana",
       type: "tokenProgram",
     },
-    ...Object.entries(protocolContracts)
+    ...Object.entries(zetachainContracts)
       .filter(([, value]) => value.target !== undefined)
       .map(([key, value]) => {
         return {
@@ -341,18 +163,18 @@ export const initLocalnet = async ({
       })
       .filter(Boolean),
     {
-      address: await protocolContracts.tss.getAddress(),
+      address: await zetachainContracts.tss.getAddress(),
       chain: "zetachain",
       type: "tss",
     },
-    ...Object.entries(contractsEthereum).map(([key, value]) => {
+    ...Object.entries(ethereumContracts).map(([key, value]) => {
       return {
         address: value.target,
         chain: "ethereum",
         type: key,
       };
     }),
-    ...Object.entries(contractsBNB).map(([key, value]) => {
+    ...Object.entries(bnbContracts).map(([key, value]) => {
       return {
         address: value.target,
         chain: "bnb",
@@ -361,8 +183,8 @@ export const initLocalnet = async ({
     }),
   ];
 
-  if (suiEnv) res.push(...suiEnv.addresses);
-  if (solanaEnv) res.push(...solanaEnv.addresses);
+  if (suiContracts) res.push(...suiContracts.addresses);
+  if (solanaContracts) res.push(...solanaContracts.addresses);
 
   return res;
 };

@@ -11,32 +11,28 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
-import { tssKeypair } from "./solanaSetup";
+import { ed25519KeyPairTSS as tssKeypair } from "./solanaSetup";
 
 export const createToken = async (
-  addresses: any,
-  custody: any,
+  contracts: any,
   symbol: string,
   isGasToken: boolean,
   chainID: string,
-  decimals: number,
-  solanaEnv?: any
+  decimals: number
 ) => {
-  if (chainID === NetworkID.Solana && !solanaEnv) {
+  if (chainID === NetworkID.Solana && !contracts.solanaContracts) {
     return;
   }
 
+  const { deployer, foreignCoins, tss } = contracts;
   const {
-    fungibleModuleSigner,
-    deployer,
-    foreignCoins,
-    tss,
     systemContract,
     gatewayZEVM,
     uniswapFactoryInstance,
     uniswapRouterInstance,
     wzeta,
-  } = addresses;
+    fungibleModuleSigner,
+  } = contracts.zetachainContracts;
 
   const zrc20Factory = new ethers.ContractFactory(
     ZRC20.abi,
@@ -68,10 +64,42 @@ export const createToken = async (
       .connect(fungibleModuleSigner)
       .setGasPrice(chainID, 1);
     asset = "";
-  } else if (chainID === NetworkID.Solana) {
-    asset = await createSolanaSPL(solanaEnv, symbol);
   } else {
-    asset = await createERC20(deployer, custody, symbol, tss);
+    if (chainID === NetworkID.Solana) {
+      const [assetAddr, gateway, user] = await createSolanaSPL(
+        contracts.solanaContracts.env,
+        symbol
+      );
+      asset = assetAddr;
+      contracts.solanaContracts.addresses.push(
+        ...[
+          {
+            address: gateway,
+            chain: "solana",
+            type: `gatewayTokenAccount${symbol}`,
+          },
+          {
+            address: user,
+            chain: "solana",
+            type: `userTokenAccount${symbol}`,
+          },
+        ]
+      );
+    } else if (chainID === NetworkID.Ethereum) {
+      asset = await createERC20(
+        deployer,
+        contracts.ethereumContracts.custody,
+        symbol,
+        tss
+      );
+    } else if (chainID === NetworkID.BNB) {
+      asset = await createERC20(
+        deployer,
+        contracts.bnbContracts.custody,
+        symbol,
+        tss
+      );
+    }
   }
 
   foreignCoins.push({
@@ -87,54 +115,56 @@ export const createToken = async (
     zrc20_contract_address: zrc20.target,
   });
 
-  (zrc20 as any).deposit(
-    await deployer.getAddress(),
-    ethers.parseEther("1000"),
-    deployOpts
-  );
-
-  await (zrc20 as any)
-    .connect(deployer)
-    .transfer(
-      fungibleModuleSigner.getAddress(),
-      ethers.parseUnits("100", await (zrc20 as any).decimals()),
-      deployOpts
-    );
-
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
-
-  await (uniswapFactoryInstance as any).createPair(
-    zrc20.target,
-    wzeta.target,
-    deployOpts
-  );
-  await (zrc20 as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
+  await Promise.all([
+    (zrc20 as any).deposit(
+      await deployer.getAddress(),
       ethers.parseEther("1000"),
       deployOpts
-    );
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(
-      uniswapRouterInstance.getAddress(),
-      ethers.parseEther("1000"),
+    ),
+
+    (zrc20 as any)
+      .connect(deployer)
+      .transfer(
+        fungibleModuleSigner.getAddress(),
+        ethers.parseUnits("100", await (zrc20 as any).decimals()),
+        deployOpts
+      ),
+
+    (wzeta as any)
+      .connect(deployer)
+      .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
+
+    (uniswapFactoryInstance as any).createPair(
+      zrc20.target,
+      wzeta.target,
       deployOpts
-    );
-  await (uniswapRouterInstance as any).addLiquidity(
-    zrc20.target,
-    wzeta.target,
-    ethers.parseUnits("100", await (zrc20 as any).decimals()), // Amount of ZRC-20
-    ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-    ethers.parseUnits("90", await (zrc20 as any).decimals()), // Min amount of ZRC-20 to add (slippage tolerance)
-    ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
-    await deployer.getAddress(),
-    Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
-    deployOpts
-  );
+    ),
+    (zrc20 as any)
+      .connect(deployer)
+      .approve(
+        uniswapRouterInstance.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(
+        uniswapRouterInstance.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+    (uniswapRouterInstance as any).addLiquidity(
+      zrc20.target,
+      wzeta.target,
+      ethers.parseUnits("100", await (zrc20 as any).decimals()), // Amount of ZRC-20
+      ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
+      ethers.parseUnits("90", await (zrc20 as any).decimals()), // Min amount of ZRC-20 to add (slippage tolerance)
+      ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
+      await deployer.getAddress(),
+      Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
+      deployOpts
+    ),
+  ]);
 };
 
 const createSolanaSPL = async (env: any, symbol: string) => {
@@ -145,66 +175,71 @@ const createSolanaSPL = async (env: any, symbol: string) => {
     null,
     9
   );
-  console.log(`Created new SPL token: ${mint.toBase58()}`);
-
-  const tssTokenAccount = await getOrCreateAssociatedTokenAccount(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    tssKeypair.publicKey
-  );
-
-  await mintTo(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    tssTokenAccount.address,
-    tssKeypair.publicKey,
-    100 * LAMPORTS_PER_SOL
-  );
-
-  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    env.gatewayProgram.provider.connection,
-    env.defaultSolanaUser,
-    mint,
-    env.defaultSolanaUser.publicKey
-  );
-
-  await mintTo(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    userTokenAccount.address,
-    tssKeypair.publicKey,
-    100 * LAMPORTS_PER_SOL
-  );
 
   const GATEWAY_PROGRAM_ID = env.gatewayProgram.programId;
-  console.log("Gateway Program ID:", GATEWAY_PROGRAM_ID.toBase58());
 
   const [gatewayPDA] = await PublicKey.findProgramAddress(
     [Buffer.from("meta")],
     GATEWAY_PROGRAM_ID
   );
 
-  const gatewayTokenAccount = await getOrCreateAssociatedTokenAccount(
-    env.gatewayProgram.provider.connection,
-    tssKeypair,
-    mint,
-    gatewayPDA,
-    true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
-  );
+  const [gatewayTokenAccount, tssTokenAccount, userTokenAccount] =
+    await Promise.all([
+      getOrCreateAssociatedTokenAccount(
+        env.gatewayProgram.provider.connection,
+        tssKeypair,
+        mint,
+        gatewayPDA,
+        true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
+      ),
+      getOrCreateAssociatedTokenAccount(
+        env.gatewayProgram.provider.connection,
+        tssKeypair,
+        mint,
+        tssKeypair.publicKey
+      ),
+      getOrCreateAssociatedTokenAccount(
+        env.gatewayProgram.provider.connection,
+        env.defaultSolanaUser,
+        mint,
+        env.defaultSolanaUser.publicKey
+      ),
+    ]);
 
-  await whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser);
+  await Promise.all([
+    mintTo(
+      env.gatewayProgram.provider.connection,
+      tssKeypair,
+      mint,
+      tssTokenAccount.address,
+      tssKeypair.publicKey,
+      100 * LAMPORTS_PER_SOL
+    ),
+    mintTo(
+      env.gatewayProgram.provider.connection,
+      tssKeypair,
+      mint,
+      userTokenAccount.address,
+      tssKeypair.publicKey,
+      100 * LAMPORTS_PER_SOL
+    ),
 
-  console.log("gatewayTokenAccount", gatewayTokenAccount.address.toBase58());
+    mintTo(
+      env.gatewayProgram.provider.connection,
+      tssKeypair,
+      mint,
+      gatewayTokenAccount.address,
+      tssKeypair.publicKey,
+      100 * LAMPORTS_PER_SOL
+    ),
+    whitelistSPLToken(env.gatewayProgram, mint, env.defaultSolanaUser),
+  ]);
 
-  console.log(`TSS ${symbol} token account: ${tssTokenAccount.address}`);
-  console.log(
-    `Default user ${symbol} token account: ${userTokenAccount.address}`
-  );
-
-  return mint.toBase58();
+  return [
+    mint.toBase58(),
+    gatewayTokenAccount.address.toBase58(),
+    userTokenAccount.address.toBase58(),
+  ];
 };
 
 const whitelistSPLToken = async (
@@ -267,31 +302,32 @@ const createERC20 = async (
   await erc20.waitForDeployment();
   const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
 
-  await (erc20 as any)
-    .connect(deployer)
-    .approve(custody.target, ethers.MaxUint256, deployOpts);
-
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      custody.target,
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      tss.getAddress(),
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      await deployer.getAddress(),
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
+  await Promise.all([
+    (erc20 as any)
+      .connect(deployer)
+      .approve(custody.target, ethers.MaxUint256, deployOpts),
+    (erc20 as any)
+      .connect(deployer)
+      .mint(
+        custody.target,
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      ),
+    (erc20 as any)
+      .connect(deployer)
+      .mint(
+        tss.getAddress(),
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      ),
+    (erc20 as any)
+      .connect(deployer)
+      .mint(
+        await deployer.getAddress(),
+        ethers.parseUnits("1000000", erc20Decimals),
+        deployOpts
+      ),
+  ]);
   await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
   return erc20.target;
 };

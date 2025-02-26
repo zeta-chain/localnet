@@ -6,9 +6,8 @@ import { log, logErr } from "./log";
 
 export const zetachainDepositAndCall = async ({
   provider,
-  protocolContracts,
+  zetachainContracts,
   args,
-  fungibleModuleSigner,
   foreignCoins,
   chainID,
 }: any) => {
@@ -44,8 +43,8 @@ export const zetachainDepositAndCall = async ({
       context
     )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
   );
-  const tx = await protocolContracts.gatewayZEVM
-    .connect(fungibleModuleSigner)
+  const tx = await zetachainContracts.gatewayZEVM
+    .connect(zetachainContracts.fungibleModuleSigner)
     .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
   await tx.wait();
   const logs = await provider.getLogs({

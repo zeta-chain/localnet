@@ -48,13 +48,11 @@ const ec = new EC("secp256k1");
 const tssKeyHex =
   "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8";
 
-export const tssKeyPair = ec.keyFromPrivate(tssKeyHex);
+export const secp256k1KeyPairTSS = ec.keyFromPrivate(tssKeyHex);
 
-const seed = new Uint8Array(
-  sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))
-).slice(0, 32);
-
-export const tssKeypair = Keypair.fromSeed(seed);
+export const ed25519KeyPairTSS = Keypair.fromSeed(
+  new Uint8Array(sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))).slice(0, 32)
+);
 
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
@@ -78,11 +76,30 @@ export const keypairFromMnemonic = async (
   return Keypair.fromSeed(seedSlice);
 };
 
+const airdrop = async (
+  connection: any,
+  keypair: any,
+  amount = 20_000_000_000_000
+) => {
+  const latestBlockhash = await connection.getLatestBlockhash();
+  const sig = await connection.requestAirdrop(payer.publicKey, amount);
+
+  await connection.requestAirdrop(keypair.publicKey, amount);
+
+  await connection.confirmTransaction(
+    {
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      signature: sig,
+    },
+    "confirmed"
+  );
+};
+
 export const solanaSetup = async ({
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
-  protocolContracts,
+  zetachainContracts,
   provider,
 }: any) => {
   if (!(await isSolanaAvailable())) {
@@ -120,7 +137,7 @@ export const solanaSetup = async ({
 
     // Convert TSS public key to address
     const publicKeyBuffer = Buffer.from(
-      tssKeyPair.getPublic(false, "hex").slice(2),
+      secp256k1KeyPairTSS.getPublic(false, "hex").slice(2),
       "hex"
     );
     const addressBuffer = keccak256(publicKeyBuffer);
@@ -129,64 +146,12 @@ export const solanaSetup = async ({
 
     const connection = gatewayProgram.provider.connection;
 
-    // Airdrop into the payer so it has enough SOL
-    const latestBlockhash = await connection.getLatestBlockhash();
-    const airdropSig = await connection.requestAirdrop(
-      payer.publicKey,
-      20_000_000_000_000
-    );
-
-    await connection.requestAirdrop(tssKeypair.publicKey, 20_000_000_000_000);
-
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: airdropSig,
-      },
-      "confirmed"
-    );
-
-    const defaultLocalnetUserKeypairAirdrop = await connection.requestAirdrop(
-      defaultLocalnetUserKeypair.publicKey,
-      20_000_000_000_000
-    );
-
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: defaultLocalnetUserKeypairAirdrop,
-      },
-      "confirmed"
-    );
-
-    const defaultSolanaUserKeypairAirdrop = await connection.requestAirdrop(
-      defaultSolanaUserKeypair.publicKey,
-      20_000_000_000_000
-    );
-
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: defaultSolanaUserKeypairAirdrop,
-      },
-      "confirmed"
-    );
-
-    const airdropTssSig = await connection.requestAirdrop(
-      tssKeypair.publicKey,
-      20_000_000_000_000
-    );
-    await connection.confirmTransaction(
-      {
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-        signature: airdropTssSig,
-      },
-      "confirmed"
-    );
+    await Promise.all([
+      airdrop(connection, payer),
+      airdrop(connection, ed25519KeyPairTSS),
+      airdrop(connection, defaultLocalnetUserKeypair),
+      airdrop(connection, defaultSolanaUserKeypair),
+    ]);
 
     const anchorProvider = new anchor.AnchorProvider(
       connection,
@@ -226,9 +191,8 @@ export const solanaSetup = async ({
     solanaMonitorTransactions({
       deployer,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
       provider,
+      zetachainContracts,
     });
   } catch (error: any) {
     console.error(`Error setting up Solana: ${error.message}`);
@@ -256,8 +220,7 @@ export const solanaSetup = async ({
 export const solanaMonitorTransactions = async ({
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
-  protocolContracts,
+  zetachainContracts,
   provider,
 }: any) => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
@@ -343,18 +306,16 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (decodedInstruction.name === "deposit") {
                       solanaDeposit({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (
                       decodedInstruction.name === "deposit_spl_token"
@@ -370,9 +331,8 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     } else if (
                       decodedInstruction.name === "deposit_spl_token_and_call"
@@ -389,9 +349,8 @@ export const solanaMonitorTransactions = async ({
                         args,
                         deployer,
                         foreignCoins,
-                        fungibleModuleSigner,
-                        protocolContracts,
                         provider,
+                        zetachainContracts,
                       });
                     }
                   }

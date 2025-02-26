@@ -7,9 +7,8 @@ import { zetachainDeposit } from "./zetachainDeposit";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
 export const solanaDeposit = async ({
-  protocolContracts,
+  zetachainContracts,
   provider,
-  fungibleModuleSigner,
   foreignCoins,
   args,
   deployer,
@@ -37,8 +36,7 @@ export const solanaDeposit = async ({
       args,
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      protocolContracts,
+      zetachainContracts,
     });
   } catch (err) {
     logErr("7001", `Error depositing: ${err}`);
@@ -48,10 +46,9 @@ export const solanaDeposit = async ({
       chainID,
       deployer,
       foreignCoins,
-      fungibleModuleSigner,
       gasLimit: 200000,
-      protocolContracts,
       provider,
+      zetachainContracts,
     });
 
     const revertAmount = BigInt(amount) - revertGasFee;

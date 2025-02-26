@@ -6,13 +6,22 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
+import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { deployOpts } from "./deployOpts";
 
 export const zetachainSetup = async (
   deployer: Signer,
   tss: Signer,
-  fungibleModule: Signer
+  provider: any
 ) => {
+  await Promise.all([
+    provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]),
+    provider.send("anvil_setBalance", [
+      FUNGIBLE_MODULE_ADDRESS,
+      ethers.parseEther("100000").toString(),
+    ]),
+  ]);
+
   const weth9Factory = new ethers.ContractFactory(
     WETH9.abi,
     WETH9.bytecode,
@@ -23,23 +32,33 @@ export const zetachainSetup = async (
   const { uniswapFactoryInstance, uniswapRouterInstance } =
     await prepareUniswap(deployer, tss, wzeta);
 
+  const [
+    uniswapFactoryInstanceAddress,
+    uniswapRouterInstanceAddress,
+    fungibleModuleSigner,
+  ] = await Promise.all([
+    uniswapFactoryInstance.getAddress(),
+    uniswapRouterInstance.getAddress(),
+    provider.getSigner(FUNGIBLE_MODULE_ADDRESS),
+  ]);
+
   const systemContractFactory = new ethers.ContractFactory(
     SystemContract.abi,
     SystemContract.bytecode,
     deployer
   );
-  const systemContract: any = await systemContractFactory.deploy(
-    wzeta.target,
-    await uniswapFactoryInstance.getAddress(),
-    await uniswapRouterInstance.getAddress(),
-    deployOpts
-  );
-
   const gatewayZEVMFactory = new ethers.ContractFactory(
     GatewayZEVM.abi,
     GatewayZEVM.bytecode,
     deployer
   );
+  const systemContract: any = await systemContractFactory.deploy(
+    wzeta.target,
+    uniswapFactoryInstanceAddress,
+    uniswapRouterInstanceAddress,
+    deployOpts
+  );
+
   const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
 
   const gatewayZEVMInterface = new ethers.Interface(GatewayZEVM.abi);
@@ -67,20 +86,23 @@ export const zetachainSetup = async (
     deployer
   );
 
-  await (wzeta as any)
-    .connect(fungibleModule)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
-  await (wzeta as any)
-    .connect(fungibleModule)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
+  await Promise.all([
+    (wzeta as any)
+      .connect(fungibleModuleSigner)
+      .deposit({ ...deployOpts, value: ethers.parseEther("10") }),
+    (wzeta as any)
+      .connect(fungibleModuleSigner)
+      .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts),
+    (wzeta as any)
+      .connect(deployer)
+      .deposit({ ...deployOpts, value: ethers.parseEther("10") }),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts),
+  ]);
 
   return {
+    fungibleModuleSigner,
     gatewayZEVM,
     systemContract,
     tss,

@@ -28,7 +28,7 @@ export const suiSetup = async ({
   deployer,
   foreignCoins,
   fungibleModuleSigner,
-  protocolContracts,
+  zetachainContracts,
   provider,
 }: any) => {
   if (!(await isSuiAvailable())) {
@@ -39,21 +39,17 @@ export const suiSetup = async ({
   const user = generateAccount(MNEMONIC);
   const address = user.keypair.toSuiAddress();
 
-  console.log("Generated new Sui account:");
-  console.log("Mnemonic:", user.mnemonic);
-  console.log("Address:", address);
-
-  console.log("Requesting SUI from faucet...");
-  requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address });
-
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.toSuiAddress();
   console.log("Publisher address:", publisherAddress);
 
-  await requestSuiFromFaucetV0({
-    host: FAUCET_URL,
-    recipient: publisherAddress,
-  });
+  await Promise.all([
+    requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address }),
+    requestSuiFromFaucetV0({
+      host: FAUCET_URL,
+      recipient: publisherAddress,
+    }),
+  ]);
 
   const gatewayPath = require.resolve("@zetachain/localnet/sui/gateway.json");
   const gateway = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
@@ -151,9 +147,9 @@ export const suiSetup = async ({
     gatewayObjectId,
     keypair,
     moduleId,
-    protocolContracts,
     provider,
     withdrawCapObjectId,
+    zetachainContracts,
   });
 
   return {
@@ -172,6 +168,11 @@ export const suiSetup = async ({
         address: user.mnemonic,
         chain: "sui",
         type: "userMnemonic",
+      },
+      {
+        address: user.keypair.toSuiAddress(),
+        chain: "sui",
+        type: "userAddress",
       },
     ],
     env: {

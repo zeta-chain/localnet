@@ -6,27 +6,21 @@ import { log, logErr } from "./log";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainCall = async ({
-  evmContracts,
-  foreignCoins,
-  tss,
-  provider,
-  gatewayZEVM,
   args,
-  fungibleModuleSigner,
+  contracts,
   exitOnError = false,
 }: {
   args: any;
-  evmContracts: any;
+  contracts: any;
   exitOnError: boolean;
-  foreignCoins: any[];
-  fungibleModuleSigner: any;
-  gatewayZEVM: any;
-  provider: ethers.JsonRpcProvider;
-  tss: any;
 }) => {
+  const {
+    provider,
+    zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
+  } = contracts;
   log("7001", "Gateway: 'Called' event emitted");
   const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
-  const chainID = foreignCoins.find(
+  const chainID = contracts.foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
 
@@ -34,13 +28,10 @@ export const zetachainCall = async ({
     await evmExecute({
       amount: 0,
       callOptions,
-      evmContracts,
-      foreignCoins,
+      contracts,
       message,
-      provider,
       receiver,
       sender,
-      tss,
       zrc20,
     });
   } catch (err: any) {
@@ -59,7 +50,6 @@ export const zetachainCall = async ({
       provider,
       revertOptions,
       sender,
-      tss,
     });
   }
 };
