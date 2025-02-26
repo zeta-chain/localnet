@@ -48,13 +48,11 @@ const ec = new EC("secp256k1");
 const tssKeyHex =
   "5b81cdf52ba0766983acf8dd0072904733d92afe4dd3499e83e879b43ccb73e8";
 
-export const tssKeyPair = ec.keyFromPrivate(tssKeyHex);
+export const secp256k1KeyPairTSS = ec.keyFromPrivate(tssKeyHex);
 
-const seed = new Uint8Array(
-  sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))
-).slice(0, 32);
-
-export const tssKeypair = Keypair.fromSeed(seed);
+export const ed25519KeyPairTSS = Keypair.fromSeed(
+  new Uint8Array(sha256.arrayBuffer(Buffer.from(tssKeyHex, "hex"))).slice(0, 32)
+);
 
 const chain_id = 111111;
 const chain_id_bn = new anchor.BN(chain_id);
@@ -139,7 +137,7 @@ export const solanaSetup = async ({
 
     // Convert TSS public key to address
     const publicKeyBuffer = Buffer.from(
-      tssKeyPair.getPublic(false, "hex").slice(2),
+      secp256k1KeyPairTSS.getPublic(false, "hex").slice(2),
       "hex"
     );
     const addressBuffer = keccak256(publicKeyBuffer);
@@ -150,7 +148,7 @@ export const solanaSetup = async ({
 
     await Promise.all([
       airdrop(connection, payer),
-      airdrop(connection, tssKeypair),
+      airdrop(connection, ed25519KeyPairTSS),
       airdrop(connection, defaultLocalnetUserKeypair),
       airdrop(connection, defaultSolanaUserKeypair),
     ]);

@@ -11,7 +11,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
-import { tssKeypair } from "./solanaSetup";
+import { ed25519KeyPairTSS as tssKeypair } from "./solanaSetup";
 
 export const createToken = async (
   contracts: any,
