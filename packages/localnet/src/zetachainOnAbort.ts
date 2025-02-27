@@ -64,7 +64,9 @@ export const zetachainOnAbort = async ({
             context
           )}`
         );
-        const abortTx = await abortableContract.onAbort(context);
+        const abortTx = await abortableContract.onAbort(context, {
+          gasLimit: 1_500_000,
+        });
         await abortTx.wait();
         const logs = await provider.getLogs({
           address: abortAddress,

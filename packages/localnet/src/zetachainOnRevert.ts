@@ -46,17 +46,15 @@ export const zetachainOnRevert = async ({
         if (asset === ethers.ZeroAddress) {
           tx = await gatewayZEVM
             .connect(fungibleModuleSigner)
-            .executeRevert(revertAddress, revertContext, deployOpts);
+            .executeRevert(revertAddress, revertContext, {
+              gasLimit: 1_500_000,
+            });
         } else {
           tx = await gatewayZEVM
             .connect(fungibleModuleSigner)
-            .depositAndRevert(
-              asset,
-              amount,
-              revertAddress,
-              revertContext,
-              deployOpts
-            );
+            .depositAndRevert(asset, amount, revertAddress, revertContext, {
+              gasLimit: 1_500_000,
+            });
         }
         await tx.wait();
         const logs = await provider.getLogs({
