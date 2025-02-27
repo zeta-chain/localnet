@@ -154,8 +154,8 @@ export const evmSetup = async ({
       foreignCoins,
       gatewayEVM,
       provider,
-      zetachainContracts,
       tss,
+      zetachainContracts,
     });
   });
 

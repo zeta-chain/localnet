@@ -34,8 +34,8 @@ export const evmOnRevert = async ({
         tx = await gatewayEVM
           .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, {
-            value: amount,
             gasLimit: onRevertGasLimit,
+            value: amount,
           });
       } else {
         tx = await custody

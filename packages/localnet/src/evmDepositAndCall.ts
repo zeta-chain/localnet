@@ -71,10 +71,10 @@ export const evmDepositAndCall = async ({
         err,
         gatewayEVM,
         isGas,
+        provider,
         revertOptions,
         sender,
         token,
-        provider,
         tss,
       });
     } else {
