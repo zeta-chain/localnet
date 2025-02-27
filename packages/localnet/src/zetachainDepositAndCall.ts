@@ -45,7 +45,9 @@ export const zetachainDepositAndCall = async ({
   );
   const tx = await zetachainContracts.gatewayZEVM
     .connect(zetachainContracts.fungibleModuleSigner)
-    .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
+    .depositAndCall(context, zrc20, amount, receiver, message, {
+      gasLimit: 1_500_000,
+    });
   await tx.wait();
   const logs = await provider.getLogs({
     address: receiver,

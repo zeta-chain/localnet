@@ -35,7 +35,9 @@ export const zetachainExecute = async ({
     );
     const executeTx = await zetachainContracts.gatewayZEVM
       .connect(zetachainContracts.fungibleModuleSigner)
-      .execute(context, zrc20, 0, receiver, message, deployOpts);
+      .execute(context, zrc20, 0, receiver, message, {
+        gasLimit: 1_500_000,
+      });
     await executeTx.wait();
     const logs = await provider.getLogs({
       address: receiver,

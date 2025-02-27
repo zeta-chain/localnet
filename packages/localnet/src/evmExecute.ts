@@ -1,4 +1,4 @@
-import { BigNumberish, ethers } from "ethers";
+import { BigNumberish, ethers, GasCostPlugin } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
@@ -49,7 +49,7 @@ export const evmExecute = async ({
     .connect(contracts.tss)
     .execute(messageContext, receiver, message, {
       value: amount,
-      ...deployOpts,
+      gasLimit: callOptions.gasLimit,
     });
 
   const logs = await contracts.provider.getLogs({
