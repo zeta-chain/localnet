@@ -1,4 +1,5 @@
 import { EventId, SuiClient } from "@mysten/sui/client";
+import { toB64 } from "@mysten/sui/utils";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
@@ -7,6 +8,7 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 import path from "path";
 import os from "os";
+import { execSync } from "child_process";
 
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -37,6 +39,7 @@ export const suiSetup = async ({
   zetachainContracts,
   provider,
 }: any) => {
+  // 1. Clone Move repo
   await cloneRepository(
     REPO_URL,
     TEMP_DIR,
@@ -45,26 +48,79 @@ export const suiSetup = async ({
     false
   );
 
+  // 2. Build Move contracts
+  console.log("Building Move contracts...");
+  try {
+    execSync("sui move build", { cwd: TEMP_DIR, stdio: "inherit" });
+  } catch (error) {
+    throw new Error("Move contract build failed: " + error);
+  }
+
+  // 3. Check if local Sui node is available
   if (!(await isSuiAvailable())) {
     return;
   }
-  const client = new SuiClient({ url: NODE_RPC });
 
+  // 4. Generate a user account from mnemonic
   const user = generateAccount(MNEMONIC);
   const address = user.keypair.toSuiAddress();
 
+  // 5. Generate a new ephemeral keypair for publishing
   const keypair = new Ed25519Keypair();
-  const publisherAddress = keypair.toSuiAddress();
+  const publisherAddress = keypair.getPublicKey().toSuiAddress();
   console.log("Publisher address:", publisherAddress);
 
+  // Export the private key as a Bech32-encoded string
+  const privateKeyBech32 = keypair.getSecretKey();
+  console.log("Private Key (Bech32):", privateKeyBech32);
+  try {
+    // This will add the key to the CLI's local keystore
+    execSync(`sui keytool import ${privateKeyBech32} Ed25519`, {
+      stdio: "inherit",
+    });
+    // Switch the CLI's active address to our newly imported address
+    execSync(`sui client switch --address ${publisherAddress}`, {
+      stdio: "inherit",
+    });
+  } catch (error) {
+    throw new Error("Failed to import ephemeral key: " + error);
+  }
+
+  // 7. Fund both the user address and the publisher address
   await Promise.all([
     requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address }),
-    requestSuiFromFaucetV0({
-      host: FAUCET_URL,
-      recipient: publisherAddress,
-    }),
+    requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: publisherAddress }),
   ]);
 
+  // 8. Fetch largest gas coin for the publisher address
+  console.log("Fetching largest gas coin...");
+  let gasCoinId = "";
+  try {
+    const gasCoinsOutput = execSync(
+      `sui client gas ${publisherAddress} --json`
+    ).toString();
+    const gasCoins = JSON.parse(gasCoinsOutput);
+    gasCoinId = gasCoins.sort(
+      (a: any, b: any) => b.mistBalance - a.mistBalance
+    )[0].gasCoinId;
+    console.log("Using gas coin:", gasCoinId);
+  } catch (error) {
+    throw new Error("Failed to fetch gas coin: " + error);
+  }
+
+  // 9. Use CLI to publish Move package (signed by ephemeral address)
+  console.log("Deploying Move package via CLI...");
+  try {
+    execSync(
+      `sui client publish --gas-budget ${GAS_BUDGET} --gas ${gasCoinId} --skip-dependency-verification`,
+      { cwd: TEMP_DIR, stdio: "inherit" }
+    );
+  } catch (error) {
+    throw new Error("Move contract deployment failed: " + error);
+  }
+
+  // 10. Now publish the "gateway" package from @zetachain/localnet
+  const client = new SuiClient({ url: new URL(NODE_RPC).toString() });
   const gatewayPath = require.resolve("@zetachain/localnet/sui/gateway.json");
   const gateway = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
   const { modules, dependencies } = gateway;
@@ -72,17 +128,15 @@ export const suiSetup = async ({
   const publishTx = new Transaction();
   publishTx.setGasBudget(GAS_BUDGET);
 
+  // This publish is separate from the CLI-based publish above;
+  // here we publish the "gateway" modules via the SDK
   const [upgradeCap] = publishTx.publish({
     dependencies,
     modules,
   });
 
+  // Transfer the upgradeCap to the publisher address
   publishTx.transferObjects([upgradeCap], publisherAddress);
-
-  let moduleId: string | null = null;
-  let gatewayObjectId: string | null = null;
-  let adminCapObjectId: string | null = null;
-  let withdrawCapObjectId: string | null = null;
 
   const publishResult = await client.signAndExecuteTransaction({
     options: {
@@ -91,32 +145,21 @@ export const suiSetup = async ({
       showObjectChanges: true,
     },
     requestType: "WaitForLocalExecution",
-    signer: keypair,
+    signer: keypair, // Using ephemeral keypair in code
     transaction: publishTx,
   });
 
   await waitForConfirmation(client, publishResult.digest);
 
+  // Parse IDs for newly published objects
+  let moduleId: string | null = null;
+  let gatewayObjectId: string | null = null;
+  let adminCapObjectId: string | null = null;
+  let withdrawCapObjectId: string | null = null;
+
   const publishedModule = publishResult.objectChanges?.find(
     (change) => change.type === "published"
   );
-
-  const gatewayObject = publishResult.objectChanges?.find(
-    (change) =>
-      change.type === "created" &&
-      change.objectType.includes("gateway::Gateway")
-  );
-  const withdrawCapObject = publishResult.objectChanges?.find(
-    (change) =>
-      change.type === "created" &&
-      change.objectType.includes("gateway::WithdrawCap")
-  );
-  const adminCapObject = publishResult.objectChanges?.find(
-    (change) =>
-      change.type === "created" &&
-      change.objectType.includes("gateway::AdminCap")
-  );
-
   if (publishedModule) {
     moduleId = (publishedModule as any).packageId;
     console.log("Published Module ID:", moduleId);
@@ -124,57 +167,61 @@ export const suiSetup = async ({
     throw new Error("Failed to get module ID");
   }
 
+  const gatewayObject = publishResult.objectChanges?.find(
+    (change) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::Gateway")
+  );
   if (gatewayObject) {
     gatewayObjectId = (gatewayObject as any).objectId;
     console.log("Gateway Object ID:", gatewayObjectId);
-  } else {
-    console.warn("No Gateway object found after publish.");
   }
 
+  const withdrawCapObject = publishResult.objectChanges?.find(
+    (change) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::WithdrawCap")
+  );
   if (withdrawCapObject) {
     withdrawCapObjectId = (withdrawCapObject as any).objectId;
     console.log("Withdraw Cap Object ID:", withdrawCapObjectId);
-  } else {
-    console.warn("No WithdrawCap object found after publish.");
   }
 
+  const adminCapObject = publishResult.objectChanges?.find(
+    (change) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::AdminCap")
+  );
   if (adminCapObject) {
     adminCapObjectId = (adminCapObject as any).objectId;
     console.log("AdminCap Object ID:", adminCapObjectId);
-  } else {
-    console.warn("No AdminCap object found after publish.");
   }
 
-  if (!moduleId) {
-    throw new Error("Failed to get module ID");
+  // Start polling for deposit events
+  if (gatewayObjectId) {
+    pollEvents({
+      client,
+      deployer,
+      foreignCoins,
+      fungibleModuleSigner,
+      gatewayObjectId,
+      keypair,
+      moduleId,
+      provider,
+      withdrawCapObjectId,
+      zetachainContracts,
+    });
   }
-
-  if (!gatewayObjectId) {
-    throw new Error("Failed to get gateway object ID");
-  }
-
-  pollEvents({
-    client,
-    deployer,
-    foreignCoins,
-    fungibleModuleSigner,
-    gatewayObjectId,
-    keypair,
-    moduleId,
-    provider,
-    withdrawCapObjectId,
-    zetachainContracts,
-  });
 
   return {
     addresses: [
       {
-        address: moduleId,
+        address: moduleId!,
         chain: "sui",
         type: "gatewayModuleID",
       },
       {
-        address: gatewayObjectId,
+        address: gatewayObjectId!,
         chain: "sui",
         type: "gatewayObjectId",
       },
@@ -198,6 +245,8 @@ export const suiSetup = async ({
     },
   };
 };
+
+// Helper to wait for transaction confirmation
 const waitForConfirmation = async (
   client: SuiClient,
   digest: string,
@@ -213,13 +262,13 @@ const waitForConfirmation = async (
     if (status.effects?.status?.status === "success") {
       return status;
     }
-
     console.log("Waiting for confirmation...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
 
+// Helper to poll deposit events
 const pollEvents = async (context: any) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
