@@ -48,8 +48,8 @@ export const evmExecute = async ({
   const executeTx = await evmContracts.gatewayEVM
     .connect(contracts.tss)
     .execute(messageContext, receiver, message, {
-      value: amount,
       gasLimit: callOptions.gasLimit,
+      value: amount,
     });
 
   const logs = await contracts.provider.getLogs({
