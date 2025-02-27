@@ -155,6 +155,7 @@ export const evmSetup = async ({
       gatewayEVM,
       provider,
       zetachainContracts,
+      tss,
     });
   });
 
