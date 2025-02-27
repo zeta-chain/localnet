@@ -5,16 +5,22 @@ import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
+import path from "path";
+import os from "os";
 
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
+import { cloneRepository } from "./cloneRepository";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
 const FAUCET_URL = "http://127.0.0.1:9123";
 const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
+const REPO_URL = "https://github.com/zeta-chain/protocol-contracts-sui.git";
+const TEMP_DIR = path.join(os.tmpdir(), "protocol-contracts-sui");
+const BRANCH_NAME = "main";
 
 const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);
@@ -31,6 +37,14 @@ export const suiSetup = async ({
   zetachainContracts,
   provider,
 }: any) => {
+  await cloneRepository(
+    REPO_URL,
+    TEMP_DIR,
+    BRANCH_NAME,
+    { cache: true },
+    false
+  );
+
   if (!(await isSuiAvailable())) {
     return;
   }
