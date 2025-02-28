@@ -2,17 +2,17 @@ import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { mnemonicToSeedSync } from "bip39";
+import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
-import path from "path";
 import os from "os";
-import { execSync, spawnSync } from "child_process";
+import path from "path";
 
+import { cloneRepository } from "./cloneRepository";
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
-import { cloneRepository } from "./cloneRepository";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
