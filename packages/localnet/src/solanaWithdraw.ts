@@ -70,6 +70,7 @@ export const solanaWithdraw = async ({
           val,
           Array.from(signatureBuffer),
           Number(recoveryParam),
+          Array.from(messageHash),
           nonce
         )
         .accounts({
@@ -132,6 +133,7 @@ export const solanaWithdraw = async ({
           val, // amount
           Array.from(signatureBuffer),
           Number(recoveryParam),
+          Array.from(messageHash),
           nonce
         )
         .accounts({
