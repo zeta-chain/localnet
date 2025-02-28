@@ -1,9 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
-import { ethers } from "ethers";
+import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
@@ -15,12 +12,12 @@ export const solanaExecute = async ({
   sender,
   recipient,
   amount,
-  data,
+  message,
 }: {
   sender: Buffer;
   amount: bigint;
   recipient: string;
-  data: Buffer;
+  message: Buffer;
 }) => {
   try {
     const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
@@ -48,27 +45,31 @@ export const solanaExecute = async ({
     const nonce = pdaAccountData.nonce;
     const val = new anchor.BN(amount.toString());
 
+    // TODO: some of the fields like data and receiver are too much coupled with evm (hexlify receiver, abi.encode data etc)
+    // probably as we introduce more chains its better to deliver raw strings to localnet and parse specific to chain here
+    const decodedMessage = AbiCoder.defaultAbiCoder().decode(["string"], message);
+    const data = Buffer.from(decodedMessage.at(0), "utf-8");
     const instructionId = 0x5;
     const buffer = Buffer.concat([
-        Buffer.from("ZETACHAIN", "utf-8"),
-        Buffer.from([instructionId]),
-        chainIdBn.toArrayLike(Buffer, "be", 8),
-        new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
-        val.toArrayLike(Buffer, "be", 8),
-        Buffer.from(bs58.decode(recipient)),
-        data,
+      Buffer.from("ZETACHAIN", "utf-8"),
+      Buffer.from([instructionId]),
+      chainIdBn.toArrayLike(Buffer, "be", 8),
+      new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
+      val.toArrayLike(Buffer, "be", 8),
+      connectedProgram.programId.toBuffer(), // TODO: use recipient field
+      data,
     ]);
 
     const messageHash = keccak256(buffer);
     const signatureObj = tssKeyPair.sign(messageHash);
     const { r, s, recoveryParam } = signatureObj;
     const signatureBuffer = Buffer.concat([
-        r.toArrayLike(Buffer, "be", 32),
-        s.toArrayLike(Buffer, "be", 32),
+      r.toArrayLike(Buffer, "be", 32),
+      s.toArrayLike(Buffer, "be", 32),
     ]);
 
-    await gatewayProgram.methods
-    .execute(
+    const signature = await gatewayProgram.methods
+      .execute(
         val,
         Array.from(sender),
         data,
@@ -76,15 +77,15 @@ export const solanaExecute = async ({
         Number(recoveryParam),
         Array.from(messageHash),
         nonce
-    )
-    .accountsPartial({
+      )
+      .accountsPartial({
         // mandatory predefined accounts
         signer: payer.publicKey,
         pda: pdaAccount,
         destinationProgram: connectedProgram.programId,
         destinationProgramPda: connectedPdaAccount,
-    })
-    .remainingAccounts([
+      })
+      .remainingAccounts([
         // accounts coming from withdraw and call msg
         { pubkey: connectedPdaAccount, isSigner: false, isWritable: true },
         { pubkey: pdaAccount, isSigner: false, isWritable: false },
@@ -93,16 +94,26 @@ export const solanaExecute = async ({
             isSigner: false,
             isWritable: false,
         },
-    ])
-    .rpc();
-
-    log(
-        NetworkID.Solana,
-        `Executing Gateway execute (SOL): Sending ${ethers.formatUnits(
-            amount,
-            9
-        )} SOL to ${recipient}`
+      ])
+      .rpc();
+    
+    // get tx details to check if connected program is called
+    await new Promise(r => setTimeout(r, 2000));
+    const transaction = await connection.getTransaction(
+      signature,
+      { commitment: "confirmed" }
     );
+
+    // log messages showing onCall called
+    const logMessages = transaction?.meta?.logMessages || [];
+    log(
+      NetworkID.Solana,
+      `Executing Gateway execute (SOL): Sending ${ethers.formatUnits(
+        amount,
+        9
+      )} SOL to ${recipient}`
+    );
+    log(NetworkID.Solana, "log messages", ...logMessages);
   } catch (err) {
     logErr(NetworkID.Solana, `Error executing Gateway execute: ${err}`);
   }

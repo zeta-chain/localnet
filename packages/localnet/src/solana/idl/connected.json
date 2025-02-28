@@ -93,9 +93,6 @@
           "name": "gateway_pda"
         },
         {
-          "name": "random_wallet"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
