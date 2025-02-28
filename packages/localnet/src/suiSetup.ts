@@ -65,11 +65,6 @@ export const suiSetup = async ({
 
   publishTx.transferObjects([upgradeCap], publisherAddress);
 
-  let moduleId: string | null = null;
-  let gatewayObjectId: string | null = null;
-  let adminCapObjectId: string | null = null;
-  let withdrawCapObjectId: string | null = null;
-
   const publishResult = await client.signAndExecuteTransaction({
     options: {
       showEffects: true,
@@ -97,47 +92,10 @@ export const suiSetup = async ({
       change.type === "created" &&
       change.objectType.includes("gateway::WithdrawCap")
   );
-  const adminCapObject = publishResult.objectChanges?.find(
-    (change) =>
-      change.type === "created" &&
-      change.objectType.includes("gateway::AdminCap")
-  );
 
-  if (publishedModule) {
-    moduleId = (publishedModule as any).packageId;
-    console.log("Published Module ID:", moduleId);
-  } else {
-    throw new Error("Failed to get module ID");
-  }
-
-  if (gatewayObject) {
-    gatewayObjectId = (gatewayObject as any).objectId;
-    console.log("Gateway Object ID:", gatewayObjectId);
-  } else {
-    console.warn("No Gateway object found after publish.");
-  }
-
-  if (withdrawCapObject) {
-    withdrawCapObjectId = (withdrawCapObject as any).objectId;
-    console.log("Withdraw Cap Object ID:", withdrawCapObjectId);
-  } else {
-    console.warn("No WithdrawCap object found after publish.");
-  }
-
-  if (adminCapObject) {
-    adminCapObjectId = (adminCapObject as any).objectId;
-    console.log("AdminCap Object ID:", adminCapObjectId);
-  } else {
-    console.warn("No AdminCap object found after publish.");
-  }
-
-  if (!moduleId) {
-    throw new Error("Failed to get module ID");
-  }
-
-  if (!gatewayObjectId) {
-    throw new Error("Failed to get gateway object ID");
-  }
+  const moduleId = (publishedModule as any).packageId;
+  const gatewayObjectId = (gatewayObject as any).objectId;
+  const withdrawCapObjectId = (withdrawCapObject as any).objectId;
 
   pollEvents({
     client,
