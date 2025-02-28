@@ -1,14 +1,12 @@
 import { EventId, SuiClient } from "@mysten/sui/client";
-import { toB64 } from "@mysten/sui/utils";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 import path from "path";
 import os from "os";
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
 
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -21,7 +19,7 @@ const NODE_RPC = "http://127.0.0.1:9000";
 const FAUCET_URL = "http://127.0.0.1:9123";
 const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
 const REPO_URL = "https://github.com/zeta-chain/protocol-contracts-sui.git";
-const LOCALNET_DIR = path.join(os.homedir(), ".localnet");
+const LOCALNET_DIR = "/usr/local/share/localnet";
 const PROTOCOL_CONTRACTS_REPO = path.join(
   LOCALNET_DIR,
   "protocol-contracts-sui"
@@ -43,6 +41,8 @@ export const suiSetup = async ({
   zetachainContracts,
   provider,
 }: any) => {
+  await ensureDirectoryExists(); // Ensure directory setup
+
   await cloneRepository(
     REPO_URL,
     PROTOCOL_CONTRACTS_REPO,
@@ -241,5 +241,48 @@ const pollEvents = async (context: any) => {
       console.log(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
+  }
+};
+
+const runSudoCommand = (command: any, args: any) => {
+  console.log(`Requesting sudo access to run: ${command} ${args.join(" ")}`);
+  const result = spawnSync("sudo", [command, ...args], { stdio: "inherit" });
+
+  if (result.error) {
+    console.error(`❌ Failed to execute: ${command}`, result.error);
+    process.exit(1);
+  }
+};
+
+const ensureDirectoryExists = () => {
+  try {
+    if (!fs.existsSync(LOCALNET_DIR)) {
+      console.log(`📁 Creating directory: ${LOCALNET_DIR}`);
+      const command = "mkdir";
+      const args = ["-p", LOCALNET_DIR];
+      console.log(
+        `Requesting sudo access to run: ${command} ${args.join(" ")}`
+      );
+      const result = spawnSync("sudo", [command, ...args], {
+        stdio: "inherit",
+      });
+
+      if (result.error) {
+        console.error(`❌ Failed to execute: ${command}`, result.error);
+        process.exit(1);
+      }
+    }
+
+    fs.accessSync(LOCALNET_DIR, fs.constants.W_OK);
+    console.log(`✅ Directory is writable: ${LOCALNET_DIR}`);
+  } catch (err) {
+    console.log(
+      `🔒 Directory is not writable. Changing ownership to ${
+        os.userInfo().username
+      }...`
+    );
+    runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
+
+    console.log(`✅ Ownership updated.`);
   }
 };
