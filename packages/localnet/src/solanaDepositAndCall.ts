@@ -28,7 +28,7 @@ export const solanaDepositAndCall = async ({
     }
 
     if (!foreignCoin) {
-      logErr("7001", `Foreign coin not found for asset: ${asset}`);
+      logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
       return;
     }
     await zetachainDepositAndCall({

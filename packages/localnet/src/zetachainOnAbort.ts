@@ -1,6 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 
 export const zetachainOnAbort = async ({
@@ -22,10 +23,10 @@ export const zetachainOnAbort = async ({
 
   try {
     if (abortAddress === ethers.ZeroAddress) {
-      logErr("7001", `abortAddress is zero`);
+      logErr(NetworkID.ZetaChain, `abortAddress is zero`);
       if (asset !== ethers.ZeroAddress && amount > 0) {
         logErr(
-          "7001",
+          NetworkID.ZetaChain,
           `Transferring ${amount} of ${asset} tokens to sender ${sender}`
         );
 
@@ -35,7 +36,10 @@ export const zetachainOnAbort = async ({
         throw new Error(`Can't transfer ${amount} of ${asset} tokens`);
       }
     } else {
-      log("7001", `Transferring tokens to abortAddress ${abortAddress}`);
+      log(
+        NetworkID.ZetaChain,
+        `Transferring tokens to abortAddress ${abortAddress}`
+      );
       if (asset !== ethers.ZeroAddress && amount > 0) {
         const transferTx = await assetContract.transfer(abortAddress, amount);
         await transferTx.wait();
@@ -59,26 +63,31 @@ export const zetachainOnAbort = async ({
         );
 
         log(
-          "7001",
+          NetworkID.ZetaChain,
           `Contract ${abortAddress} executing onAbort, context: ${JSON.stringify(
             context
           )}`
         );
-        const abortTx = await abortableContract.onAbort(context);
+        const abortTx = await abortableContract.onAbort(context, {
+          gasLimit: 1_500_000,
+        });
         await abortTx.wait();
         const logs = await provider.getLogs({
           address: abortAddress,
           fromBlock: "latest",
         });
         logs.forEach((data: any) => {
-          log("7001", `Event from onAbort: ${JSON.stringify(data)}`);
+          log(
+            NetworkID.ZetaChain,
+            `Event from onAbort: ${JSON.stringify(data)}`
+          );
         });
       } catch (err) {
         const error = `onAbort failed: ${err}`;
-        logErr("7001", error);
+        logErr(NetworkID.ZetaChain, error);
       }
     }
   } catch (err) {
-    logErr("7001", `Abort processing failed: ${err}`);
+    logErr(NetworkID.ZetaChain, `Abort processing failed: ${err}`);
   }
 };

@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { evmOnRevert } from "./evmOnRevert";
 import { log, logErr } from "./log";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
@@ -15,6 +16,7 @@ export const evmDepositAndCall = async ({
   provider,
   zetachainContracts,
   gatewayEVM,
+  tss,
 }: any) => {
   log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
@@ -30,7 +32,7 @@ export const evmDepositAndCall = async ({
   }
 
   if (!foreignCoin) {
-    logErr("7001", `Foreign coin not found for asset: ${asset}`);
+    logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
     return;
   }
 
@@ -46,7 +48,7 @@ export const evmDepositAndCall = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("7001", `onCall failed: ${err}`);
+    logErr(NetworkID.ZetaChain, `onCall failed: ${err}`);
     const gasLimit = revertOptions[4];
     // TODO: instead of swapping, get a quote from Uniswap to estimate if the amount is sufficient. Do the same for evmDeposit
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
@@ -70,13 +72,15 @@ export const evmDepositAndCall = async ({
         err,
         gatewayEVM,
         isGas,
+        provider,
         revertOptions,
         sender,
         token,
+        tss,
       });
     } else {
       log(
-        "7001",
+        NetworkID.ZetaChain,
         `Cannot initiate a revert, deposited amount ${amount} is less than gas fee ${revertGasFee}`
       );
       const abortAddress = revertOptions[2];
