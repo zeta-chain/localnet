@@ -6,7 +6,7 @@ export const cloneRepository = async (
   tempDir: string,
   branchName: string,
   options: any,
-  isVerbose: boolean,
+  isVerbose: boolean
 ) => {
   const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -29,7 +29,7 @@ export const cloneRepository = async (
     if (isVerbose) console.log(`Cloning repository (branch: ${branchName})...`);
     const git = simpleGit();
     await git.clone(repoUrl, tempDir, ["--branch", branchName, "--depth=1"]);
-    if (isVerbose) console.log("Repository cloned successfully.");
+    if (isVerbose) console.log(`Repository cloned successfully: ${tempDir}`);
   } else {
     if (isVerbose) console.log("Using cached repository. Skipping clone.");
   }

@@ -21,7 +21,11 @@ const NODE_RPC = "http://127.0.0.1:9000";
 const FAUCET_URL = "http://127.0.0.1:9123";
 const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
 const REPO_URL = "https://github.com/zeta-chain/protocol-contracts-sui.git";
-const TEMP_DIR = path.join(os.tmpdir(), "protocol-contracts-sui");
+const LOCALNET_DIR = path.join(os.homedir(), ".localnet");
+const PROTOCOL_CONTRACTS_REPO = path.join(
+  LOCALNET_DIR,
+  "protocol-contracts-sui"
+);
 const BRANCH_NAME = "main";
 
 const generateAccount = (mnemonic: string) => {
@@ -39,46 +43,41 @@ export const suiSetup = async ({
   zetachainContracts,
   provider,
 }: any) => {
-  // 1. Clone Move repo
   await cloneRepository(
     REPO_URL,
-    TEMP_DIR,
+    PROTOCOL_CONTRACTS_REPO,
     BRANCH_NAME,
     { cache: true },
-    false
+    true
   );
 
-  // 2. Build Move contracts
   console.log("Building Move contracts...");
   try {
-    execSync("sui move build", { cwd: TEMP_DIR, stdio: "inherit" });
+    execSync("sui move build", {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "inherit",
+    });
   } catch (error) {
     throw new Error("Move contract build failed: " + error);
   }
 
-  // 3. Check if local Sui node is available
   if (!(await isSuiAvailable())) {
     return;
   }
 
-  // 4. Generate a user account from mnemonic
   const user = generateAccount(MNEMONIC);
   const address = user.keypair.toSuiAddress();
 
-  // 5. Generate a new ephemeral keypair for publishing
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.getPublicKey().toSuiAddress();
   console.log("Publisher address:", publisherAddress);
 
-  // Export the private key as a Bech32-encoded string
   const privateKeyBech32 = keypair.getSecretKey();
   console.log("Private Key (Bech32):", privateKeyBech32);
   try {
-    // This will add the key to the CLI's local keystore
     execSync(`sui keytool import ${privateKeyBech32} ed25519`, {
       stdio: "inherit",
     });
-    // Switch the CLI's active address to our newly imported address
     execSync(`sui client switch --address ${publisherAddress}`, {
       stdio: "inherit",
     });
@@ -86,82 +85,39 @@ export const suiSetup = async ({
     throw new Error("Failed to import ephemeral key: " + error);
   }
 
-  // 7. Fund both the user address and the publisher address
   await Promise.all([
     requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address }),
     requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: publisherAddress }),
   ]);
 
-  // 8. Fetch largest gas coin for the publisher address
-  console.log("Fetching largest gas coin...");
-  let gasCoinId = "";
-  try {
-    const gasCoinsOutput = execSync(
-      `sui client gas ${publisherAddress} --json`
-    ).toString();
-    const gasCoins = JSON.parse(gasCoinsOutput);
-    gasCoinId = gasCoins.sort(
-      (a: any, b: any) => b.mistBalance - a.mistBalance
-    )[0].gasCoinId;
-    console.log("Using gas coin:", gasCoinId);
-  } catch (error) {
-    throw new Error("Failed to fetch gas coin: " + error);
-  }
+  let publishResult;
 
-  // 9. Use CLI to publish Move package (signed by ephemeral address)
   console.log("Deploying Move package via CLI...");
   try {
-    execSync(
-      `sui client publish --gas-budget ${GAS_BUDGET} --gas ${gasCoinId} --skip-dependency-verification`,
-      { cwd: TEMP_DIR, stdio: "inherit" }
+    const result = execSync(
+      `sui client publish --gas-budget ${GAS_BUDGET} --skip-dependency-verification --json`,
+      { cwd: PROTOCOL_CONTRACTS_REPO, encoding: "utf-8" }
     );
+    publishResult = JSON.parse(result);
   } catch (error) {
     throw new Error("Move contract deployment failed: " + error);
   }
 
-  // 10. Now publish the "gateway" package from @zetachain/localnet
   const client = new SuiClient({ url: new URL(NODE_RPC).toString() });
-  const gatewayPath = require.resolve("@zetachain/localnet/sui/gateway.json");
-  const gateway = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
-  const { modules, dependencies } = gateway;
-
-  const publishTx = new Transaction();
-  publishTx.setGasBudget(GAS_BUDGET);
-
-  // This publish is separate from the CLI-based publish above;
-  // here we publish the "gateway" modules via the SDK
-  const [upgradeCap] = publishTx.publish({
-    dependencies,
-    modules,
-  });
-
-  // Transfer the upgradeCap to the publisher address
-  publishTx.transferObjects([upgradeCap], publisherAddress);
-
-  const publishResult = await client.signAndExecuteTransaction({
-    options: {
-      showEffects: true,
-      showEvents: true,
-      showObjectChanges: true,
-    },
-    requestType: "WaitForLocalExecution",
-    signer: keypair, // Using ephemeral keypair in code
-    transaction: publishTx,
-  });
 
   await waitForConfirmation(client, publishResult.digest);
 
   const publishedModule = publishResult.objectChanges?.find(
-    (change) => change.type === "published"
+    (change: any) => change.type === "published"
   );
 
   const gatewayObject = publishResult.objectChanges?.find(
-    (change) =>
+    (change: any) =>
       change.type === "created" &&
       change.objectType.includes("gateway::Gateway")
   );
   const withdrawCapObject = publishResult.objectChanges?.find(
-    (change) =>
+    (change: any) =>
       change.type === "created" &&
       change.objectType.includes("gateway::WithdrawCap")
   );
