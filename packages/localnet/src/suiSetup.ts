@@ -41,6 +41,10 @@ export const suiSetup = async ({
   zetachainContracts,
   provider,
 }: any) => {
+  if (!(await isSuiAvailable())) {
+    return;
+  }
+
   await ensureDirectoryExists(); // Ensure directory setup
 
   await cloneRepository(
@@ -59,10 +63,6 @@ export const suiSetup = async ({
     });
   } catch (error) {
     throw new Error("Move contract build failed: " + error);
-  }
-
-  if (!(await isSuiAvailable())) {
-    return;
   }
 
   const user = generateAccount(MNEMONIC);
