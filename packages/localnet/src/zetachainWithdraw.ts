@@ -22,7 +22,7 @@ export const zetachainWithdraw = async ({
     provider,
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
-  log("7001", "Gateway: 'Withdrawn' event emitted");
+  log(NetworkID.ZetaChain, "Gateway: 'Withdrawn' event emitted");
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20

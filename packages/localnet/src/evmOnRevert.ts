@@ -1,7 +1,6 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
-import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
 
 export const evmOnRevert = async ({
@@ -17,7 +16,8 @@ export const evmOnRevert = async ({
   tss,
   gatewayEVM,
 }: any) => {
-  const [revertAddress, callOnRevert, , revertMessage] = revertOptions;
+  const [revertAddress, callOnRevert, , revertMessage, onRevertGasLimit] =
+    revertOptions;
   const revertContext = { amount, asset, revertMessage, sender };
   if (callOnRevert) {
     try {
@@ -33,7 +33,7 @@ export const evmOnRevert = async ({
         tx = await gatewayEVM
           .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, {
-            deployOpts,
+            gasLimit: onRevertGasLimit,
             value: amount,
           });
       } else {
@@ -45,7 +45,7 @@ export const evmOnRevert = async ({
             amount,
             "0x",
             revertContext,
-            deployOpts
+            { gasLimit: onRevertGasLimit }
           );
       }
       await tx.wait();

@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { deployOpts } from "./deployOpts";
 import { log, logErr } from "./log";
 
 export const zetachainDepositAndCall = async ({
@@ -23,7 +22,7 @@ export const zetachainDepositAndCall = async ({
   }
 
   if (!foreignCoin) {
-    logErr("7001", `Foreign coin not found for asset: ${asset}`);
+    logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
     return;
   }
   const zrc20 = foreignCoin.zrc20_contract_address;
@@ -38,20 +37,22 @@ export const zetachainDepositAndCall = async ({
       : sender,
   };
   log(
-    "7001",
+    NetworkID.ZetaChain,
     `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
       context
     )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
   );
   const tx = await zetachainContracts.gatewayZEVM
     .connect(zetachainContracts.fungibleModuleSigner)
-    .depositAndCall(context, zrc20, amount, receiver, message, deployOpts);
+    .depositAndCall(context, zrc20, amount, receiver, message, {
+      gasLimit: 1_500_000,
+    });
   await tx.wait();
   const logs = await provider.getLogs({
     address: receiver,
     fromBlock: "latest",
   });
   logs.forEach((data: any) => {
-    log("7001", `Event from onCall: ${JSON.stringify(data)}`);
+    log(NetworkID.ZetaChain, `Event from onCall: ${JSON.stringify(data)}`);
   });
 };

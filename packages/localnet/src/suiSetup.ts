@@ -151,67 +151,37 @@ export const suiSetup = async ({
 
   await waitForConfirmation(client, publishResult.digest);
 
-  // Parse IDs for newly published objects
-  let moduleId: string | null = null;
-  let gatewayObjectId: string | null = null;
-  let adminCapObjectId: string | null = null;
-  let withdrawCapObjectId: string | null = null;
-
   const publishedModule = publishResult.objectChanges?.find(
     (change) => change.type === "published"
   );
-  if (publishedModule) {
-    moduleId = (publishedModule as any).packageId;
-    console.log("Published Module ID:", moduleId);
-  } else {
-    throw new Error("Failed to get module ID");
-  }
 
   const gatewayObject = publishResult.objectChanges?.find(
     (change) =>
       change.type === "created" &&
       change.objectType.includes("gateway::Gateway")
   );
-  if (gatewayObject) {
-    gatewayObjectId = (gatewayObject as any).objectId;
-    console.log("Gateway Object ID:", gatewayObjectId);
-  }
-
   const withdrawCapObject = publishResult.objectChanges?.find(
     (change) =>
       change.type === "created" &&
       change.objectType.includes("gateway::WithdrawCap")
   );
-  if (withdrawCapObject) {
-    withdrawCapObjectId = (withdrawCapObject as any).objectId;
-    console.log("Withdraw Cap Object ID:", withdrawCapObjectId);
-  }
 
-  const adminCapObject = publishResult.objectChanges?.find(
-    (change) =>
-      change.type === "created" &&
-      change.objectType.includes("gateway::AdminCap")
-  );
-  if (adminCapObject) {
-    adminCapObjectId = (adminCapObject as any).objectId;
-    console.log("AdminCap Object ID:", adminCapObjectId);
-  }
+  const moduleId = (publishedModule as any).packageId;
+  const gatewayObjectId = (gatewayObject as any).objectId;
+  const withdrawCapObjectId = (withdrawCapObject as any).objectId;
 
-  // Start polling for deposit events
-  if (gatewayObjectId) {
-    pollEvents({
-      client,
-      deployer,
-      foreignCoins,
-      fungibleModuleSigner,
-      gatewayObjectId,
-      keypair,
-      moduleId,
-      provider,
-      withdrawCapObjectId,
-      zetachainContracts,
-    });
-  }
+  pollEvents({
+    client,
+    deployer,
+    foreignCoins,
+    fungibleModuleSigner,
+    gatewayObjectId,
+    keypair,
+    moduleId,
+    provider,
+    withdrawCapObjectId,
+    zetachainContracts,
+  });
 
   return {
     addresses: [

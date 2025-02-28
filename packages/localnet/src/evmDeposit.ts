@@ -2,6 +2,7 @@ import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router0
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { evmOnRevert } from "./evmOnRevert";
 import { log, logErr } from "./log";
 import { zetachainDeposit } from "./zetachainDeposit";
@@ -29,7 +30,7 @@ export const evmDeposit = async ({
   }
 
   if (!foreignCoin) {
-    logErr("7001", `Foreign coin not found for asset: ${asset}`);
+    logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
     return;
   }
 
@@ -45,7 +46,7 @@ export const evmDeposit = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("7001", `Error depositing: ${err}`);
+    logErr(NetworkID.ZetaChain, `Error depositing: ${err}`);
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
       revertOptions[4]
@@ -181,7 +182,10 @@ const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logErr("7001", `Error performing swap on Uniswap: ${swapError}`);
+    logErr(
+      NetworkID.ZetaChain,
+      `Error performing swap on Uniswap: ${swapError}`
+    );
   }
 
   const amountInZeta = await getAmounts(
