@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmExecute } from "./evmExecute";
 import { log, logErr } from "./log";
@@ -18,7 +19,7 @@ export const zetachainCall = async ({
     provider,
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
-  log("7001", "Gateway: 'Called' event emitted");
+  log(NetworkID.ZetaChain, "Gateway: 'Called' event emitted");
   const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
   const chainID = contracts.foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20

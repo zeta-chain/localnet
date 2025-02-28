@@ -1,6 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { ethers, NonceManager } from "ethers";
+import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log } from "./log";
 import { logErr } from "./log";
 import { zetachainOnAbort } from "./zetachainOnAbort";
@@ -31,13 +32,13 @@ export const zetachainOnRevert = async ({
   );
 
   if (callOnRevert) {
-    log("7001", `callOnRevert is true`);
+    log(NetworkID.ZetaChain, `callOnRevert is true`);
     try {
       if (revertAddress === ethers.ZeroAddress) {
         throw new Error("revertAddress is zero");
       } else {
         logErr(
-          "7001",
+          NetworkID.ZetaChain,
           `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
             revertContext
           )}`
@@ -62,12 +63,15 @@ export const zetachainOnRevert = async ({
           fromBlock: "latest",
         });
         logs.forEach((data: any) => {
-          log("7001", `Event from onRevert: ${JSON.stringify(data)}`);
+          log(
+            NetworkID.ZetaChain,
+            `Event from onRevert: ${JSON.stringify(data)}`
+          );
         });
       }
     } catch (err) {
       const error = `onRevert failed: ${err}`;
-      logErr("7001", error);
+      logErr(NetworkID.ZetaChain, error);
       await zetachainOnAbort({
         abortAddress,
         amount,
@@ -80,18 +84,21 @@ export const zetachainOnRevert = async ({
       });
     }
   } else {
-    log("7001", `callOnRevert is false`);
+    log(NetworkID.ZetaChain, `callOnRevert is false`);
     try {
       if (revertAddress === ethers.ZeroAddress) {
         throw new Error("revertAddress is zero");
       } else {
-        log("7001", `Transferring tokens to revertAddress ${revertAddress}`);
+        log(
+          NetworkID.ZetaChain,
+          `Transferring tokens to revertAddress ${revertAddress}`
+        );
         const transferTx = await assetContract.transfer(revertAddress, amount);
         await transferTx.wait();
       }
     } catch (err) {
       logErr(
-        "7001",
+        NetworkID.ZetaChain,
         `Token transfer to revertAddress ${revertAddress} failed: ${err}`
       );
       await zetachainOnAbort({
