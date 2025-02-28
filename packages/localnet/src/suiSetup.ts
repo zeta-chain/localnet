@@ -75,7 +75,7 @@ export const suiSetup = async ({
   console.log("Private Key (Bech32):", privateKeyBech32);
   try {
     // This will add the key to the CLI's local keystore
-    execSync(`sui keytool import ${privateKeyBech32} Ed25519`, {
+    execSync(`sui keytool import ${privateKeyBech32} ed25519`, {
       stdio: "inherit",
     });
     // Switch the CLI's active address to our newly imported address
