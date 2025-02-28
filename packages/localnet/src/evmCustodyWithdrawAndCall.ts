@@ -1,7 +1,5 @@
 import { ethers } from "ethers";
 
-import { deployOpts } from "./deployOpts";
-
 export const evmCustodyWithdrawAndCall = async ({
   evmContracts,
   tss,

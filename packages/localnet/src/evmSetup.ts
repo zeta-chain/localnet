@@ -3,7 +3,7 @@ import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.so
 import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
-import { ethers, Signer } from "ethers";
+import { ethers } from "ethers";
 
 import { deployOpts } from "./deployOpts";
 import { evmCall } from "./evmCall";
