@@ -6,8 +6,8 @@ import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
 import { log, logErr } from "./log";
-import { zetachainOnRevert } from "./zetachainOnRevert";
 import { solanaExecute } from "./solanaExecute";
+import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdrawAndCall = async ({
   args,
@@ -52,10 +52,10 @@ export const zetachainWithdrawAndCall = async ({
       case NetworkID.Solana: {
         if (isGasToken) {
           await solanaExecute({
-            sender,
-            recipient: ethers.toUtf8String(receiver),
             amount,
             message,
+            recipient: ethers.toUtf8String(receiver),
+            sender,
           });
         } else {
           log(NetworkID.Solana, "execute spl todo");
@@ -88,7 +88,7 @@ export const zetachainWithdrawAndCall = async ({
             chainID === NetworkID.Ethereum
               ? contracts.ethereumContracts
               : contracts.bnbContracts;
-    
+
           await evmCustodyWithdrawAndCall({
             args,
             evmContracts,

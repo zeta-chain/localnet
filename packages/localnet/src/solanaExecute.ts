@@ -4,8 +4,8 @@ import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
-import Gateway_IDL from "./solana/idl/gateway.json";
 import Connected_IDL from "./solana/idl/connected.json";
+import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 
 export const solanaExecute = async ({
@@ -14,10 +14,10 @@ export const solanaExecute = async ({
   amount,
   message,
 }: {
-  sender: Buffer;
   amount: bigint;
-  recipient: string;
   message: Buffer;
+  recipient: string;
+  sender: Buffer;
 }) => {
   try {
     const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
@@ -47,7 +47,10 @@ export const solanaExecute = async ({
 
     // TODO: some of the fields like data and receiver are too much coupled with evm (hexlify receiver, abi.encode data etc)
     // probably as we introduce more chains its better to deliver raw strings to localnet and parse specific to chain here
-    const decodedMessage = AbiCoder.defaultAbiCoder().decode(["string"], message);
+    const decodedMessage = AbiCoder.defaultAbiCoder().decode(
+      ["string"],
+      message
+    );
     const data = Buffer.from(decodedMessage.at(0), "utf-8");
     const instructionId = 0x5;
     const buffer = Buffer.concat([
@@ -79,30 +82,31 @@ export const solanaExecute = async ({
         nonce
       )
       .accountsPartial({
+        destinationProgram: connectedProgram.programId,
+
+        destinationProgramPda: connectedPdaAccount,
+
+        pda: pdaAccount,
         // mandatory predefined accounts
         signer: payer.publicKey,
-        pda: pdaAccount,
-        destinationProgram: connectedProgram.programId,
-        destinationProgramPda: connectedPdaAccount,
       })
       .remainingAccounts([
         // accounts coming from withdraw and call msg
-        { pubkey: connectedPdaAccount, isSigner: false, isWritable: true },
-        { pubkey: pdaAccount, isSigner: false, isWritable: false },
+        { isSigner: false, isWritable: true, pubkey: connectedPdaAccount },
+        { isSigner: false, isWritable: false, pubkey: pdaAccount },
         {
-        pubkey: anchor.web3.SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
+          isSigner: false,
+          isWritable: false,
+          pubkey: anchor.web3.SystemProgram.programId,
         },
       ])
       .rpc();
-    
+
     // get tx details to check if connected program is called
-    await new Promise(r => setTimeout(r, 2000));
-    const transaction = await connection.getTransaction(
-      signature,
-      { commitment: "confirmed" }
-    );
+    await new Promise((r) => setTimeout(r, 2000));
+    const transaction = await connection.getTransaction(signature, {
+      commitment: "confirmed",
+    });
 
     // log messages showing onCall called
     const logMessages = transaction?.meta?.logMessages || [];

@@ -13,8 +13,8 @@ import util from "util";
 
 import { MNEMONIC } from "./constants";
 import { isSolanaAvailable } from "./isSolanaAvailable";
-import Gateway_IDL from "./solana/idl/gateway.json";
 import Connected_IDL from "./solana/idl/connected.json";
+import Gateway_IDL from "./solana/idl/gateway.json";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 
