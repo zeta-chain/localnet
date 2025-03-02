@@ -21,9 +21,7 @@
     },
     "./solana/idl/gateway.json": "./dist/localnet/src/solana/idl/gateway.json",
     "./solana/deploy/gateway.so": "./dist/localnet/src/solana/deploy/gateway.so",
-    "./solana/deploy/connected.so": "./dist/localnet/src/solana/deploy/connected.so",
     "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json",
-    "./solana/deploy/connected-keypair.json": "./dist/localnet/src/solana/deploy/connected-keypair.json",
     "./sui/gateway.mv": "./dist/localnet/src/sui/gateway.mv",
     "./sui/gateway.json": "./dist/localnet/src/sui/gateway.json"
   },

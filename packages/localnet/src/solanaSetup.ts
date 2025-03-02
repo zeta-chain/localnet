@@ -13,7 +13,6 @@ import util from "util";
 
 import { MNEMONIC } from "./constants";
 import { isSolanaAvailable } from "./isSolanaAvailable";
-import Connected_IDL from "./solana/idl/connected.json";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
@@ -118,13 +117,6 @@ export const solanaSetup = async ({
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
   );
 
-  const connectedSoPath = require.resolve(
-    "@zetachain/localnet/solana/deploy/connected.so"
-  );
-  const connectedKeypairPath = require.resolve(
-    "@zetachain/localnet/solana/deploy/connected-keypair.json"
-  );
-
   const defaultSolanaUserKeypair = await loadSolanaKeypair();
 
   console.log(
@@ -133,7 +125,6 @@ export const solanaSetup = async ({
   );
 
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
-  const connectedProgram = new anchor.Program(Connected_IDL as anchor.Idl);
 
   try {
     if (!fs.existsSync(gatewayKeypairPath)) {
@@ -142,14 +133,6 @@ export const solanaSetup = async ({
 
     if (!fs.existsSync(gatewaySoPath)) {
       throw new Error(`gateway.so file not found: ${gatewaySoPath}`);
-    }
-
-    if (!fs.existsSync(connectedKeypairPath)) {
-      throw new Error(`Keypair file not found: ${connectedKeypairPath}`);
-    }
-
-    if (!fs.existsSync(connectedSoPath)) {
-      throw new Error(`connected.so file not found: ${connectedSoPath}`);
     }
 
     // Convert TSS public key to address
@@ -182,17 +165,10 @@ export const solanaSetup = async ({
     const { stdout } = await execAsync(deployCommand);
     console.log(`Deployment output: ${stdout}`);
 
-    const deployConnnectedCommand = `solana program deploy --program-id ${connectedKeypairPath} ${connectedSoPath} --url localhost`;
-
-    await execAsync(deployConnnectedCommand);
-
     await new Promise((r) => setTimeout(r, 1000));
 
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     console.log("Initialized gateway program");
-
-    await connectedProgram.methods.initialize().rpc();
-    console.log("Initialized connected program");
 
     const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("meta", "utf-8")],

@@ -4,7 +4,6 @@ import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
-import Connected_IDL from "./solana/idl/connected.json";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 
@@ -21,7 +20,7 @@ export const solanaExecute = async ({
 }) => {
   try {
     const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
-    const connectedProgram = new anchor.Program(Connected_IDL as anchor.Idl);
+    const connectedProgramId = new anchor.web3.PublicKey(recipient);
     const connection = gatewayProgram.provider.connection;
     const provider = new anchor.AnchorProvider(
       connection,
@@ -39,7 +38,7 @@ export const solanaExecute = async ({
     );
     const [connectedPdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("connected", "utf-8")],
-      connectedProgram.programId
+      connectedProgramId
     );
     const chainIdBn = new anchor.BN(pdaAccountData.chainId);
     const nonce = pdaAccountData.nonce;
@@ -59,7 +58,7 @@ export const solanaExecute = async ({
       chainIdBn.toArrayLike(Buffer, "be", 8),
       new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
       val.toArrayLike(Buffer, "be", 8),
-      connectedProgram.programId.toBuffer(), // TODO: use recipient field
+      connectedProgramId.toBuffer(), // TODO: use recipient field
       data,
     ]);
 
@@ -82,10 +81,8 @@ export const solanaExecute = async ({
         nonce
       )
       .accountsPartial({
-        destinationProgram: connectedProgram.programId,
-
+        destinationProgram: connectedProgramId,
         destinationProgramPda: connectedPdaAccount,
-
         pda: pdaAccount,
         // mandatory predefined accounts
         signer: payer.publicKey,
