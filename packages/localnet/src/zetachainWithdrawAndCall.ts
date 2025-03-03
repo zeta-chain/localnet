@@ -6,6 +6,7 @@ import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
 import { log, logErr } from "./log";
+import { solanaExecute } from "./solanaExecute";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdrawAndCall = async ({
@@ -46,37 +47,56 @@ export const zetachainWithdrawAndCall = async ({
     const coinType = await zrc20Contract.COIN_TYPE();
     const isGasToken = coinType === 1n;
 
-    if (isArbitraryCall) {
-      const selector = message.slice(0, 10);
-      const code = await provider.getCode(receiver);
-      if (!code.includes(selector.slice(2))) {
-        throw new Error(
-          `Receiver contract does not contain function with selector ${selector}`
-        );
+    switch (chainID) {
+      // solana
+      case NetworkID.Solana: {
+        if (isGasToken) {
+          await solanaExecute({
+            amount,
+            message,
+            recipient: ethers.toUtf8String(receiver),
+            sender,
+          });
+        } else {
+          log(NetworkID.Solana, "execute spl todo");
+        }
+        break;
       }
-    }
-    if (isGasToken) {
-      await evmExecute({
-        amount,
-        callOptions,
-        contracts,
-        message,
-        receiver,
-        sender,
-        zrc20,
-      });
-    } else {
-      const evmContracts =
-        chainID === NetworkID.Ethereum
-          ? contracts.ethereumContracts
-          : contracts.bnbContracts;
+      // current case in default, it will be extended with other chains in future
+      default: {
+        if (isArbitraryCall) {
+          const selector = message.slice(0, 10);
+          const code = await provider.getCode(receiver);
+          if (!code.includes(selector.slice(2))) {
+            throw new Error(
+              `Receiver contract does not contain function with selector ${selector}`
+            );
+          }
+        }
+        if (isGasToken) {
+          await evmExecute({
+            amount,
+            callOptions,
+            contracts,
+            message,
+            receiver,
+            sender,
+            zrc20,
+          });
+        } else {
+          const evmContracts =
+            chainID === NetworkID.Ethereum
+              ? contracts.ethereumContracts
+              : contracts.bnbContracts;
 
-      await evmCustodyWithdrawAndCall({
-        args,
-        evmContracts,
-        foreignCoins,
-        tss,
-      });
+          await evmCustodyWithdrawAndCall({
+            args,
+            evmContracts,
+            foreignCoins,
+            tss,
+          });
+        }
+      }
     }
   } catch (err: any) {
     logErr(chainID, `Error executing ${receiver}: ${err}`);
