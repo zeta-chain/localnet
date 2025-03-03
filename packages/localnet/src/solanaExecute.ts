@@ -58,7 +58,7 @@ export const solanaExecute = async ({
       chainIdBn.toArrayLike(Buffer, "be", 8),
       new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
       val.toArrayLike(Buffer, "be", 8),
-      connectedProgramId.toBuffer(), // TODO: use recipient field
+      connectedProgramId.toBuffer(),
       data,
     ]);
 
