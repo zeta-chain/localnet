@@ -45,7 +45,7 @@ export const suiSetup = async ({
     return;
   }
 
-  await ensureDirectoryExists(); // Ensure directory setup
+  await ensureDirectoryExists();
 
   await cloneRepository(
     REPO_URL,
@@ -172,7 +172,6 @@ export const suiSetup = async ({
   };
 };
 
-// Helper to wait for transaction confirmation
 const waitForConfirmation = async (
   client: SuiClient,
   digest: string,
