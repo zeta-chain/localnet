@@ -28,7 +28,7 @@ export const solanaDeposit = async ({
     }
 
     if (!foreignCoin) {
-      logErr("7001", `Foreign coin not found for asset: ${asset}`);
+      logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
       return;
     }
 
@@ -39,7 +39,7 @@ export const solanaDeposit = async ({
       zetachainContracts,
     });
   } catch (err) {
-    logErr("7001", `Error depositing: ${err}`);
+    logErr(NetworkID.ZetaChain, `Error depositing: ${err}`);
     const { revertGasFee } = await zetachainSwapToCoverGas({
       amount,
       asset,

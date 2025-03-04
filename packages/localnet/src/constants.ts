@@ -12,5 +12,5 @@ export const NetworkID = {
   Ethereum: "5",
   Solana: "901",
   Sui: "103",
-  ZetaChain: "7000",
+  ZetaChain: "7001",
 };

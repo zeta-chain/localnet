@@ -22,7 +22,7 @@ export const zetachainWithdrawAndCall = async ({
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
 
-  log("7001", "Gateway: 'WithdrawnAndCalled' event emitted");
+  log(NetworkID.ZetaChain, "Gateway: 'WithdrawnAndCalled' event emitted");
   const [
     sender,
     ,

@@ -1,7 +1,5 @@
 import { ethers } from "ethers";
 
-import { deployOpts } from "./deployOpts";
-
 export const evmCustodyWithdrawAndCall = async ({
   evmContracts,
   tss,
@@ -30,14 +28,9 @@ export const evmCustodyWithdrawAndCall = async ({
 
     const executeTx = await evmContracts.custody
       .connect(tss)
-      .withdrawAndCall(
-        messageContext,
-        receiver,
-        asset,
-        amount,
-        message,
-        deployOpts
-      );
+      .withdrawAndCall(messageContext, receiver, asset, amount, message, {
+        gasLimit: callOptions.gasLimit,
+      });
     await executeTx.wait();
   } catch (error: any) {
     throw new Error(

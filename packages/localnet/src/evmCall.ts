@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 
+import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 import { zetachainExecute } from "./zetachainExecute";
 import { zetachainOnAbort } from "./zetachainOnAbort";
@@ -29,7 +30,7 @@ export const evmCall = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr("7001", `Error executing onCall: ${err}`);
+    logErr(NetworkID.ZetaChain, `Error executing onCall: ${err}`);
     // No asset calls don't support reverts, so aborting
     const revertOptions = args[5];
     const abortAddress = revertOptions[2];
