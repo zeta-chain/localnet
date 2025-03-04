@@ -46,11 +46,29 @@ export const solanaExecute = async ({
 
     // TODO: some of the fields like data and receiver are too much coupled with evm (hexlify receiver, abi.encode data etc)
     // probably as we introduce more chains its better to deliver raw strings to localnet and parse specific to chain here
-    const decodedMessage = AbiCoder.defaultAbiCoder().decode(
-      ["string"],
-      message
-    );
-    const data = Buffer.from(decodedMessage.at(0), "utf-8");
+
+    // toolkit additionally is doing abi.encode on provided bytes, so first decode that and then decode accounts and data
+    const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
+    const decodedAccountsAndData = AbiCoder.defaultAbiCoder().decode(
+      [
+        "tuple(tuple(bytes32 publicKey, bool isWritable)[] accounts, bytes data)",
+      ],
+      decodedBytes[0]
+    )[0];
+
+    const accounts = decodedAccountsAndData[0];
+    const data = decodedAccountsAndData[1];
+
+    const remainingAccounts: anchor.web3.AccountMeta[] = [];
+    for (let acc of accounts) {
+      // this is encoded as { pubkey, isWritable }
+      remainingAccounts.push({
+        isSigner: false,
+        isWritable: acc[1],
+        pubkey: new anchor.web3.PublicKey(ethers.getBytes(acc[0])),
+      });
+    }
+
     const instructionId = 0x5;
     const buffer = Buffer.concat([
       Buffer.from("ZETACHAIN", "utf-8"),
@@ -59,7 +77,7 @@ export const solanaExecute = async ({
       new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
       val.toArrayLike(Buffer, "be", 8),
       connectedProgramId.toBuffer(),
-      data,
+      Buffer.from(ethers.getBytes(data)),
     ]);
 
     const messageHash = keccak256(buffer);
@@ -74,7 +92,7 @@ export const solanaExecute = async ({
       .execute(
         val,
         Array.from(sender),
-        data,
+        Buffer.from(ethers.getBytes(data)),
         Array.from(signatureBuffer),
         Number(recoveryParam),
         Array.from(messageHash),
@@ -87,16 +105,7 @@ export const solanaExecute = async ({
         // mandatory predefined accounts
         signer: payer.publicKey,
       })
-      .remainingAccounts([
-        // accounts coming from withdraw and call msg
-        { isSigner: false, isWritable: true, pubkey: connectedPdaAccount },
-        { isSigner: false, isWritable: false, pubkey: pdaAccount },
-        {
-          isSigner: false,
-          isWritable: false,
-          pubkey: anchor.web3.SystemProgram.programId,
-        },
-      ])
+      .remainingAccounts(remainingAccounts)
       .rpc();
 
     // get tx details to check if connected program is called
