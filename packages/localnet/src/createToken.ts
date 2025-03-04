@@ -273,7 +273,7 @@ const whitelistSPLToken = async (
   );
 
   await gatewayProgram.methods
-    .whitelistSplMint(new Uint8Array(64).fill(0), 0, new BN(0))
+    .whitelistSplMint(new Uint8Array(64).fill(0), 0, [], new BN(0))
     .accounts({
       authority: authorityKeypair.publicKey,
       pda: gatewayPDA,
