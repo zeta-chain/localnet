@@ -41,6 +41,10 @@ export const zetachainWithdrawAndCall = async ({
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
 
+  const asset = foreignCoins.find(
+    (coin: any) => coin.zrc20_contract_address === zrc20
+  ).asset;
+
   try {
     (tss as NonceManager).reset();
     const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
@@ -50,16 +54,14 @@ export const zetachainWithdrawAndCall = async ({
     switch (chainID) {
       // solana
       case NetworkID.Solana: {
-        if (isGasToken) {
-          await solanaExecute({
-            amount,
-            message,
-            recipient: ethers.toUtf8String(receiver),
-            sender,
-          });
-        } else {
-          log(NetworkID.Solana, "execute spl todo");
-        }
+        await solanaExecute({
+          amount,
+          decimals: 9,
+          message,
+          mint: asset,
+          recipient: ethers.toUtf8String(receiver),
+          sender,
+        });
         break;
       }
       // current case in default, it will be extended with other chains in future

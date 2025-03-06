@@ -1,4 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
+import {
+  getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
+} from "@solana/spl-token";
 import { keccak256 } from "ethereumjs-util";
 import { AbiCoder, ethers } from "ethers";
 
@@ -12,9 +16,13 @@ export const solanaExecute = async ({
   recipient,
   amount,
   message,
+  mint,
+  decimals,
 }: {
   amount: bigint;
+  decimals?: number;
   message: Buffer;
+  mint?: string;
   recipient: string;
   sender: Buffer;
 }) => {
@@ -40,6 +48,7 @@ export const solanaExecute = async ({
       [Buffer.from("connected", "utf-8")],
       connectedProgramId
     );
+
     const chainIdBn = new anchor.BN(pdaAccountData.chainId);
     const nonce = pdaAccountData.nonce;
     const val = new anchor.BN(amount.toString());
@@ -69,61 +78,142 @@ export const solanaExecute = async ({
       });
     }
 
-    const instructionId = 0x5;
-    const buffer = Buffer.concat([
-      Buffer.from("ZETACHAIN", "utf-8"),
-      Buffer.from([instructionId]),
-      chainIdBn.toArrayLike(Buffer, "be", 8),
-      new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
-      val.toArrayLike(Buffer, "be", 8),
-      connectedProgramId.toBuffer(),
-      Buffer.from(ethers.getBytes(data)),
-    ]);
+    const isSpl = !!mint;
 
-    const messageHash = keccak256(buffer);
-    const signatureObj = tssKeyPair.sign(messageHash);
-    const { r, s, recoveryParam } = signatureObj;
-    const signatureBuffer = Buffer.concat([
-      r.toArrayLike(Buffer, "be", 32),
-      s.toArrayLike(Buffer, "be", 32),
-    ]);
-
-    const signature = await gatewayProgram.methods
-      .execute(
-        val,
-        Array.from(sender),
+    if (!isSpl) {
+      const instructionId = 0x5;
+      const buffer = Buffer.concat([
+        Buffer.from("ZETACHAIN", "utf-8"),
+        Buffer.from([instructionId]),
+        chainIdBn.toArrayLike(Buffer, "be", 8),
+        new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
+        val.toArrayLike(Buffer, "be", 8),
+        connectedProgramId.toBuffer(),
         Buffer.from(ethers.getBytes(data)),
-        Array.from(signatureBuffer),
-        Number(recoveryParam),
-        Array.from(messageHash),
-        nonce
-      )
-      .accountsPartial({
-        destinationProgram: connectedProgramId,
-        destinationProgramPda: connectedPdaAccount,
-        pda: pdaAccount,
-        // mandatory predefined accounts
-        signer: payer.publicKey,
-      })
-      .remainingAccounts(remainingAccounts)
-      .rpc();
+      ]);
 
-    // get tx details to check if connected program is called
-    await new Promise((r) => setTimeout(r, 2000));
-    const transaction = await connection.getTransaction(signature, {
-      commitment: "confirmed",
-    });
+      const messageHash = keccak256(buffer);
+      const signatureObj = tssKeyPair.sign(messageHash);
+      const { r, s, recoveryParam } = signatureObj;
+      const signatureBuffer = Buffer.concat([
+        r.toArrayLike(Buffer, "be", 32),
+        s.toArrayLike(Buffer, "be", 32),
+      ]);
 
-    // log messages showing onCall called
-    const logMessages = transaction?.meta?.logMessages || [];
-    log(
-      NetworkID.Solana,
-      `Executing Gateway execute (SOL): Sending ${ethers.formatUnits(
-        amount,
-        9
-      )} SOL to ${recipient}`
-    );
-    log(NetworkID.Solana, "log messages", ...logMessages);
+      const signature = await gatewayProgram.methods
+        .execute(
+          val,
+          Array.from(sender),
+          Buffer.from(ethers.getBytes(data)),
+          Array.from(signatureBuffer),
+          Number(recoveryParam),
+          Array.from(messageHash),
+          nonce
+        )
+        .accountsPartial({
+          destinationProgram: connectedProgramId,
+          destinationProgramPda: connectedPdaAccount,
+          pda: pdaAccount,
+          signer: payer.publicKey,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc();
+
+      // get tx details to check if connected program is called
+      await new Promise((r) => setTimeout(r, 2000));
+      const transaction = await connection.getTransaction(signature, {
+        commitment: "confirmed",
+      });
+
+      // log messages showing onCall called
+      const logMessages = transaction?.meta?.logMessages || [];
+      log(
+        NetworkID.Solana,
+        `Executing Gateway execute (SOL): Sending ${ethers.formatUnits(
+          amount,
+          9
+        )} SOL to ${recipient}`
+      );
+      log(NetworkID.Solana, "log messages", ...logMessages);
+    } else {
+      const mintPubkey = new anchor.web3.PublicKey(mint);
+
+      const connectedPdaATA = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payer,
+        mintPubkey,
+        connectedPdaAccount,
+        true
+      );
+      const pdaATA = await getAssociatedTokenAddress(
+        mintPubkey,
+        pdaAccount,
+        true
+      );
+
+      const instructionId = 0x6;
+      const buffer = Buffer.concat([
+        Buffer.from("ZETACHAIN", "utf-8"),
+        Buffer.from([instructionId]),
+        chainIdBn.toArrayLike(Buffer, "be", 8),
+        new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
+        val.toArrayLike(Buffer, "be", 8),
+        mintPubkey.toBytes(),
+        connectedPdaATA.address.toBuffer(),
+        Buffer.from(ethers.getBytes(data)),
+      ]);
+
+      const messageHash = keccak256(buffer);
+      const signatureObj = tssKeyPair.sign(messageHash);
+      const { r, s, recoveryParam } = signatureObj;
+      const signatureBuffer = Buffer.concat([
+        r.toArrayLike(Buffer, "be", 32),
+        s.toArrayLike(Buffer, "be", 32),
+      ]);
+
+      const signature = await gatewayProgram.methods
+        .executeSplToken(
+          decimals,
+          val,
+          Array.from(sender),
+          Buffer.from(ethers.getBytes(data)),
+          Array.from(signatureBuffer),
+          Number(recoveryParam),
+          Array.from(messageHash),
+          nonce
+        )
+        .accountsPartial({
+          associatedTokenProgram: anchor.utils.token.ASSOCIATED_PROGRAM_ID,
+          destinationProgram: connectedProgramId,
+          destinationProgramPda: connectedPdaAccount,
+          destinationProgramPdaAta: connectedPdaATA.address,
+          mintAccount: mintPubkey,
+          pda: pdaAccount,
+          pdaAta: pdaATA,
+          signer: payer.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc();
+
+      // get tx details to check if connected program is called
+      await new Promise((r) => setTimeout(r, 2000));
+      const transaction = await connection.getTransaction(signature, {
+        commitment: "confirmed",
+      });
+
+      // log messages showing onCall called
+      const logMessages = transaction?.meta?.logMessages || [];
+      log(
+        NetworkID.Solana,
+        `Executing Gateway execute (SPL): Sending ${ethers.formatUnits(
+          amount,
+          decimals
+        )} SPL to ${recipient}`
+      );
+      log(NetworkID.Solana, "log messages", ...logMessages);
+    }
   } catch (err) {
     logErr(NetworkID.Solana, `Error executing Gateway execute: ${err}`);
   }
