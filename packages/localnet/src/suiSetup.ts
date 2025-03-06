@@ -49,7 +49,7 @@ export const suiSetup = async ({
     return;
   }
 
-  await ensureDirectoryExists();
+  ensureDirectoryExists();
 
   await cloneRepository(
     REPO_URL,
