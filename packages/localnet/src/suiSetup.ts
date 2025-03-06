@@ -30,7 +30,11 @@ const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);
   const hdKey = HDKey.fromMasterSeed(seed);
   const derivedKey = hdKey.derive(DERIVATION_PATH);
-  const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
+  if (!derivedKey.privateKey) {
+    throw new Error("Failed to derive private key");
+  }
+
+  const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey);
   return { keypair, mnemonic };
 };
 
@@ -142,12 +146,12 @@ export const suiSetup = async ({
   return {
     addresses: [
       {
-        address: moduleId!,
+        address: moduleId,
         chain: "sui",
         type: "gatewayModuleID",
       },
       {
-        address: gatewayObjectId!,
+        address: gatewayObjectId,
         chain: "sui",
         type: "gatewayObjectId",
       },
