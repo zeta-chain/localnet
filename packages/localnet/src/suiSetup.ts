@@ -59,6 +59,36 @@ export const suiSetup = async ({
     true
   );
 
+  try {
+    execSync("sui genesis", {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    console.log("Genesis already exists, skipping...");
+  }
+
+  try {
+    execSync(
+      "sui client new-env --rpc http://127.0.0.1:9000 --alias localnet",
+      {
+        cwd: PROTOCOL_CONTRACTS_REPO,
+        stdio: "inherit",
+      }
+    );
+  } catch (error) {
+    console.log("Environment already exists, skipping...");
+  }
+
+  try {
+    execSync("sui client switch --env localnet", {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    throw new Error("Failed to switch to localnet environment: " + error);
+  }
+
   console.log("Building Move contracts...");
   try {
     execSync("sui move build", {
