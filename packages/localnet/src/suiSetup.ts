@@ -99,7 +99,7 @@ export const suiSetup = async ({
   console.log("Deploying Move package via CLI...");
   try {
     const result = execSync(
-      `sui client publish --gas-budget ${GAS_BUDGET} --skip-dependency-verification --json`,
+      `sui client publish --gas-budget ${GAS_BUDGET} --json`,
       { cwd: PROTOCOL_CONTRACTS_REPO, encoding: "utf-8" }
     );
     publishResult = JSON.parse(result);
