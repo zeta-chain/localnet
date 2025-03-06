@@ -1,11 +1,14 @@
 import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
+import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
+import os from "os";
+import path from "path";
 
+import { cloneRepository } from "./cloneRepository";
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
@@ -15,12 +18,23 @@ const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
 const FAUCET_URL = "http://127.0.0.1:9123";
 const DERIVATION_PATH = "m/44'/784'/0'/0'/0'";
+const REPO_URL = "https://github.com/zeta-chain/protocol-contracts-sui.git";
+const LOCALNET_DIR = "/usr/local/share/localnet";
+const PROTOCOL_CONTRACTS_REPO = path.join(
+  LOCALNET_DIR,
+  "protocol-contracts-sui"
+);
+const BRANCH_NAME = "main";
 
 const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);
   const hdKey = HDKey.fromMasterSeed(seed);
   const derivedKey = hdKey.derive(DERIVATION_PATH);
-  const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
+  if (!derivedKey.privateKey) {
+    throw new Error("Failed to derive private key");
+  }
+
+  const keypair = Ed25519Keypair.fromSecretKey(derivedKey.privateKey);
   return { keypair, mnemonic };
 };
 
@@ -34,61 +48,80 @@ export const suiSetup = async ({
   if (!(await isSuiAvailable())) {
     return;
   }
-  const client = new SuiClient({ url: NODE_RPC });
+
+  ensureDirectoryExists();
+
+  await cloneRepository(
+    REPO_URL,
+    PROTOCOL_CONTRACTS_REPO,
+    BRANCH_NAME,
+    { cache: true },
+    true
+  );
+
+  console.log("Building Move contracts...");
+  try {
+    execSync("sui move build", {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    throw new Error("Move contract build failed: " + error);
+  }
 
   const user = generateAccount(MNEMONIC);
   const address = user.keypair.toSuiAddress();
 
   const keypair = new Ed25519Keypair();
-  const publisherAddress = keypair.toSuiAddress();
+  const publisherAddress = keypair.getPublicKey().toSuiAddress();
   console.log("Publisher address:", publisherAddress);
+
+  const privateKeyBech32 = keypair.getSecretKey();
+  console.log("Private Key (Bech32):", privateKeyBech32);
+  try {
+    execSync(`sui keytool import ${privateKeyBech32} ed25519`, {
+      stdio: "inherit",
+    });
+    execSync(`sui client switch --address ${publisherAddress}`, {
+      stdio: "inherit",
+    });
+  } catch (error) {
+    throw new Error("Failed to import ephemeral key: " + error);
+  }
 
   await Promise.all([
     requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: address }),
-    requestSuiFromFaucetV0({
-      host: FAUCET_URL,
-      recipient: publisherAddress,
-    }),
+    requestSuiFromFaucetV0({ host: FAUCET_URL, recipient: publisherAddress }),
   ]);
 
-  const gatewayPath = require.resolve("@zetachain/localnet/sui/gateway.json");
-  const gateway = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
-  const { modules, dependencies } = gateway;
+  let publishResult;
 
-  const publishTx = new Transaction();
-  publishTx.setGasBudget(GAS_BUDGET);
+  console.log("Deploying Move package via CLI...");
+  try {
+    const result = execSync(
+      `sui client publish --gas-budget ${GAS_BUDGET} --json`,
+      { cwd: PROTOCOL_CONTRACTS_REPO, encoding: "utf-8" }
+    );
+    publishResult = JSON.parse(result);
+  } catch (error) {
+    throw new Error("Move contract deployment failed: " + error);
+  }
 
-  const [upgradeCap] = publishTx.publish({
-    dependencies,
-    modules,
-  });
-
-  publishTx.transferObjects([upgradeCap], publisherAddress);
-
-  const publishResult = await client.signAndExecuteTransaction({
-    options: {
-      showEffects: true,
-      showEvents: true,
-      showObjectChanges: true,
-    },
-    requestType: "WaitForLocalExecution",
-    signer: keypair,
-    transaction: publishTx,
-  });
+  const client = new SuiClient({ url: new URL(NODE_RPC).toString() });
 
   await waitForConfirmation(client, publishResult.digest);
 
   const publishedModule = publishResult.objectChanges?.find(
-    (change) => change.type === "published"
+    (change: any) => change.type === "published"
   );
 
   const gatewayObject = publishResult.objectChanges?.find(
-    (change) =>
+    (change: any) =>
       change.type === "created" &&
       change.objectType.includes("gateway::Gateway")
   );
   const withdrawCapObject = publishResult.objectChanges?.find(
-    (change) =>
+    (change: any) =>
       change.type === "created" &&
       change.objectType.includes("gateway::WithdrawCap")
   );
@@ -142,6 +175,7 @@ export const suiSetup = async ({
     },
   };
 };
+
 const waitForConfirmation = async (
   client: SuiClient,
   digest: string,
@@ -157,13 +191,13 @@ const waitForConfirmation = async (
     if (status.effects?.status?.status === "success") {
       return status;
     }
-
     console.log("Waiting for confirmation...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
 
+// Helper to poll deposit events
 const pollEvents = async (context: any) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
@@ -210,5 +244,48 @@ const pollEvents = async (context: any) => {
       console.log(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
+  }
+};
+
+const runSudoCommand = (command: any, args: any) => {
+  console.log(`Requesting sudo access to run: ${command} ${args.join(" ")}`);
+  const result = spawnSync("sudo", [command, ...args], { stdio: "inherit" });
+
+  if (result.error) {
+    console.error(`❌ Failed to execute: ${command}`, result.error);
+    process.exit(1);
+  }
+};
+
+const ensureDirectoryExists = () => {
+  try {
+    if (!fs.existsSync(LOCALNET_DIR)) {
+      console.log(`📁 Creating directory: ${LOCALNET_DIR}`);
+      const command = "mkdir";
+      const args = ["-p", LOCALNET_DIR];
+      console.log(
+        `Requesting sudo access to run: ${command} ${args.join(" ")}`
+      );
+      const result = spawnSync("sudo", [command, ...args], {
+        stdio: "inherit",
+      });
+
+      if (result.error) {
+        console.error(`❌ Failed to execute: ${command}`, result.error);
+        process.exit(1);
+      }
+    }
+
+    fs.accessSync(LOCALNET_DIR, fs.constants.W_OK);
+    console.log(`✅ Directory is writable: ${LOCALNET_DIR}`);
+  } catch (err) {
+    console.log(
+      `🔒 Directory is not writable. Changing ownership to ${
+        os.userInfo().username
+      }...`
+    );
+    runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
+
+    console.log(`✅ Ownership updated.`);
   }
 };
