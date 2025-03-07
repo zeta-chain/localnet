@@ -2,7 +2,7 @@ import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { mnemonicToSeedSync } from "bip39";
-import { execSync, spawnSync } from "child_process";
+import { exec, execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 import os from "os";
@@ -59,6 +59,33 @@ export const suiSetup = async ({
     true
   );
 
+  try {
+    execSync("sui genesis", {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "ignore",
+    });
+  } catch (error) {
+    console.log("Genesis already exists, skipping...");
+  }
+
+  try {
+    execSync(`sui client new-env --rpc ${NODE_RPC} --alias localnet`, {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "ignore",
+    });
+  } catch (error) {
+    console.log("Environment already exists, skipping...");
+  }
+
+  try {
+    execSync("sui client switch --env localnet", {
+      cwd: PROTOCOL_CONTRACTS_REPO,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    throw new Error(`Failed to switch to localnet environment: ${error}`);
+  }
+
   console.log("Building Move contracts...");
   try {
     execSync("sui move build", {
@@ -66,7 +93,7 @@ export const suiSetup = async ({
       stdio: "inherit",
     });
   } catch (error) {
-    throw new Error("Move contract build failed: " + error);
+    throw new Error(`Move contract build failed: ${error}`);
   }
 
   const user = generateAccount(MNEMONIC);
