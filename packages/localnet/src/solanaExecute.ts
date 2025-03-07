@@ -138,9 +138,7 @@ export const solanaExecute = async ({
     } else {
       const mintPubkey = new anchor.web3.PublicKey(mint);
 
-      const connectedPdaATA = await getOrCreateAssociatedTokenAccount(
-        connection,
-        payer,
+      const connectedPdaATA = await getAssociatedTokenAddress(
         mintPubkey,
         connectedPdaAccount,
         true
@@ -159,7 +157,7 @@ export const solanaExecute = async ({
         new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
         val.toArrayLike(Buffer, "be", 8),
         mintPubkey.toBytes(),
-        connectedPdaATA.address.toBuffer(),
+        connectedPdaATA.toBuffer(),
         Buffer.from(ethers.getBytes(data)),
       ]);
 
@@ -186,7 +184,7 @@ export const solanaExecute = async ({
           associatedTokenProgram: anchor.utils.token.ASSOCIATED_PROGRAM_ID,
           destinationProgram: connectedProgramId,
           destinationProgramPda: connectedPdaAccount,
-          destinationProgramPdaAta: connectedPdaATA.address,
+          destinationProgramPdaAta: connectedPdaATA,
           mintAccount: mintPubkey,
           pda: pdaAccount,
           pdaAta: pdaATA,
