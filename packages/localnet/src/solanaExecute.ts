@@ -145,7 +145,9 @@ export const solanaExecute = async ({
         connectedPdaAccount,
         true
       );
-      const pdaATA = await getAssociatedTokenAddress(
+      const pdaATA = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payer,
         mintPubkey,
         pdaAccount,
         true
@@ -189,7 +191,7 @@ export const solanaExecute = async ({
           destinationProgramPdaAta: connectedPdaATA.address,
           mintAccount: mintPubkey,
           pda: pdaAccount,
-          pdaAta: pdaATA,
+          pdaAta: pdaATA.address,
           signer: payer.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
