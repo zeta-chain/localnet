@@ -60,7 +60,6 @@ export const zetachainOnAbort = async ({
             context
           )}`
         );
-        console.log(abortAddress, context);
         const abortTx = await gatewayZEVM
           .connect(fungibleModuleSigner)
           .executeAbort(abortAddress, context, { gasLimit: 1_500_000 });
