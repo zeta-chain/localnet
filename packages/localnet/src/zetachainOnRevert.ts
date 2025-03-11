@@ -10,11 +10,11 @@ export const zetachainOnRevert = async ({
   revertOptions,
   asset,
   amount,
-  deployOpts,
   sender,
   chainID,
   gatewayZEVM,
   provider,
+  outgoing,
   fungibleModuleSigner,
 }: any) => {
   const [revertAddress, callOnRevert, abortAddress, revertMessage] =
@@ -110,6 +110,8 @@ export const zetachainOnRevert = async ({
         provider,
         revertMessage,
         sender,
+        outgoing,
+        gatewayZEVM,
       });
     }
   }

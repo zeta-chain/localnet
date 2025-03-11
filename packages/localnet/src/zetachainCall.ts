@@ -49,6 +49,7 @@ export const zetachainCall = async ({
       fungibleModuleSigner,
       gatewayZEVM,
       provider,
+      outgoing: true,
       revertOptions,
       sender,
     });

@@ -78,6 +78,7 @@ export const zetachainWithdraw = async ({
       gatewayZEVM,
       provider,
       revertOptions,
+      outgoing: true,
       sender,
       tss,
     });

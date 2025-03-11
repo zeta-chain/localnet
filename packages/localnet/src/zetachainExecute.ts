@@ -63,6 +63,7 @@ export const zetachainExecute = async ({
       provider,
       revertMessage: revertMessage,
       sender,
+      gatewayZEVM: zetachainContracts.gatewayZEVM,
     });
   }
 };

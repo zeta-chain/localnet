@@ -102,6 +102,7 @@ export const evmDeposit = async ({
         provider,
         revertMessage: revertMessage,
         sender,
+        gatewayZEVM: zetachainContracts.gatewayZEVM,
       });
     }
   }

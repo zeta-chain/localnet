@@ -116,6 +116,7 @@ export const zetachainWithdrawAndCall = async ({
       provider,
       revertOptions,
       sender,
+      outgoing: true,
       tss,
     });
   }
