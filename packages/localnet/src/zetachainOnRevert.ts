@@ -107,11 +107,11 @@ export const zetachainOnRevert = async ({
         asset,
         chainID,
         fungibleModuleSigner,
+        gatewayZEVM,
+        outgoing,
         provider,
         revertMessage,
         sender,
-        outgoing,
-        gatewayZEVM,
       });
     }
   }

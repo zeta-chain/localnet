@@ -113,10 +113,10 @@ export const zetachainWithdrawAndCall = async ({
       err,
       fungibleModuleSigner,
       gatewayZEVM,
+      outgoing: true,
       provider,
       revertOptions,
       sender,
-      outgoing: true,
       tss,
     });
   }

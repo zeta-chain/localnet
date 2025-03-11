@@ -91,11 +91,11 @@ export const evmDepositAndCall = async ({
         asset: zrc20,
         chainID,
         fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
+        gatewayZEVM: zetachainContracts.gatewayZEVM,
         outgoing: false,
         provider,
         revertMessage: revertMessage,
         sender,
-        gatewayZEVM: zetachainContracts.gatewayZEVM,
       });
     }
   }

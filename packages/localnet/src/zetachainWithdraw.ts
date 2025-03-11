@@ -76,9 +76,9 @@ export const zetachainWithdraw = async ({
       err,
       fungibleModuleSigner,
       gatewayZEVM,
+      outgoing: true,
       provider,
       revertOptions,
-      outgoing: true,
       sender,
       tss,
     });
