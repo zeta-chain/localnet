@@ -70,6 +70,7 @@ export const evmDepositAndCall = async ({
         amount: revertAmount,
         asset,
         chainID,
+        custody,
         err,
         gatewayEVM,
         isGas,
@@ -78,7 +79,6 @@ export const evmDepositAndCall = async ({
         sender,
         token,
         tss,
-        custody,
       });
     } else {
       log(

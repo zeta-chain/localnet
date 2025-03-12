@@ -149,6 +149,7 @@ export const evmSetup = async ({
     evmDepositAndCall({
       args,
       chainID,
+      custody,
       deployer,
       exitOnError: false,
       foreignCoins,
@@ -156,7 +157,6 @@ export const evmSetup = async ({
       provider,
       tss,
       zetachainContracts,
-      custody,
     });
   });
 
