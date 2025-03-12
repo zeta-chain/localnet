@@ -17,6 +17,7 @@ export const evmDepositAndCall = async ({
   zetachainContracts,
   gatewayEVM,
   tss,
+  custody,
 }: any) => {
   log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
@@ -77,6 +78,7 @@ export const evmDepositAndCall = async ({
         sender,
         token,
         tss,
+        custody,
       });
     } else {
       log(
