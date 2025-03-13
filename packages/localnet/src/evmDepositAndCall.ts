@@ -17,6 +17,7 @@ export const evmDepositAndCall = async ({
   zetachainContracts,
   gatewayEVM,
   tss,
+  custody,
 }: any) => {
   log(chainID, "Gateway: DepositedAndCalled event emitted");
   const [sender, , amount, asset, , revertOptions] = args;
@@ -69,6 +70,7 @@ export const evmDepositAndCall = async ({
         amount: revertAmount,
         asset,
         chainID,
+        custody,
         err,
         gatewayEVM,
         isGas,
@@ -91,6 +93,7 @@ export const evmDepositAndCall = async ({
         asset: zrc20,
         chainID,
         fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
+        gatewayZEVM: zetachainContracts.gatewayZEVM,
         outgoing: false,
         provider,
         revertMessage: revertMessage,

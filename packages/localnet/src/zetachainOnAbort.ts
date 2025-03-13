@@ -14,6 +14,7 @@ export const zetachainOnAbort = async ({
   revertMessage,
   abortAddress,
   outgoing,
+  gatewayZEVM,
 }: any) => {
   const assetContract = new ethers.Contract(
     asset,
@@ -53,24 +54,15 @@ export const zetachainOnAbort = async ({
           chainID,
           revertMessage,
         ];
-
-        const abortableContract = new ethers.Contract(
-          abortAddress,
-          [
-            "function onAbort((bytes, address, uint256, bool, uint256, bytes) calldata abortContext) external",
-          ],
-          fungibleModuleSigner
-        );
-
         log(
           NetworkID.ZetaChain,
           `Contract ${abortAddress} executing onAbort, context: ${JSON.stringify(
             context
           )}`
         );
-        const abortTx = await abortableContract.onAbort(context, {
-          gasLimit: 1_500_000,
-        });
+        const abortTx = await gatewayZEVM
+          .connect(fungibleModuleSigner)
+          .executeAbort(abortAddress, context, { gasLimit: 1_500_000 });
         await abortTx.wait();
         const logs = await provider.getLogs({
           address: abortAddress,

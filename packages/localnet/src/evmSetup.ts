@@ -149,6 +149,7 @@ export const evmSetup = async ({
     evmDepositAndCall({
       args,
       chainID,
+      custody,
       deployer,
       exitOnError: false,
       foreignCoins,
