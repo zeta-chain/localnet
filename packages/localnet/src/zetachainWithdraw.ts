@@ -7,6 +7,7 @@ import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
 import { log } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
+import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
@@ -41,12 +42,16 @@ export const zetachainWithdraw = async ({
 
     if (chainID === NetworkID.Solana) {
       const receiverAddress = ethers.toUtf8String(receiver);
-      await solanaWithdraw({
-        amount: amount,
-        decimals: 9,
-        mint: asset,
-        recipient: receiverAddress,
-      });
+      if (asset) {
+        await solanaWithdrawSPL({
+          amount: amount,
+          decimals: 9,
+          mint: asset,
+          recipient: receiverAddress,
+        });
+      } else {
+        await solanaWithdraw({ amount: amount, recipient: receiverAddress });
+      }
     } else if (chainID === NetworkID.Sui) {
       await suiWithdraw({
         amount,
