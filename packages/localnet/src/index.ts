@@ -51,15 +51,15 @@ export const initLocalnet = async ({
         deployer,
         foreignCoins,
         provider,
-        zetachainContracts,
         skip: skip.includes("solana"),
+        zetachainContracts,
       }),
       suiSetup({
         deployer,
         foreignCoins,
         provider,
-        zetachainContracts,
         skip: skip.includes("sui"),
+        zetachainContracts,
       }),
       evmSetup({
         chainID: NetworkID.Ethereum,
