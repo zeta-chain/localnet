@@ -1,9 +1,9 @@
-import { Command } from "commander";
+import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
 import { exec, execSync } from "child_process";
+import { Command } from "commander";
 import fs from "fs";
 import waitOn from "wait-on";
-import { confirm } from "@inquirer/prompts";
 
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
@@ -54,11 +54,11 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
 };
 
 const startLocalnet = async (options: {
-  port: number;
   anvil: string;
-  forceKill: boolean;
-  stopAfterInit: boolean;
   exitOnError: boolean;
+  forceKill: boolean;
+  port: number;
+  stopAfterInit: boolean;
 }) => {
   try {
     execSync("which anvil");
@@ -194,11 +194,11 @@ export const startCommand = new Command("start")
   .action(async (options) => {
     try {
       await startLocalnet({
-        port: parseInt(options.port),
         anvil: options.anvil,
-        forceKill: options.forceKill,
-        stopAfterInit: options.stopAfterInit,
         exitOnError: options.exitOnError,
+        forceKill: options.forceKill,
+        port: parseInt(options.port),
+        stopAfterInit: options.stopAfterInit,
       });
     } catch (error) {
       console.error(ansis.red(`Error: ${error}`));
