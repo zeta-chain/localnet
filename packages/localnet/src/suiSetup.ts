@@ -44,8 +44,9 @@ export const suiSetup = async ({
   fungibleModuleSigner,
   zetachainContracts,
   provider,
+  skip,
 }: any) => {
-  if (!(await isSuiAvailable())) {
+  if (skip || !(await isSuiAvailable())) {
     return;
   }
 
