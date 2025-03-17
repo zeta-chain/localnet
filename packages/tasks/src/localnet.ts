@@ -82,26 +82,19 @@ const localnet = async (args: any) => {
   const skip = args.skip ? args.skip.split(",") : [];
 
   let solanaTestValidator: any;
+  let solanaError = "";
   if ((await isSolanaAvailable()) && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
 
-    // Add error handling for solana-test-validator
-    if (solanaTestValidator.stderr) {
-      solanaTestValidator.stderr.on("data", (data: string) => {
-        if (data.toLowerCase().includes("error")) {
-          console.error(ansis.red(`Solana test validator error: ${data}`));
-          cleanup();
-          process.exit(1);
-        }
+    if (solanaTestValidator.stdout) {
+      solanaTestValidator.stdout.on("data", (data: string) => {
+        solanaError += data;
       });
     }
 
-    // Add exit handler for the validator process
     solanaTestValidator.on("exit", (code: number) => {
       if (code !== 0) {
-        console.error(
-          ansis.red(`Solana test validator exited with code ${code}`)
-        );
+        console.error(ansis.red(solanaError));
         cleanup();
         process.exit(1);
       }
