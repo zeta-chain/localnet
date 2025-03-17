@@ -101,8 +101,9 @@ export const solanaSetup = async ({
   foreignCoins,
   zetachainContracts,
   provider,
+  skip,
 }: any) => {
-  if (!(await isSolanaAvailable())) {
+  if (skip || !(await isSolanaAvailable())) {
     return;
   }
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);

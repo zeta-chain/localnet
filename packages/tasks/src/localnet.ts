@@ -79,13 +79,15 @@ const localnet = async (args: any) => {
     anvilProcess.stderr.pipe(process.stderr);
   }
 
+  const skip = args.skip ? args.skip.split(",") : [];
+
   let solanaTestValidator: any;
-  if (await isSolanaAvailable()) {
+  if ((await isSolanaAvailable()) && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
     await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
   }
 
-  if (await isSuiAvailable()) {
+  if ((await isSuiAvailable()) && !skip.includes("sui")) {
     console.log("Starting Sui...");
     exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
@@ -112,6 +114,7 @@ const localnet = async (args: any) => {
     const addresses = await initLocalnet({
       exitOnError: args.exitOnError,
       port: args.port,
+      skip,
     });
 
     // Get unique chains
@@ -174,4 +177,8 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
   )
   .addFlag("forceKill", "Force kill any process on the port without prompting")
   .addFlag("stopAfterInit", "Stop the localnet after successful initialization")
-  .addFlag("exitOnError", "Exit with an error if a call is reverted");
+  .addFlag("exitOnError", "Exit with an error if a call is reverted")
+  .addOptionalParam(
+    "skip",
+    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'"
+  );

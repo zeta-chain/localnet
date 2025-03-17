@@ -21,9 +21,11 @@ const foreignCoins: any[] = [];
 export const initLocalnet = async ({
   port,
   exitOnError,
+  skip,
 }: {
   exitOnError: boolean;
   port: number;
+  skip: string[];
 }): Promise<(InitLocalnetAddress | undefined)[]> => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
@@ -50,12 +52,14 @@ export const initLocalnet = async ({
         deployer,
         foreignCoins,
         provider,
+        skip: skip.includes("solana"),
         zetachainContracts,
       }),
       suiSetup({
         deployer,
         foreignCoins,
         provider,
+        skip: skip.includes("sui"),
         zetachainContracts,
       }),
       evmSetup({
@@ -112,12 +116,7 @@ export const initLocalnet = async ({
     zetachainWithdrawAndCall({ args, contracts, exitOnError })
   );
 
-  const res = [
-    {
-      address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-      chain: "solana",
-      type: "tokenProgram",
-    },
+  let res = [
     ...Object.entries(zetachainContracts)
       .filter(([, value]) => value.target !== undefined)
       .map(([key, value]) => {
@@ -184,8 +183,20 @@ export const initLocalnet = async ({
     }),
   ];
 
-  if (suiContracts) res.push(...suiContracts.addresses);
-  if (solanaContracts) res.push(...solanaContracts.addresses);
+  if (suiContracts) {
+    res = [...res, ...suiContracts.addresses];
+  }
+  if (solanaContracts) {
+    res = [
+      ...res,
+      ...solanaContracts.addresses,
+      {
+        address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        chain: "solana",
+        type: "tokenProgram",
+      },
+    ];
+  }
 
   return res;
 };
