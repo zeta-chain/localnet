@@ -84,7 +84,28 @@ const localnet = async (args: any) => {
   let solanaTestValidator: any;
   if ((await isSolanaAvailable()) && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
-    await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+
+    // Add error handling for solana-test-validator
+    if (solanaTestValidator.stderr) {
+      solanaTestValidator.stderr.on("data", (data: string) => {
+        if (data.toLowerCase().includes("error")) {
+          console.error(ansis.red(`Solana test validator error: ${data}`));
+          cleanup();
+          process.exit(1);
+        }
+      });
+    }
+
+    // Add exit handler for the validator process
+    solanaTestValidator.on("exit", (code: number) => {
+      if (code !== 0) {
+        console.error(
+          ansis.red(`Solana test validator exited with code ${code}`)
+        );
+        cleanup();
+        process.exit(1);
+      }
+    });
   }
 
   if ((await isSuiAvailable()) && !skip.includes("sui")) {
