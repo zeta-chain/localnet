@@ -59,8 +59,8 @@ const startLocalnet = async (options: {
   exitOnError: boolean;
   forceKill: boolean;
   port: number;
-  stopAfterInit: boolean;
   skip: string;
+  stopAfterInit: boolean;
 }) => {
   try {
     execSync("which anvil");
@@ -211,8 +211,8 @@ export const startCommand = new Command("start")
         exitOnError: options.exitOnError,
         forceKill: options.forceKill,
         port: parseInt(options.port),
-        stopAfterInit: options.stopAfterInit,
         skip: options.skip,
+        stopAfterInit: options.stopAfterInit,
       });
     } catch (error) {
       console.error(ansis.red(`Error: ${error}`));
