@@ -60,6 +60,7 @@ const startLocalnet = async (options: {
   forceKill: boolean;
   port: number;
   stopAfterInit: boolean;
+  skip: string;
 }) => {
   try {
     execSync("which anvil");
@@ -87,6 +88,8 @@ const startLocalnet = async (options: {
     anvilProcess.stdout.pipe(process.stdout);
     anvilProcess.stderr.pipe(process.stderr);
   }
+
+  const skip = options.skip ? options.skip.split(",") : [];
 
   let solanaTestValidator: ChildProcess;
 
@@ -122,6 +125,7 @@ const startLocalnet = async (options: {
     const rawInitialAddresses = await initLocalnet({
       exitOnError: options.exitOnError,
       port: options.port,
+      skip,
     });
 
     const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
@@ -195,6 +199,11 @@ export const startCommand = new Command("start")
     "Exit with an error if a call is reverted",
     false
   )
+  .option(
+    "--skip <string>,<string>",
+    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'",
+    ""
+  )
   .action(async (options) => {
     try {
       await startLocalnet({
@@ -203,6 +212,7 @@ export const startCommand = new Command("start")
         forceKill: options.forceKill,
         port: parseInt(options.port),
         stopAfterInit: options.stopAfterInit,
+        skip: options.skip,
       });
     } catch (error) {
       console.error(ansis.red(`Error: ${error}`));
