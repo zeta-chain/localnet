@@ -1,5 +1,5 @@
-import { Command } from "commander";
 import ansis from "ansis";
+import { Command } from "commander";
 import fs from "fs";
 
 const LOCALNET_JSON_FILE = "./localnet.json";

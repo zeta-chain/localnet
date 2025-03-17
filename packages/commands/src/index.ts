@@ -1,8 +1,8 @@
 import { Command } from "commander";
 
+import { checkCommand } from "./check";
 import { startCommand } from "./start";
 import { stopCommand } from "./stop";
-import { checkCommand } from "./check";
 
 export const localnetCommand = new Command("localnet").description(
   "Local development environment"
