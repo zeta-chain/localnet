@@ -1,6 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
-import { exec, execSync } from "child_process";
+import { ChildProcess, exec, execSync } from "child_process";
 import { Command } from "commander";
 import fs from "fs";
 import waitOn from "wait-on";
@@ -8,6 +8,7 @@ import waitOn from "wait-on";
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
+import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -87,13 +88,14 @@ const startLocalnet = async (options: {
     anvilProcess.stderr.pipe(process.stderr);
   }
 
-  let solanaTestValidator: any;
-  if (await isSolanaAvailable()) {
+  let solanaTestValidator: ChildProcess;
+
+  if (isSolanaAvailable()) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
     await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
   }
 
-  if (await isSuiAvailable()) {
+  if (isSuiAvailable()) {
     console.log("Starting Sui...");
     exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
@@ -117,22 +119,24 @@ const startLocalnet = async (options: {
   };
 
   try {
-    const addresses = await initLocalnet({
+    const rawInitialAddresses = await initLocalnet({
       exitOnError: options.exitOnError,
       port: options.port,
     });
 
+    const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
+
     // Get unique chains
-    const chains = [...new Set(addresses.map((item: any) => item.chain))];
+    const chains = [...new Set(addresses.map((item) => item.chain))];
 
     // Create tables for each chain
     chains.forEach((chain) => {
       const chainContracts = addresses
-        .filter((contract: any) => contract.chain === chain)
-        .reduce((acc: any, { type, address }: any) => {
+        .filter((contract) => contract.chain === chain)
+        .reduce((acc: Record<string, string>, { type, address }) => {
           acc[type] = address;
           return acc;
-        }, {});
+        }, {} as Record<string, string>);
 
       console.log(`\n${chain.toUpperCase()}`);
       console.table(chainContracts);
@@ -144,7 +148,7 @@ const startLocalnet = async (options: {
       JSON.stringify({ addresses, pid: process.pid }, null, 2),
       "utf-8"
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
     process.exit(1);
