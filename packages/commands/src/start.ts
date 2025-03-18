@@ -1,13 +1,14 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
-import { exec, execSync } from "child_process";
+import { ChildProcess, exec, execSync } from "child_process";
+import { Command } from "commander";
 import fs from "fs";
-import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
+import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -53,7 +54,14 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
   }
 };
 
-const localnet = async (args: any) => {
+const startLocalnet = async (options: {
+  anvil: string;
+  exitOnError: boolean;
+  forceKill: boolean;
+  port: number;
+  skip: string;
+  stopAfterInit: boolean;
+}) => {
   try {
     execSync("which anvil");
   } catch (error) {
@@ -65,13 +73,15 @@ const localnet = async (args: any) => {
     process.exit(1);
   }
 
-  await killProcessOnPort(args.port, args.forceKill);
+  await killProcessOnPort(options.port, options.forceKill);
 
-  if (args.anvil !== "")
-    console.log(`Starting anvil on port ${args.port} with args: ${args.anvil}`);
+  if (options.anvil !== "")
+    console.log(
+      `Starting anvil on port ${options.port} with args: ${options.anvil}`
+    );
 
   const anvilProcess = exec(
-    `anvil --auto-impersonate --port ${args.port} ${args.anvil}`
+    `anvil --auto-impersonate --port ${options.port} ${options.anvil}`
   );
 
   if (anvilProcess.stdout && anvilProcess.stderr) {
@@ -79,15 +89,16 @@ const localnet = async (args: any) => {
     anvilProcess.stderr.pipe(process.stderr);
   }
 
-  const skip = args.skip ? args.skip.split(",") : [];
+  const skip = options.skip ? options.skip.split(",") : [];
 
-  let solanaTestValidator: any;
-  if ((await isSolanaAvailable()) && !skip.includes("solana")) {
+  let solanaTestValidator: ChildProcess;
+
+  if (isSolanaAvailable()) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
     await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
   }
 
-  if ((await isSuiAvailable()) && !skip.includes("sui")) {
+  if (isSuiAvailable()) {
     console.log("Starting Sui...");
     exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
@@ -95,7 +106,7 @@ const localnet = async (args: any) => {
     await waitOn({ resources: [`tcp:127.0.0.1:9000`] });
   }
 
-  await waitOn({ resources: [`tcp:127.0.0.1:${args.port}`] });
+  await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
 
   const cleanup = () => {
     console.log("\nShutting down anvil and cleaning up...");
@@ -111,23 +122,25 @@ const localnet = async (args: any) => {
   };
 
   try {
-    const addresses = await initLocalnet({
-      exitOnError: args.exitOnError,
-      port: args.port,
+    const rawInitialAddresses = await initLocalnet({
+      exitOnError: options.exitOnError,
+      port: options.port,
       skip,
     });
 
+    const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
+
     // Get unique chains
-    const chains = [...new Set(addresses.map((item: any) => item.chain))];
+    const chains = [...new Set(addresses.map((item) => item.chain))];
 
     // Create tables for each chain
     chains.forEach((chain) => {
       const chainContracts = addresses
-        .filter((contract: any) => contract.chain === chain)
-        .reduce((acc: any, { type, address }: any) => {
+        .filter((contract) => contract.chain === chain)
+        .reduce((acc: Record<string, string>, { type, address }) => {
           acc[type] = address;
           return acc;
-        }, {});
+        }, {} as Record<string, string>);
 
       console.log(`\n${chain.toUpperCase()}`);
       console.table(chainContracts);
@@ -139,7 +152,7 @@ const localnet = async (args: any) => {
       JSON.stringify({ addresses, pid: process.pid }, null, 2),
       "utf-8"
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
     process.exit(1);
@@ -158,7 +171,7 @@ const localnet = async (args: any) => {
     cleanup();
   });
 
-  if (args.stopAfterInit) {
+  if (options.stopAfterInit) {
     console.log(ansis.green("Localnet successfully initialized. Stopping..."));
     cleanup();
     process.exit(0);
@@ -167,18 +180,42 @@ const localnet = async (args: any) => {
   await new Promise(() => {});
 };
 
-export const localnetTask = task("localnet", "Start localnet", localnet)
-  .addOptionalParam("port", "Port to run anvil on", 8545, types.int)
-  .addOptionalParam(
-    "anvil",
-    "Additional arguments to pass to anvil",
-    "",
-    types.string
+export const startCommand = new Command("start")
+  .description("Start localnet")
+  .option("-p, --port <number>", "Port to run anvil on", "8545")
+  .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "")
+  .option(
+    "-f, --force-kill",
+    "Force kill any process on the port without prompting",
+    false
   )
-  .addFlag("forceKill", "Force kill any process on the port without prompting")
-  .addFlag("stopAfterInit", "Stop the localnet after successful initialization")
-  .addFlag("exitOnError", "Exit with an error if a call is reverted")
-  .addOptionalParam(
-    "skip",
-    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'"
-  );
+  .option(
+    "-s, --stop-after-init",
+    "Stop the localnet after successful initialization",
+    false
+  )
+  .option(
+    "-e, --exit-on-error",
+    "Exit with an error if a call is reverted",
+    false
+  )
+  .option(
+    "--skip <string>,<string>",
+    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'",
+    ""
+  )
+  .action(async (options) => {
+    try {
+      await startLocalnet({
+        anvil: options.anvil,
+        exitOnError: options.exitOnError,
+        forceKill: options.forceKill,
+        port: parseInt(options.port),
+        skip: options.skip,
+        stopAfterInit: options.stopAfterInit,
+      });
+    } catch (error) {
+      console.error(ansis.red(`Error: ${error}`));
+      process.exit(1);
+    }
+  });
