@@ -1,5 +1,6 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
+import { InitLocalnetAddress } from "../../types/zodSchemas";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { createToken } from "./createToken";
 import { evmSetup } from "./evmSetup";
@@ -25,7 +26,7 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
   skip: string[];
-}) => {
+}): Promise<(InitLocalnetAddress | undefined)[]> => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
 
