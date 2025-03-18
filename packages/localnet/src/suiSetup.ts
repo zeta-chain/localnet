@@ -24,7 +24,7 @@ const PROTOCOL_CONTRACTS_REPO = path.join(
   LOCALNET_DIR,
   "protocol-contracts-sui"
 );
-const BRANCH_NAME = "main";
+const BRANCH_NAME = "localnet";
 
 const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);

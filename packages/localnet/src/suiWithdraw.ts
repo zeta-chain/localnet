@@ -55,6 +55,5 @@ const fetchGatewayNonce = async (client: any, gatewayId: string) => {
   const fields = (resp.data.content as any).fields;
   const nonceValue = fields.nonce;
 
-  console.log("Gateway nonce:", nonceValue);
   return nonceValue;
 };

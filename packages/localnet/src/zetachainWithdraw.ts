@@ -5,7 +5,7 @@ import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
-import { log } from "./log";
+import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
@@ -51,7 +51,7 @@ export const zetachainWithdraw = async ({
       await suiWithdraw({
         amount,
         sender: receiver,
-        ...contracts.suiContracts,
+        ...contracts.suiContracts.env,
       });
     } else {
       if (isGasToken) {
@@ -68,6 +68,7 @@ export const zetachainWithdraw = async ({
     if (exitOnError) {
       throw new Error(err);
     }
+    logErr(NetworkID.ZetaChain, `Withdraw failed: ${err}`);
     return await zetachainOnRevert({
       amount,
       asset: zrc20,
