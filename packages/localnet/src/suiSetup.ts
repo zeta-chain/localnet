@@ -7,7 +7,7 @@ import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 import os from "os";
 import path from "path";
-
+import { Transaction } from "@mysten/sui/transactions";
 import { cloneRepository } from "./cloneRepository";
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -138,6 +138,33 @@ export const suiSetup = async ({
   const client = new SuiClient({ url: new URL(NODE_RPC).toString() });
 
   await waitForConfirmation(client, publishResult.digest);
+
+  const tokenPath = require.resolve("./sui/token/token.json");
+  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+  const { modules, dependencies } = token;
+
+  const publishTx = new Transaction();
+  publishTx.setGasBudget(GAS_BUDGET);
+
+  const [upgradeCap] = publishTx.publish({
+    dependencies,
+    modules,
+  });
+
+  publishTx.transferObjects([upgradeCap], publisherAddress);
+
+  const publishTokenResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: publishTx,
+  });
+
+  console.log("!!!", publishTokenResult);
 
   const publishedModule = publishResult.objectChanges?.find(
     (change: any) => change.type === "published"
