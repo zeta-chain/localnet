@@ -12,9 +12,6 @@ export const zetachainDeposit = async ({
 }: any) => {
   const [, receiver, amount, asset] = args;
   let foreignCoin;
-  console.log("Foreign coins:", foreignCoins);
-  console.log("Deposit event coin type:", asset);
-
   // Check for both ZeroAddress and the full SUI path
   if (
     asset === ethers.ZeroAddress ||
