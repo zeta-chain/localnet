@@ -148,5 +148,5 @@ export const suiDepositAndCallTask = task(
   .addVariadicPositionalParam("values", "The values of the parameters")
   .addOptionalParam(
     "coinType",
-    "Full coin type path (e.g., '<package>::my_coin::MY_COIN'). Defaults to SUI"
+    "Full coin type path (e.g., '<package>::token::TOKEN'). Defaults to SUI"
   );

@@ -113,7 +113,7 @@ export const createToken = async (
       if (!asset) {
         throw new Error("Failed to create Sui token");
       }
-      asset = `${asset.replace("0x", "")}::my_coin::MY_COIN`;
+      asset = `${asset.replace("0x", "")}::token::TOKEN`;
     }
   }
 
@@ -425,7 +425,7 @@ const createSuiToken = async (contracts: any, symbol: string) => {
       whitelistTx.object(whitelistCapObjectId),
     ],
     target: `${gatewayModuleId}::gateway::whitelist`,
-    typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
+    typeArguments: [`${tokenModuleId}::token::TOKEN`],
   });
 
   const whitelistResult = await client.signAndExecuteTransaction({
@@ -470,7 +470,7 @@ const createSuiToken = async (contracts: any, symbol: string) => {
       mintTx.pure(amount),
       mintTx.pure.address(userAddress),
     ],
-    target: `${tokenModuleId}::my_coin::mint`,
+    target: `${tokenModuleId}::token::mint`,
     typeArguments: [],
   });
 
@@ -481,7 +481,7 @@ const createSuiToken = async (contracts: any, symbol: string) => {
       mintTx.pure(amount),
       mintTx.pure.address(gatewayObjectId),
     ],
-    target: `${tokenModuleId}::my_coin::mint`,
+    target: `${tokenModuleId}::token::mint`,
     typeArguments: [],
   });
 

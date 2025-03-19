@@ -154,5 +154,5 @@ export const suiDepositTask = task(
   .addParam("amount", "Amount to deposit")
   .addOptionalParam(
     "coinType",
-    "Full coin type path (e.g., '<package>::my_coin::MY_COIN'). Defaults to SUI"
+    "Full coin type path (e.g., '<package>::token::TOKEN'). Defaults to SUI"
   );

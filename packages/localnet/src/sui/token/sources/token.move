@@ -1,14 +1,14 @@
-module token::my_coin;
+module token::token;
 
 use sui::coin::{Self, TreasuryCap};
 
-public struct MY_COIN has drop {}
+public struct TOKEN has drop {}
 
-fun init(witness: MY_COIN, ctx: &mut TxContext) {
+fun init(witness: TOKEN, ctx: &mut TxContext) {
 		let (treasury, metadata) = coin::create_currency(
 				witness,
 				6,
-				b"MY_COIN",
+				b"TOKEN",
 				b"",
 				b"",
 				option::none(),
@@ -19,7 +19,7 @@ fun init(witness: MY_COIN, ctx: &mut TxContext) {
 }
 
 public fun mint(
-		treasury_cap: &mut TreasuryCap<MY_COIN>,
+		treasury_cap: &mut TreasuryCap<TOKEN>,
 		amount: u64,
 		recipient: address,
 		ctx: &mut TxContext,
