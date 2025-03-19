@@ -1,13 +1,14 @@
 import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { exec, execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 import os from "os";
 import path from "path";
-import { Transaction } from "@mysten/sui/transactions";
+
 import { cloneRepository } from "./cloneRepository";
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -206,8 +207,8 @@ export const suiSetup = async ({
       gatewayObjectId,
       keypair,
       moduleId,
-      withdrawCapObjectId,
       whitelistCapObjectId,
+      withdrawCapObjectId,
     },
   };
 };

@@ -1,4 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
+import { Transaction } from "@mysten/sui/transactions";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
@@ -8,7 +9,6 @@ import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
-import { Transaction } from "@mysten/sui/transactions";
 import * as fs from "fs";
 import path from "path";
 
@@ -405,12 +405,12 @@ const createSuiToken = async (contracts: any, symbol: string) => {
   whitelistTx.setGasBudget(GAS_BUDGET);
 
   whitelistTx.moveCall({
-    target: `${gatewayModuleId}::gateway::whitelist`,
-    typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
     arguments: [
       whitelistTx.object(gatewayObjectId),
       whitelistTx.object(whitelistCapObjectId),
     ],
+    target: `${gatewayModuleId}::gateway::whitelist`,
+    typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
   });
 
   const whitelistResult = await client.signAndExecuteTransaction({
