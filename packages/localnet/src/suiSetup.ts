@@ -24,7 +24,7 @@ const PROTOCOL_CONTRACTS_REPO = path.join(
   LOCALNET_DIR,
   "protocol-contracts-sui"
 );
-const BRANCH_NAME = "main";
+const BRANCH_NAME = "withdraw-and-call-function";
 
 const generateAccount = (mnemonic: string) => {
   const seed = mnemonicToSeedSync(mnemonic);

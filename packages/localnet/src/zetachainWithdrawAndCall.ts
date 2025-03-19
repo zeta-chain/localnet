@@ -8,6 +8,7 @@ import { evmExecute } from "./evmExecute";
 import { log, logErr } from "./log";
 import { solanaExecute } from "./solanaExecute";
 import { zetachainOnRevert } from "./zetachainOnRevert";
+import { suiWithdrawAndCall } from "./suiWithdrawAndCall";
 
 export const zetachainWithdrawAndCall = async ({
   args,
@@ -64,7 +65,15 @@ export const zetachainWithdrawAndCall = async ({
         });
         break;
       }
-      // current case in default, it will be extended with other chains in future
+      // sui
+      case NetworkID.Sui: {
+        await suiWithdrawAndCall({
+          amount,
+          targetModule: receiver,
+          ...contracts.suiContracts.env,
+        });
+        break;
+      }
       default: {
         if (isArbitraryCall) {
           const selector = message.slice(0, 10);
