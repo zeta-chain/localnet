@@ -165,14 +165,6 @@ export const suiSetup = async ({
   const withdrawCapObjectId = (withdrawCapObject as any).objectId;
   const whitelistCapObjectId = (whitelistCapObject as any).objectId;
 
-  await publishToken(
-    client,
-    keypair,
-    moduleId,
-    gatewayObjectId,
-    whitelistCapObjectId
-  );
-
   pollEvents({
     client,
     deployer,
@@ -215,6 +207,7 @@ export const suiSetup = async ({
       keypair,
       moduleId,
       withdrawCapObjectId,
+      whitelistCapObjectId,
     },
   };
 };
@@ -331,71 +324,4 @@ const ensureDirectoryExists = () => {
 
     console.log(`✅ Ownership updated.`);
   }
-};
-
-const publishToken = async (
-  client: SuiClient,
-  keypair: Ed25519Keypair,
-  gatewayModuleId: any,
-  gatewayObjectId: any,
-  whitelistCapObjectId: string
-) => {
-  const tokenPath = require.resolve("./sui/token/token.json");
-  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
-  const { modules, dependencies } = token;
-
-  const publishTx = new Transaction();
-  publishTx.setGasBudget(GAS_BUDGET);
-
-  const [upgradeCap] = publishTx.publish({
-    dependencies,
-    modules,
-  });
-
-  publishTx.transferObjects(
-    [upgradeCap],
-    keypair.getPublicKey().toSuiAddress()
-  );
-
-  const publishResult = await client.signAndExecuteTransaction({
-    options: {
-      showEffects: true,
-      showEvents: true,
-      showObjectChanges: true,
-    },
-    requestType: "WaitForLocalExecution",
-    signer: keypair,
-    transaction: publishTx,
-  });
-
-  const publishedModule = publishResult.objectChanges?.find(
-    (change: any) => change.type === "published"
-  );
-
-  const tokenModuleId = (publishedModule as any).packageId;
-
-  const whitelistTx = new Transaction();
-  whitelistTx.setGasBudget(GAS_BUDGET);
-
-  whitelistTx.moveCall({
-    target: `${gatewayModuleId}::gateway::whitelist`,
-    typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
-    arguments: [
-      whitelistTx.object(gatewayObjectId),
-      whitelistTx.object(whitelistCapObjectId),
-    ],
-  });
-
-  const whitelistResult = await client.signAndExecuteTransaction({
-    options: {
-      showEffects: true,
-      showEvents: true,
-      showObjectChanges: true,
-    },
-    requestType: "WaitForLocalExecution",
-    signer: keypair,
-    transaction: whitelistTx,
-  });
-
-  console.log("Token successfully whitelisted:", whitelistResult);
 };

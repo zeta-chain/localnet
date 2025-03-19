@@ -8,10 +8,15 @@ import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
+import { Transaction } from "@mysten/sui/transactions";
+import * as fs from "fs";
+import path from "path";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { ed25519KeyPairTSS as tssKeypair } from "./solanaSetup";
+
+const GAS_BUDGET = 5_000_000_000;
 
 export const createToken = async (
   contracts: any,
@@ -22,6 +27,10 @@ export const createToken = async (
 ) => {
   if (chainID === NetworkID.Solana && !contracts.solanaContracts) {
     return;
+  }
+
+  if (chainID === NetworkID.Sui) {
+    return await createSuiToken(contracts, symbol);
   }
 
   const { deployer, foreignCoins, tss } = contracts;
@@ -330,4 +339,99 @@ const createERC20 = async (
   ]);
   await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
   return erc20.target;
+};
+
+const createSuiToken = async (contracts: any, symbol: string) => {
+  const { suiContracts } = contracts;
+  if (!suiContracts) return;
+
+  const {
+    client,
+    keypair,
+    moduleId: gatewayModuleId,
+    gatewayObjectId,
+    whitelistCapObjectId,
+  } = suiContracts.env;
+
+  const tokenPath = require.resolve("./sui/token/token.json");
+  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+  const { modules, dependencies } = token;
+
+  const publishTx = new Transaction();
+  publishTx.setGasBudget(GAS_BUDGET);
+
+  const [upgradeCap] = publishTx.publish({
+    dependencies,
+    modules,
+  });
+
+  publishTx.transferObjects(
+    [upgradeCap],
+    keypair.getPublicKey().toSuiAddress()
+  );
+
+  console.log("Publishing token module...");
+  const publishResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: publishTx,
+  });
+
+  if (publishResult.effects?.status?.error) {
+    throw new Error(
+      `Failed to publish token: ${publishResult.effects.status.error}`
+    );
+  }
+
+  const publishedModule = publishResult.objectChanges?.find(
+    (change: any) => change.type === "published"
+  );
+
+  if (!publishedModule) {
+    throw new Error("Failed to find published module in transaction results");
+  }
+
+  console.log("Published module:", publishedModule);
+  const tokenModuleId = (publishedModule as any).packageId;
+  if (!tokenModuleId) {
+    throw new Error("Failed to get token module ID");
+  }
+
+  console.log("Whitelisting token...");
+  const whitelistTx = new Transaction();
+  whitelistTx.setGasBudget(GAS_BUDGET);
+
+  whitelistTx.moveCall({
+    target: `${gatewayModuleId}::gateway::whitelist`,
+    typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
+    arguments: [
+      whitelistTx.object(gatewayObjectId),
+      whitelistTx.object(whitelistCapObjectId),
+    ],
+  });
+
+  const whitelistResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: whitelistTx,
+  });
+
+  if (whitelistResult.effects?.status?.error) {
+    throw new Error(
+      `Failed to whitelist token: ${whitelistResult.effects.status.error}`
+    );
+  }
+
+  console.log("Token successfully whitelisted");
+  return tokenModuleId;
 };
