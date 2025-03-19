@@ -1,5 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
 import { Transaction } from "@mysten/sui/transactions";
+import { bcs } from "@mysten/sui/bcs";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
@@ -10,7 +11,6 @@ import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/Test
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 import * as fs from "fs";
-import path from "path";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
@@ -401,6 +401,16 @@ const createSuiToken = async (contracts: any, symbol: string) => {
     throw new Error("Failed to get token module ID");
   }
 
+  // Find the treasury cap object from the publish transaction
+  const treasuryCap = publishResult.objectChanges?.find(
+    (change: any) =>
+      change.type === "created" && change.objectType.includes("TreasuryCap")
+  );
+
+  if (!treasuryCap) {
+    throw new Error("Failed to find treasury cap in transaction results");
+  }
+
   const whitelistTx = new Transaction();
   whitelistTx.setGasBudget(GAS_BUDGET);
 
@@ -429,6 +439,57 @@ const createSuiToken = async (contracts: any, symbol: string) => {
       `Failed to whitelist token: ${whitelistResult.effects.status.error}`
     );
   }
+
+  // Mint tokens to user and gateway
+  const mintTx = new Transaction();
+  mintTx.setGasBudget(GAS_BUDGET);
+
+  // 100 tokens with 6 decimals (matching the token.move decimals)
+  const amount = bcs.U64.serialize(100_000_000);
+
+  // Get addresses for minting
+  const userAddress = keypair.getPublicKey().toSuiAddress();
+
+  // Mint to user (keypair address)
+  mintTx.moveCall({
+    arguments: [
+      mintTx.object(treasuryCap.objectId),
+      mintTx.pure(amount),
+      mintTx.pure.address(userAddress),
+    ],
+    target: `${tokenModuleId}::my_coin::mint`,
+    typeArguments: [],
+  });
+
+  // Mint to gateway
+  mintTx.moveCall({
+    arguments: [
+      mintTx.object(treasuryCap.objectId),
+      mintTx.pure(amount),
+      mintTx.pure.address(gatewayObjectId),
+    ],
+    target: `${tokenModuleId}::my_coin::mint`,
+    typeArguments: [],
+  });
+
+  const mintResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: mintTx,
+  });
+
+  if (mintResult.effects?.status?.error) {
+    throw new Error(
+      `Failed to mint tokens: ${mintResult.effects.status.error}`
+    );
+  }
+
+  console.log(`✅ Minted ${symbol} tokens to user and gateway`);
 
   suiContracts.addresses.push({
     address: tokenModuleId,

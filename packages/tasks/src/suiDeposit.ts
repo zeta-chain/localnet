@@ -14,30 +14,35 @@ const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
   return Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
 };
 
-const getFirstSuiCoin = async (
+const getCoin = async (
   client: SuiClient,
-  owner: string
+  owner: string,
+  coinType: string
 ): Promise<string> => {
   const coins = await client.getCoins({
-    coinType: "0x2::sui::SUI",
+    coinType,
     owner,
   });
   if (!coins.data.length) {
-    throw new Error("No SUI coins found in this account");
+    throw new Error(`No coins of type ${coinType} found in this account`);
   }
   return coins.data[0].coinObjectId;
 };
 
 const suiDeposit = async (args: any) => {
-  const { mnemonic, gateway, module, receiver, amount } = args;
+  const { mnemonic, gateway, module, receiver, amount, coinType } = args;
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
   const keypair = getKeypairFromMnemonic(mnemonic);
   const address = keypair.toSuiAddress();
   console.log(`Using Address: ${address}`);
 
-  const coinObjectId = await getFirstSuiCoin(client, address);
-  console.log(`Using SUI Coin: ${coinObjectId}`);
+  // Default to SUI if no coinType is provided
+  const fullCoinType = coinType || "0x2::sui::SUI";
+  console.log(`Using Coin Type: ${fullCoinType}`);
+
+  const coinObjectId = await getCoin(client, address, fullCoinType);
+  console.log(`Using Coin Object: ${coinObjectId}`);
 
   const tx = new Transaction();
   const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [amount]);
@@ -45,7 +50,7 @@ const suiDeposit = async (args: any) => {
   tx.moveCall({
     arguments: [tx.object(gateway), splittedCoin, tx.pure.string(receiver)],
     target: `${module}::gateway::deposit`,
-    typeArguments: ["0x2::sui::SUI"],
+    typeArguments: [fullCoinType],
   });
 
   tx.setGasBudget(GAS_BUDGET);
@@ -83,4 +88,8 @@ export const suiDepositTask = task(
     "Module package ID, e.g. 0x1234abcd... for `<pkg>::gateway`"
   )
   .addParam("receiver", "Receiver EVM address")
-  .addParam("amount", "Amount of SUI to deposit");
+  .addParam("amount", "Amount to deposit")
+  .addOptionalParam(
+    "coinType",
+    "Full coin type path (e.g., '<package>::my_coin::MY_COIN'). Defaults to SUI"
+  );

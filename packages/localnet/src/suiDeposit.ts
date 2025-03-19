@@ -18,8 +18,21 @@ export const suiDeposit = async ({
   provider,
   withdrawCapObjectId,
 }: any) => {
-  const asset = ethers.ZeroAddress;
   const chainID = NetworkID.Sui;
+
+  // Find the matching foreign coin based on the coin type from the event
+  const matchingCoin = foreignCoins.find(
+    (coin: any) =>
+      coin.foreign_chain_id === chainID &&
+      (coin.coin_type === "SUI" || coin.asset === event.coin_type)
+  );
+
+  // Use ZeroAddress for native SUI, otherwise use the found asset address
+  const asset =
+    event.coin_type === "0x2::sui::SUI"
+      ? ethers.ZeroAddress
+      : matchingCoin?.asset || ethers.ZeroAddress;
+
   try {
     log(chainID, `Gateway deposit event, ${JSON.stringify(event)}`);
     await zetachainDeposit({
@@ -49,6 +62,7 @@ export const suiDeposit = async ({
         moduleId: moduleId,
         sender: event.sender,
         withdrawCapObjectId: withdrawCapObjectId,
+        coinType: event.coin_type,
       });
     } else {
       console.error(
