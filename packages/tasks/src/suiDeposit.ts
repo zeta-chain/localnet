@@ -1,67 +1,12 @@
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import { mnemonicToSeedSync } from "bip39";
-import { HDKey } from "ethereum-cryptography/hdkey";
-import * as fs from "fs";
 import { task } from "hardhat/config";
-import * as path from "path";
-
-const GAS_BUDGET = 5_000_000_000;
-
-const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
-  const seed = mnemonicToSeedSync(mnemonic);
-  const hdKey = HDKey.fromMasterSeed(seed);
-  const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
-  return Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
-};
-
-const getCoin = async (
-  client: SuiClient,
-  owner: string,
-  coinType: string,
-  excludeObjectId?: string
-): Promise<string> => {
-  const coins = await client.getCoins({
-    coinType,
-    owner,
-  });
-  if (!coins.data.length) {
-    throw new Error(`No coins of type ${coinType} found in this account`);
-  }
-
-  // If we're excluding an object ID (for SUI deposits), find a different coin
-  if (excludeObjectId) {
-    const otherCoin = coins.data.find(
-      (coin) => coin.coinObjectId !== excludeObjectId
-    );
-    if (!otherCoin) {
-      throw new Error(`No other SUI coins found for gas payment`);
-    }
-    return otherCoin.coinObjectId;
-  }
-
-  return coins.data[0].coinObjectId;
-};
-
-const getLocalnetConfig = () => {
-  try {
-    const configPath = path.join(process.cwd(), "localnet.json");
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-      const gatewayObjectId = config.addresses.find(
-        (addr: any) => addr.chain === "sui" && addr.type === "gatewayObjectId"
-      )?.address;
-      const moduleId = config.addresses.find(
-        (addr: any) => addr.chain === "sui" && addr.type === "gatewayModuleID"
-      )?.address;
-      return { gatewayObjectId, moduleId };
-    }
-  } catch (error) {
-    console.log("No localnet.json found or error reading it:", error);
-  }
-  return { gatewayObjectId: null, moduleId: null };
-};
+import {
+  GAS_BUDGET,
+  getKeypairFromMnemonic,
+  getCoin,
+  getLocalnetConfig,
+} from "./utils/sui";
 
 const suiDeposit = async (args: any) => {
   const { mnemonic, gateway, module, receiver, amount, coinType } = args;

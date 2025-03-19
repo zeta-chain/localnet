@@ -1,37 +1,38 @@
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import { mnemonicToSeedSync } from "bip39";
-import { HDKey } from "ethereum-cryptography/hdkey";
 import { AbiCoder, ethers } from "ethers";
 import { task } from "hardhat/config";
-
-const GAS_BUDGET = 5_000_000_000;
-const COIN_TYPE = "0x2::sui::SUI";
-
-const getKeypairFromMnemonic = (mnemonic: string): Ed25519Keypair => {
-  const seed = mnemonicToSeedSync(mnemonic);
-  const hdKey = HDKey.fromMasterSeed(seed);
-  const derivedKey = hdKey.derive("m/44'/784'/0'/0'/0'");
-  return Ed25519Keypair.fromSecretKey(derivedKey.privateKey!);
-};
-
-const getFirstSuiCoin = async (
-  client: SuiClient,
-  owner: string
-): Promise<string> => {
-  const coins = await client.getCoins({
-    coinType: COIN_TYPE,
-    owner,
-  });
-  if (!coins.data.length) {
-    throw new Error("No SUI coins found in this account");
-  }
-  return coins.data[0].coinObjectId;
-};
+import {
+  GAS_BUDGET,
+  getKeypairFromMnemonic,
+  getCoin,
+  getLocalnetConfig,
+} from "./utils/sui";
 
 const suiDepositAndCall = async (args: any) => {
-  const { mnemonic, gateway, module, receiver, amount, types, values } = args;
+  const {
+    mnemonic,
+    gateway,
+    module,
+    receiver,
+    amount,
+    types,
+    values,
+    coinType,
+  } = args;
+
+  const client = new SuiClient({ url: getFullnodeUrl("localnet") });
+
+  const localnetConfig = getLocalnetConfig();
+  const gatewayObjectId = gateway || localnetConfig.gatewayObjectId;
+  const moduleId = module || localnetConfig.moduleId;
+
+  if (!gatewayObjectId || !moduleId) {
+    throw new Error(
+      "Gateway object ID and module ID must be provided either as parameters or in localnet.json"
+    );
+  }
+
   const valuesArray = values.map((value: any, index: any) => {
     const type = JSON.parse(types)[index];
 
@@ -57,26 +58,50 @@ const suiDepositAndCall = async (args: any) => {
 
   const payload = ethers.getBytes(encodedParameters);
 
-  const client = new SuiClient({ url: getFullnodeUrl("localnet") });
-
   const keypair = getKeypairFromMnemonic(mnemonic);
   const address = keypair.toSuiAddress();
   console.log(`Using Address: ${address}`);
+  console.log(`Using Gateway Object: ${gatewayObjectId}`);
+  console.log(`Using Module ID: ${moduleId}`);
 
-  const coinObjectId = await getFirstSuiCoin(client, address);
-  console.log(`Using SUI Coin: ${coinObjectId}`);
+  const fullCoinType = coinType || "0x2::sui::SUI";
+  console.log(`Using Coin Type: ${fullCoinType}`);
+
+  const coinObjectId = await getCoin(client, address, fullCoinType);
+  console.log(`Using Coin Object: ${coinObjectId}`);
 
   const tx = new Transaction();
   const splittedCoin = tx.splitCoins(tx.object(coinObjectId), [amount]);
+
+  if (fullCoinType === "0x2::sui::SUI") {
+    const gasCoin = await getCoin(client, address, fullCoinType, coinObjectId);
+    tx.setGasPayment([
+      {
+        objectId: gasCoin,
+        version: (await client.getObject({ id: gasCoin })).data!.version,
+        digest: (await client.getObject({ id: gasCoin })).data!.digest,
+      },
+    ]);
+  } else {
+    const suiCoin = await getCoin(client, address, "0x2::sui::SUI");
+    tx.setGasPayment([
+      {
+        objectId: suiCoin,
+        version: (await client.getObject({ id: suiCoin })).data!.version,
+        digest: (await client.getObject({ id: suiCoin })).data!.digest,
+      },
+    ]);
+  }
+
   tx.moveCall({
     arguments: [
-      tx.object(gateway),
+      tx.object(gatewayObjectId),
       splittedCoin,
       tx.pure.string(receiver),
       tx.pure.vector("u8", payload),
     ],
-    target: `${module}::gateway::deposit_and_call`,
-    typeArguments: [COIN_TYPE],
+    target: `${moduleId}::gateway::deposit_and_call`,
+    typeArguments: [fullCoinType],
   });
 
   tx.setGasBudget(GAS_BUDGET);
@@ -108,12 +133,19 @@ export const suiDepositAndCallTask = task(
   suiDepositAndCall
 )
   .addParam("mnemonic", "Mnemonic for key generation")
-  .addParam("gateway", "Gateway object ID")
-  .addParam(
+  .addOptionalParam(
+    "gateway",
+    "Gateway object ID (will use localnet.json if not provided)"
+  )
+  .addOptionalParam(
     "module",
-    "Module package ID, e.g. 0x1234abcd... for `<pkg>::gateway`"
+    "Module package ID (will use localnet.json if not provided)"
   )
   .addParam("receiver", "Receiver EVM address")
-  .addParam("amount", "Amount of SUI to deposit")
+  .addParam("amount", "Amount to deposit")
   .addParam("types", `The types of the parameters (example: '["string"]')`)
-  .addVariadicPositionalParam("values", "The values of the parameters");
+  .addVariadicPositionalParam("values", "The values of the parameters")
+  .addOptionalParam(
+    "coinType",
+    "Full coin type path (e.g., '<package>::my_coin::MY_COIN'). Defaults to SUI"
+  );
