@@ -139,33 +139,6 @@ export const suiSetup = async ({
 
   await waitForConfirmation(client, publishResult.digest);
 
-  const tokenPath = require.resolve("./sui/token/token.json");
-  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
-  const { modules, dependencies } = token;
-
-  const publishTx = new Transaction();
-  publishTx.setGasBudget(GAS_BUDGET);
-
-  const [upgradeCap] = publishTx.publish({
-    dependencies,
-    modules,
-  });
-
-  publishTx.transferObjects([upgradeCap], publisherAddress);
-
-  const publishTokenResult = await client.signAndExecuteTransaction({
-    options: {
-      showEffects: true,
-      showEvents: true,
-      showObjectChanges: true,
-    },
-    requestType: "WaitForLocalExecution",
-    signer: keypair,
-    transaction: publishTx,
-  });
-
-  console.log("!!!", publishTokenResult);
-
   const publishedModule = publishResult.objectChanges?.find(
     (change: any) => change.type === "published"
   );
@@ -181,9 +154,24 @@ export const suiSetup = async ({
       change.objectType.includes("gateway::WithdrawCap")
   );
 
+  const whitelistCapObject = publishResult.objectChanges?.find(
+    (change: any) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::WhitelistCap")
+  );
+
   const moduleId = (publishedModule as any).packageId;
   const gatewayObjectId = (gatewayObject as any).objectId;
   const withdrawCapObjectId = (withdrawCapObject as any).objectId;
+  const whitelistCapObjectId = (whitelistCapObject as any).objectId;
+
+  await publishToken(
+    client,
+    keypair,
+    moduleId,
+    gatewayObjectId,
+    whitelistCapObjectId
+  );
 
   pollEvents({
     client,
@@ -343,4 +331,87 @@ const ensureDirectoryExists = () => {
 
     console.log(`✅ Ownership updated.`);
   }
+};
+
+const publishToken = async (
+  client: SuiClient,
+  keypair: Ed25519Keypair,
+  gatewayModuleId: any,
+  gatewayObjectId: any,
+  whitelistCapObjectId: string
+) => {
+  const tokenPath = require.resolve("./sui/token/token.json");
+  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+  const { modules, dependencies } = token;
+
+  const publishTx = new Transaction();
+  publishTx.setGasBudget(GAS_BUDGET);
+
+  const [upgradeCap] = publishTx.publish({
+    dependencies,
+    modules,
+  });
+
+  publishTx.transferObjects(
+    [upgradeCap],
+    keypair.getPublicKey().toSuiAddress()
+  );
+
+  const publishResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: publishTx,
+  });
+
+  const publishedModule = publishResult.objectChanges?.find(
+    (change: any) => change.type === "published"
+  );
+
+  const tokenModuleId = (publishedModule as any).packageId;
+
+  const whitelistTx = new Transaction();
+  whitelistTx.setGasBudget(GAS_BUDGET);
+  const gatewayObject = await client.getObject({
+    id: gatewayObjectId,
+    options: { showContent: true },
+  });
+
+  const whitelistCapObject = await client.getObject({
+    id: whitelistCapObjectId,
+    options: { showContent: true },
+  });
+
+  const gatewayObjectIdString = gatewayObject?.data?.objectId;
+  const whitelistCapObjectIdString = whitelistCapObject?.data?.objectId;
+
+  if (!gatewayObjectIdString || !whitelistCapObjectIdString) {
+    throw new Error("Failed to get gateway or whitelist cap object IDs");
+  }
+
+  whitelistTx.moveCall({
+    target: `${gatewayModuleId}::gateway::whitelist`,
+    typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
+    arguments: [
+      whitelistTx.object(gatewayObjectIdString),
+      whitelistTx.object(whitelistCapObjectIdString),
+    ],
+  });
+
+  const whitelistResult = await client.signAndExecuteTransaction({
+    options: {
+      showEffects: true,
+      showEvents: true,
+      showObjectChanges: true,
+    },
+    requestType: "WaitForLocalExecution",
+    signer: keypair,
+    transaction: whitelistTx,
+  });
+
+  console.log("Token successfully whitelisted:", whitelistResult);
 };
