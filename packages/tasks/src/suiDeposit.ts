@@ -3,7 +3,9 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
+import * as fs from "fs";
 import { task } from "hardhat/config";
+import * as path from "path";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -42,13 +44,44 @@ const getCoin = async (
   return coins.data[0].coinObjectId;
 };
 
+const getLocalnetConfig = () => {
+  try {
+    const configPath = path.join(process.cwd(), "localnet.json");
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      const gatewayObjectId = config.addresses.find(
+        (addr: any) => addr.chain === "sui" && addr.type === "gatewayObjectId"
+      )?.address;
+      const moduleId = config.addresses.find(
+        (addr: any) => addr.chain === "sui" && addr.type === "gatewayModuleID"
+      )?.address;
+      return { gatewayObjectId, moduleId };
+    }
+  } catch (error) {
+    console.log("No localnet.json found or error reading it:", error);
+  }
+  return { gatewayObjectId: null, moduleId: null };
+};
+
 const suiDeposit = async (args: any) => {
   const { mnemonic, gateway, module, receiver, amount, coinType } = args;
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
+  const localnetConfig = getLocalnetConfig();
+  const gatewayObjectId = gateway || localnetConfig.gatewayObjectId;
+  const moduleId = module || localnetConfig.moduleId;
+
+  if (!gatewayObjectId || !moduleId) {
+    throw new Error(
+      "Gateway object ID and module ID must be provided either as parameters or in localnet.json"
+    );
+  }
+
   const keypair = getKeypairFromMnemonic(mnemonic);
   const address = keypair.toSuiAddress();
   console.log(`Using Address: ${address}`);
+  console.log(`Using Gateway Object: ${gatewayObjectId}`);
+  console.log(`Using Module ID: ${moduleId}`);
 
   const fullCoinType = coinType || "0x2::sui::SUI";
   console.log(`Using Coin Type: ${fullCoinType}`);
@@ -119,8 +152,12 @@ const suiDeposit = async (args: any) => {
   }
 
   tx.moveCall({
-    arguments: [tx.object(gateway), splittedCoin, tx.pure.string(receiver)],
-    target: `${module}::gateway::deposit`,
+    arguments: [
+      tx.object(gatewayObjectId),
+      splittedCoin,
+      tx.pure.string(receiver),
+    ],
+    target: `${moduleId}::gateway::deposit`,
     typeArguments: [fullCoinType],
   });
 
@@ -159,10 +196,13 @@ export const suiDepositTask = task(
   suiDeposit
 )
   .addParam("mnemonic", "Mnemonic for key generation")
-  .addParam("gateway", "Gateway object ID")
-  .addParam(
+  .addOptionalParam(
+    "gateway",
+    "Gateway object ID (will use localnet.json if not provided)"
+  )
+  .addOptionalParam(
     "module",
-    "Module package ID, e.g. 0x1234abcd... for `<pkg>::gateway`"
+    "Module package ID (will use localnet.json if not provided)"
   )
   .addParam("receiver", "Receiver EVM address")
   .addParam("amount", "Amount to deposit")
