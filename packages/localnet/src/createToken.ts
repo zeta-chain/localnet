@@ -1,6 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
-import { Transaction } from "@mysten/sui/transactions";
 import { bcs } from "@mysten/sui/bcs";
+import { Transaction } from "@mysten/sui/transactions";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
