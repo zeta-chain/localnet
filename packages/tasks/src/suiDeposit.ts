@@ -3,7 +3,6 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
-import { ethers } from "ethers";
 import { task } from "hardhat/config";
 
 const GAS_BUDGET = 5_000_000_000;
@@ -51,14 +50,12 @@ const suiDeposit = async (args: any) => {
   const address = keypair.toSuiAddress();
   console.log(`Using Address: ${address}`);
 
-  // Default to SUI if no coinType is provided
   const fullCoinType = coinType || "0x2::sui::SUI";
   console.log(`Using Coin Type: ${fullCoinType}`);
 
   const coinObjectId = await getCoin(client, address, fullCoinType);
   console.log(`Using Coin Object: ${coinObjectId}`);
 
-  // Get the actual coin type from the object
   const coinObject = await client.getObject({
     id: coinObjectId,
     options: { showContent: true },
@@ -72,7 +69,6 @@ const suiDeposit = async (args: any) => {
   const actualCoinType = coinObject.data.content.type;
   console.log(`Actual Coin Type: ${actualCoinType}`);
 
-  // Verify the coin type matches
   if (!actualCoinType.includes(fullCoinType)) {
     throw new Error(
       `Coin type mismatch. Expected: ${fullCoinType}, Got: ${actualCoinType}`
@@ -84,7 +80,6 @@ const suiDeposit = async (args: any) => {
 
   // If we're depositing SUI, we need a different coin for gas payment
   if (fullCoinType === "0x2::sui::SUI") {
-    // Get all SUI coins
     const coins = await client.getCoins({
       coinType: fullCoinType,
       owner: address,
