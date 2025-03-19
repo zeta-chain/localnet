@@ -24,7 +24,8 @@ export const suiDeposit = async ({
   const matchingCoin = foreignCoins.find(
     (coin: any) =>
       coin.foreign_chain_id === chainID &&
-      (coin.coin_type === "SUI" || coin.asset === event.coin_type)
+      ((coin.coin_type === "SUI" && event.coin_type === "0x2::sui::SUI") ||
+        coin.asset === event.coin_type)
   );
 
   // Use ZeroAddress for native SUI, otherwise use the found asset address

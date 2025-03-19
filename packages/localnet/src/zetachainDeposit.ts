@@ -15,7 +15,9 @@ export const zetachainDeposit = async ({
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
       (coin: any) =>
-        coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
+        ((coin.coin_type === "Gas" || coin.coin_type === "SUI") &&
+          coin.foreign_chain_id === chainID) ||
+        (chainID === NetworkID.Sui && coin.symbol === "SUI")
     );
   } else {
     foreignCoin = foreignCoins.find(

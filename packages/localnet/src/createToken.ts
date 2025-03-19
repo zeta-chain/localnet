@@ -451,10 +451,18 @@ const createSuiToken = async (contracts: any, symbol: string) => {
   // 100 tokens with 6 decimals (matching the token.move decimals)
   const amount = bcs.U64.serialize(100_000_000);
 
-  // Get addresses for minting
-  const userAddress = keypair.getPublicKey().toSuiAddress();
+  // Get the user address from contracts.suiContracts.addresses
+  const userAddress = suiContracts.addresses.find(
+    (addr: any) => addr.chain === "sui" && addr.type === "userAddress"
+  )?.address;
 
-  // Mint to user (keypair address)
+  if (!userAddress) {
+    throw new Error(
+      "User address not found in contracts.suiContracts.addresses"
+    );
+  }
+
+  // Mint to user address from contracts
   mintTx.moveCall({
     arguments: [
       mintTx.object(treasuryCap.objectId),
