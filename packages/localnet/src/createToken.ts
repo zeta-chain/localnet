@@ -430,5 +430,11 @@ const createSuiToken = async (contracts: any, symbol: string) => {
     );
   }
 
+  suiContracts.addresses.push({
+    address: tokenModuleId,
+    chain: "sui",
+    type: `token${symbol}`,
+  });
+
   return tokenModuleId;
 };
