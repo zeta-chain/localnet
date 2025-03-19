@@ -29,10 +29,6 @@ export const createToken = async (
     return;
   }
 
-  if (chainID === NetworkID.Sui) {
-    return await createSuiToken(contracts, symbol);
-  }
-
   const { deployer, foreignCoins, tss } = contracts;
   const {
     systemContract,
@@ -108,13 +104,18 @@ export const createToken = async (
         symbol,
         tss
       );
+    } else if (chainID === NetworkID.Sui) {
+      asset = await createSuiToken(contracts, symbol);
+      if (!asset) {
+        throw new Error("Failed to create Sui token");
+      }
     }
   }
 
   foreignCoins.push({
     asset,
-    coin_type: isGasToken ? "Gas" : "ERC20",
-    decimals: 18,
+    coin_type: isGasToken ? "Gas" : chainID === NetworkID.Sui ? "SUI" : "ERC20",
+    decimals: decimals,
     foreign_chain_id: chainID,
     gas_limit: null,
     liquidity_cap: null,
@@ -370,7 +371,6 @@ const createSuiToken = async (contracts: any, symbol: string) => {
     keypair.getPublicKey().toSuiAddress()
   );
 
-  console.log("Publishing token module...");
   const publishResult = await client.signAndExecuteTransaction({
     options: {
       showEffects: true,
@@ -396,13 +396,11 @@ const createSuiToken = async (contracts: any, symbol: string) => {
     throw new Error("Failed to find published module in transaction results");
   }
 
-  console.log("Published module:", publishedModule);
   const tokenModuleId = (publishedModule as any).packageId;
   if (!tokenModuleId) {
     throw new Error("Failed to get token module ID");
   }
 
-  console.log("Whitelisting token...");
   const whitelistTx = new Transaction();
   whitelistTx.setGasBudget(GAS_BUDGET);
 
@@ -432,6 +430,5 @@ const createSuiToken = async (contracts: any, symbol: string) => {
     );
   }
 
-  console.log("Token successfully whitelisted");
   return tokenModuleId;
 };
