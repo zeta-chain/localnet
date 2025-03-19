@@ -354,7 +354,7 @@ const createSuiToken = async (contracts: any, symbol: string) => {
     whitelistCapObjectId,
   } = suiContracts.env;
 
-  const tokenPath = require.resolve("./sui/token/token.json");
+  const tokenPath = require.resolve("@zetachain/localnet/sui/token/token.json");
   const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
   const { modules, dependencies } = token;
 

@@ -31,7 +31,7 @@
     "./solana/idl/gateway.json": "./dist/localnet/src/solana/idl/gateway.json",
     "./solana/deploy/gateway.so": "./dist/localnet/src/solana/deploy/gateway.so",
     "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json",
-    "./sui/token.json": "./dist/localnet/src/sui/token.json",
+    "./sui/token.json": "./dist/localnet/src/sui/token.json"
   },
   "keywords": [],
   "author": "ZetaChain",
