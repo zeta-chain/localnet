@@ -51,7 +51,7 @@ export const zetachainWithdraw = async ({
       await suiWithdraw({
         amount,
         sender: receiver,
-        ...contracts.suiContracts,
+        ...contracts.suiContracts.env,
       });
     } else {
       if (isGasToken) {

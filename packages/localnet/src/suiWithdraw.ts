@@ -14,7 +14,9 @@ export const suiWithdraw = async ({
   withdrawCapObjectId,
 }: any) => {
   const nonce = await fetchGatewayNonce(client, gatewayObjectId);
+
   const tx = new Transaction();
+
   const coinType =
     "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
   tx.moveCall({
@@ -23,23 +25,42 @@ export const suiWithdraw = async ({
       tx.pure.u64(amount),
       tx.pure.u64(nonce),
       tx.pure.address(sender),
+      tx.pure.u64(100000),
       tx.object(withdrawCapObjectId),
     ],
     target: `${moduleId}::gateway::withdraw`,
     typeArguments: [coinType],
   });
 
-  await client.signAndExecuteTransaction({
-    signer: keypair,
-    transaction: tx,
-  });
-  log(
-    NetworkID.Sui,
-    `Withdrawing ${ethers.formatUnits(
-      amount,
-      9
-    )} SUI tokens from the Gateway to ${sender}`
-  );
+  try {
+    log(
+      NetworkID.Sui,
+      `Withdrawing ${amount} SUI tokens from the Gateway to ${sender}`
+    );
+
+    const result = await client.signAndExecuteTransaction({
+      signer: keypair,
+      transaction: tx,
+    });
+    log(
+      NetworkID.Sui,
+      `Withdrawing ${ethers.formatUnits(
+        amount,
+        9
+      )} SUI tokens from the Gateway transaction : ${result.digest}`
+    );
+    await client.waitForTransaction({ digest: result.digest });
+    log(
+      NetworkID.Sui,
+      `Withdrawing ${ethers.formatUnits(
+        amount,
+        9
+      )} SUI tokens from the Gateway to ${sender}`
+    );
+  } catch (e) {
+    console.log(`failed to withdraw: ${e}`);
+    throw e;
+  }
 };
 
 const fetchGatewayNonce = async (client: any, gatewayId: string) => {
@@ -49,6 +70,7 @@ const fetchGatewayNonce = async (client: any, gatewayId: string) => {
   });
 
   if (resp.data?.content?.dataType !== "moveObject") {
+    console.log(`failed to fetch gateway nonce: ${resp}`);
     throw new Error("Not a valid Move object");
   }
 
