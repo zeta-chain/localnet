@@ -3,8 +3,8 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { HDKey } from "ethereum-cryptography/hdkey";
-import { task } from "hardhat/config";
 import { ethers } from "ethers";
+import { task } from "hardhat/config";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -100,9 +100,9 @@ const suiDeposit = async (args: any) => {
 
     tx.setGasPayment([
       {
+        digest: gasCoin.digest,
         objectId: gasCoin.coinObjectId,
         version: gasCoin.version,
-        digest: gasCoin.digest,
       },
     ]);
   } else {
@@ -116,9 +116,9 @@ const suiDeposit = async (args: any) => {
     }
     tx.setGasPayment([
       {
+        digest: suiCoins.data[0].digest,
         objectId: suiCoins.data[0].coinObjectId,
         version: suiCoins.data[0].version,
-        digest: suiCoins.data[0].digest,
       },
     ]);
   }
