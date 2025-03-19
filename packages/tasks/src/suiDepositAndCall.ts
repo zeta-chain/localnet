@@ -2,10 +2,11 @@ import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { AbiCoder, ethers } from "ethers";
 import { task } from "hardhat/config";
+
 import {
   GAS_BUDGET,
-  getKeypairFromMnemonic,
   getCoin,
+  getKeypairFromMnemonic,
   getLocalnetConfig,
 } from "./utils/sui";
 
@@ -77,18 +78,18 @@ const suiDepositAndCall = async (args: any) => {
     const gasCoin = await getCoin(client, address, fullCoinType, coinObjectId);
     tx.setGasPayment([
       {
+        digest: (await client.getObject({ id: gasCoin })).data!.digest,
         objectId: gasCoin,
         version: (await client.getObject({ id: gasCoin })).data!.version,
-        digest: (await client.getObject({ id: gasCoin })).data!.digest,
       },
     ]);
   } else {
     const suiCoin = await getCoin(client, address, "0x2::sui::SUI");
     tx.setGasPayment([
       {
+        digest: (await client.getObject({ id: suiCoin })).data!.digest,
         objectId: suiCoin,
         version: (await client.getObject({ id: suiCoin })).data!.version,
-        digest: (await client.getObject({ id: suiCoin })).data!.digest,
       },
     ]);
   }

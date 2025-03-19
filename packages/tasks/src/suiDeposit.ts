@@ -1,10 +1,11 @@
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { task } from "hardhat/config";
+
 import {
   GAS_BUDGET,
-  getKeypairFromMnemonic,
   getCoin,
+  getKeypairFromMnemonic,
   getLocalnetConfig,
 } from "./utils/sui";
 
