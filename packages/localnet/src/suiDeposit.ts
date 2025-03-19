@@ -37,7 +37,14 @@ export const suiDeposit = async ({
   try {
     log(chainID, `Gateway deposit event, ${JSON.stringify(event)}`);
     await zetachainDeposit({
-      args: [null, event.receiver, event.amount, asset],
+      args: [
+        null,
+        event.receiver,
+        event.amount,
+        event.coin_type === "0x2::sui::SUI"
+          ? ethers.ZeroAddress
+          : event.coin_type,
+      ],
       chainID,
       foreignCoins,
       zetachainContracts,

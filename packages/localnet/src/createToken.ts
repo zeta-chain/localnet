@@ -113,6 +113,7 @@ export const createToken = async (
       if (!asset) {
         throw new Error("Failed to create Sui token");
       }
+      asset = `${asset.replace("0x", "")}::my_coin::MY_COIN`;
     }
   }
 
