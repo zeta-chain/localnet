@@ -25,7 +25,11 @@ export const createToken = async (
   chainID: string,
   decimals: number
 ) => {
-  if (chainID === NetworkID.Solana && !contracts.solanaContracts) {
+  const solanaNotSupported =
+    chainID === NetworkID.Solana && !contracts.solanaContracts;
+  const suiNotSupported = chainID === NetworkID.Sui && !contracts.suiContracts;
+
+  if (solanaNotSupported || suiNotSupported) {
     return;
   }
 
@@ -355,9 +359,7 @@ const createSuiToken = async (contracts: any, symbol: string) => {
   } = suiContracts.env;
 
   const tokenPath = require.resolve("@zetachain/localnet/sui/token/token.json");
-  console.log("🚀 Token Path:", tokenPath);
   const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
-  console.log("🚀 Token:", token);
   const { modules, dependencies } = token;
 
   const publishTx = new Transaction();
