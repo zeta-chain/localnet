@@ -376,29 +376,13 @@ const publishToken = async (
 
   const whitelistTx = new Transaction();
   whitelistTx.setGasBudget(GAS_BUDGET);
-  const gatewayObject = await client.getObject({
-    id: gatewayObjectId,
-    options: { showContent: true },
-  });
-
-  const whitelistCapObject = await client.getObject({
-    id: whitelistCapObjectId,
-    options: { showContent: true },
-  });
-
-  const gatewayObjectIdString = gatewayObject?.data?.objectId;
-  const whitelistCapObjectIdString = whitelistCapObject?.data?.objectId;
-
-  if (!gatewayObjectIdString || !whitelistCapObjectIdString) {
-    throw new Error("Failed to get gateway or whitelist cap object IDs");
-  }
 
   whitelistTx.moveCall({
     target: `${gatewayModuleId}::gateway::whitelist`,
     typeArguments: [`${tokenModuleId}::my_coin::MY_COIN`],
     arguments: [
-      whitelistTx.object(gatewayObjectIdString),
-      whitelistTx.object(whitelistCapObjectIdString),
+      whitelistTx.object(gatewayObjectId),
+      whitelistTx.object(whitelistCapObjectId),
     ],
   });
 
