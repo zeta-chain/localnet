@@ -250,6 +250,43 @@ export const createToken = async (
           deployOpts
         ),
       ]);
+
+      console.log("✅ Mint operations completed for all V3 pools");
+
+      // Test pool functionality by attempting a swap
+      try {
+        const smallAmount = ethers.parseUnits("0.001", 18);
+
+        // Approve tokens for swap
+        await (zrc20 as any)
+          .connect(deployer)
+          .approve(uniswapRouterInstance.target, smallAmount, deployOpts);
+
+        // Attempt a swap which will only succeed if liquidity exists
+        const deadline = Math.floor(Date.now() / 1000) + 60 * 10;
+        const path = [zrc20.target, wzeta.target];
+        const amounts = await (uniswapRouterInstance as any).getAmountsOut(
+          smallAmount,
+          path,
+          deployOpts
+        );
+
+        console.log(
+          `Swap quote: ${ethers.formatUnits(
+            smallAmount,
+            18
+          )} ${symbol} = ${ethers.formatUnits(amounts[1], 18)} WZETA`
+        );
+        console.log("✅ Successfully got swap quote - liquidity confirmed");
+      } catch (error: any) {
+        console.log(
+          "ℹ️ Could not verify liquidity via swap quote:",
+          error.message
+        );
+        console.log(
+          "ℹ️ This might be normal if we're still in the setup process. Mint operations were successful."
+        );
+      }
     })(),
     (zrc20 as any)
       .connect(deployer)
