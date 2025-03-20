@@ -7,6 +7,7 @@ import {
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
@@ -30,6 +31,7 @@ export const createToken = async (
     gatewayZEVM,
     uniswapFactoryInstance,
     uniswapRouterInstance,
+    uniswapV3FactoryInstance,
     wzeta,
     fungibleModuleSigner,
   } = contracts.zetachainContracts;
@@ -139,6 +141,116 @@ export const createToken = async (
       wzeta.target,
       deployOpts
     ),
+    (uniswapV3FactoryInstance as any).createPool(
+      zrc20.target,
+      wzeta.target,
+      500,
+      deployOpts
+    ),
+    (uniswapV3FactoryInstance as any).createPool(
+      zrc20.target,
+      wzeta.target,
+      3000,
+      deployOpts
+    ),
+    (uniswapV3FactoryInstance as any).createPool(
+      zrc20.target,
+      wzeta.target,
+      10000,
+      deployOpts
+    ),
+    (async () => {
+      const pool500Address = await (uniswapV3FactoryInstance as any).getPool(
+        zrc20.target,
+        wzeta.target,
+        500
+      );
+      const pool3000Address = await (uniswapV3FactoryInstance as any).getPool(
+        zrc20.target,
+        wzeta.target,
+        3000
+      );
+      const pool10000Address = await (uniswapV3FactoryInstance as any).getPool(
+        zrc20.target,
+        wzeta.target,
+        10000
+      );
+
+      // Create Contract instances for each pool
+      const pool500 = new ethers.Contract(
+        pool500Address,
+        UniswapV3Pool.abi,
+        deployer
+      );
+      const pool3000 = new ethers.Contract(
+        pool3000Address,
+        UniswapV3Pool.abi,
+        deployer
+      );
+      const pool10000 = new ethers.Contract(
+        pool10000Address,
+        UniswapV3Pool.abi,
+        deployer
+      );
+
+      await Promise.all([
+        (zrc20 as any)
+          .connect(deployer)
+          .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
+        (zrc20 as any)
+          .connect(deployer)
+          .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
+        (zrc20 as any)
+          .connect(deployer)
+          .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
+        (wzeta as any)
+          .connect(deployer)
+          .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
+        (wzeta as any)
+          .connect(deployer)
+          .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
+        (wzeta as any)
+          .connect(deployer)
+          .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
+      ]);
+
+      const sqrtPriceX96 = ethers.parseUnits("1", 18);
+      await Promise.all([
+        pool500.initialize(sqrtPriceX96, deployOpts),
+        pool3000.initialize(sqrtPriceX96, deployOpts),
+        pool10000.initialize(sqrtPriceX96, deployOpts),
+      ]);
+
+      const liquidity = ethers.parseUnits("100", 18);
+      const tickLower = -10;
+      const tickUpper = 10;
+      await Promise.all([
+        pool500.mint(
+          await deployer.getAddress(),
+          tickLower,
+          tickUpper,
+          liquidity,
+          "0x",
+          deployOpts
+        ),
+        pool3000.mint(
+          await deployer.getAddress(),
+          tickLower,
+          tickUpper,
+          liquidity,
+          "0x",
+          deployOpts
+        ),
+        pool10000.mint(
+          await deployer.getAddress(),
+          tickLower,
+          tickUpper,
+          liquidity,
+          "0x",
+          deployOpts
+        ),
+      ]);
+    })(),
     (zrc20 as any)
       .connect(deployer)
       .approve(
@@ -156,12 +268,12 @@ export const createToken = async (
     (uniswapRouterInstance as any).addLiquidity(
       zrc20.target,
       wzeta.target,
-      ethers.parseUnits("100", await (zrc20 as any).decimals()), // Amount of ZRC-20
-      ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-      ethers.parseUnits("90", await (zrc20 as any).decimals()), // Min amount of ZRC-20 to add (slippage tolerance)
-      ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
+      ethers.parseUnits("100", await (zrc20 as any).decimals()),
+      ethers.parseUnits("100", await (wzeta as any).decimals()),
+      ethers.parseUnits("90", await (zrc20 as any).decimals()),
+      ethers.parseUnits("90", await (wzeta as any).decimals()),
       await deployer.getAddress(),
-      Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
+      Math.floor(Date.now() / 1000) + 60 * 10,
       deployOpts
     ),
   ]);

@@ -1,5 +1,7 @@
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
+import * as UniswapV3Factory from "@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json";
+import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
@@ -29,8 +31,11 @@ export const zetachainSetup = async (
   );
   const wzeta = await weth9Factory.deploy(deployOpts);
 
-  const { uniswapFactoryInstance, uniswapRouterInstance } =
-    await prepareUniswap(deployer, tss, wzeta);
+  const {
+    uniswapFactoryInstance,
+    uniswapRouterInstance,
+    uniswapV3FactoryInstance,
+  } = await prepareUniswap(deployer, tss, wzeta);
 
   const [
     uniswapFactoryInstanceAddress,
@@ -108,11 +113,13 @@ export const zetachainSetup = async (
     tss,
     uniswapFactoryInstance,
     uniswapRouterInstance,
+    uniswapV3FactoryInstance,
     wzeta,
   };
 };
 
 const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
+  // Deploy V2 contracts
   const uniswapFactory = new ethers.ContractFactory(
     UniswapV2Factory.abi,
     UniswapV2Factory.bytecode,
@@ -135,5 +142,25 @@ const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
     deployOpts
   );
 
-  return { uniswapFactoryInstance, uniswapRouterInstance };
+  // Deploy V3 contracts
+  const uniswapV3Factory = new ethers.ContractFactory(
+    UniswapV3Factory.abi,
+    UniswapV3Factory.bytecode,
+    deployer
+  );
+
+  const uniswapV3FactoryInstance = await uniswapV3Factory.deploy(deployOpts);
+
+  // Enable fee amounts for V3 pools
+  await Promise.all([
+    (uniswapV3FactoryInstance as any).enableFeeAmount(500, 10, deployOpts), // 0.05% fee
+    (uniswapV3FactoryInstance as any).enableFeeAmount(3000, 60, deployOpts), // 0.3% fee
+    (uniswapV3FactoryInstance as any).enableFeeAmount(10000, 200, deployOpts), // 1% fee
+  ]);
+
+  return {
+    uniswapFactoryInstance,
+    uniswapRouterInstance,
+    uniswapV3FactoryInstance,
+  };
 };
