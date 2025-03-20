@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
+import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
 
@@ -52,12 +53,17 @@ export const solanaDepositAndCall = async ({
 
     const revertAmount = BigInt(amount) - revertGasFee;
 
-    const receiver = ethers.toUtf8String(sender);
-    await solanaWithdraw({
-      amount: revertAmount,
-      decimals: 9,
-      mint: asset === ethers.ZeroAddress ? null : asset,
-      recipient: receiver,
-    });
+    const recipient = ethers.toUtf8String(sender);
+    const mint = asset === ethers.ZeroAddress ? null : asset;
+    if (mint) {
+      await solanaWithdrawSPL({
+        amount: revertAmount,
+        decimals: 9,
+        mint,
+        recipient,
+      });
+    } else {
+      await solanaWithdraw({ amount: revertAmount, recipient });
+    }
   }
 };
