@@ -44,48 +44,25 @@ export const suiWithdrawAndCall = async ({
     target: `${targetModule}::universal::on_call`,
     typeArguments: [coinType],
   });
-
   tx.setGasBudget(100000000)
 
-  log(
-    NetworkID.Sui,
-    `Calling module ${targetModule}::universal::on_call with coins  ${JSON.stringify(coins, null, 2)}`
-  );
-
   try {
-    log(
-      NetworkID.Sui,
-      `WithdrawAndCall ${amount} SUI tokens from the Gateway to ${targetModule}`
-    );
-
     const result = await await client.signAndExecuteTransaction({
       signer: keypair,
       transaction: tx,
     });
-
-    log(
-      NetworkID.Sui,
-      `Withdrawing SUI tokens from the Gateway transaction : ${result.digest}`
-    );
-
     await client.waitForTransaction({ digest: result.digest });
     log(
       NetworkID.Sui,
-      `Withdrawing SUI tokens from the Gateway to succeeded`
+      `Withdrawing ${ethers.formatUnits(
+        amount,
+        9
+      )} SUI tokens and calling contract from the Gateway to ${gatewayObjectId}`
     );
-
   } catch (e) {
-    console.log(`failed to withdrawAndCall: ${e}`);
+    log(NetworkID.Sui, `failed to withdraw and call: ${e}`);
     throw e;
   }
-
-  log(
-    NetworkID.Sui,
-    `Withdrawing ${ethers.formatUnits(
-      amount,
-      9
-    )} SUI tokens from the Gateway`
-  );
 };
 
 const fetchGatewayNonce = async (client: any, gatewayId: string) => {

@@ -33,22 +33,10 @@ export const suiWithdraw = async ({
   });
 
   try {
-    log(
-      NetworkID.Sui,
-      `Withdrawing ${amount} SUI tokens from the Gateway to ${sender}`
-    );
-
     const result = await client.signAndExecuteTransaction({
       signer: keypair,
       transaction: tx,
     });
-    log(
-      NetworkID.Sui,
-      `Withdrawing ${ethers.formatUnits(
-        amount,
-        9
-      )} SUI tokens from the Gateway transaction : ${result.digest}`
-    );
     await client.waitForTransaction({ digest: result.digest });
     log(
       NetworkID.Sui,
@@ -58,7 +46,7 @@ export const suiWithdraw = async ({
       )} SUI tokens from the Gateway to ${sender}`
     );
   } catch (e) {
-    console.log(`failed to withdraw: ${e}`);
+    log(NetworkID.Sui, `failed to withdraw: ${e}`);
     throw e;
   }
 };
