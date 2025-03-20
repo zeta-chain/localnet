@@ -113,7 +113,6 @@ export const createToken = async (
       if (!asset) {
         throw new Error("Failed to create Sui token");
       }
-      asset = `${asset.replace("0x", "")}::token::TOKEN`;
     }
   }
 
@@ -503,12 +502,12 @@ const createSuiToken = async (contracts: any, symbol: string) => {
   }
 
   console.log(`✅ Minted ${symbol} tokens to user and gateway`);
-
+  const address = `${tokenModuleId.replace("0x", "")}::token::TOKEN`;
   suiContracts.addresses.push({
-    address: tokenModuleId,
+    address,
     chain: "sui",
     type: `token${symbol}`,
   });
 
-  return tokenModuleId;
+  return address;
 };
