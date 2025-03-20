@@ -82,9 +82,23 @@ const localnet = async (args: any) => {
   const skip = args.skip ? args.skip.split(",") : [];
 
   let solanaTestValidator: any;
+  let solanaError = "";
   if ((await isSolanaAvailable()) && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
-    await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+
+    if (solanaTestValidator.stdout) {
+      solanaTestValidator.stdout.on("data", (data: string) => {
+        solanaError += data;
+      });
+    }
+
+    solanaTestValidator.on("exit", (code: number) => {
+      if (code !== 0) {
+        console.error(ansis.red(solanaError));
+        cleanup();
+        process.exit(1);
+      }
+    });
   }
 
   if ((await isSuiAvailable()) && !skip.includes("sui")) {
