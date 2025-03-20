@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ethers } from "ethers";
+import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { log } from "./log";
@@ -7,6 +7,7 @@ import { log } from "./log";
 export const suiWithdrawAndCall = async ({
   amount,
   targetModule,
+  message,
   client,
   keypair,
   moduleId,
@@ -17,6 +18,20 @@ export const suiWithdrawAndCall = async ({
   const tx = new Transaction();
   const coinType =
     "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+
+  // Decode the message
+  const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
+  const decodedMessage = AbiCoder.defaultAbiCoder().decode(
+    [
+      "tuple(string[] typeArguments, byte32[] objects, bytes message)",
+    ],
+    decodedBytes[0]
+  )[0];
+  const additionalTypeArguments = decodedMessage[0];
+  const objects = decodedMessage[1];
+  const data = decodedMessage[2];
+
+  // TODO: check all objects are shared and not owned by the sender
 
   // Withdraw the coins and get the coins ID
   const [coins, coinsBudget] = tx.moveCall({
