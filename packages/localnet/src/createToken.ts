@@ -5,9 +5,9 @@ import {
   mintTo,
 } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
+import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
@@ -136,11 +136,70 @@ export const createToken = async (
       .connect(deployer)
       .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
 
-    (uniswapFactoryInstance as any).createPair(
-      zrc20.target,
-      wzeta.target,
-      deployOpts
+    setupUniswapV2(
+      deployer,
+      zrc20,
+      wzeta,
+      uniswapFactoryInstance,
+      uniswapRouterInstance
     ),
+    setupUniswapV3(
+      deployer,
+      zrc20,
+      wzeta,
+      uniswapV3FactoryInstance,
+      uniswapRouterInstance
+    ),
+  ]);
+};
+
+const setupUniswapV2 = async (
+  deployer: any,
+  zrc20: any,
+  wzeta: any,
+  uniswapFactoryInstance: any,
+  uniswapRouterInstance: any
+) => {
+  await Promise.all([
+    uniswapFactoryInstance.createPair(zrc20.target, wzeta.target, deployOpts),
+    (zrc20 as any)
+      .connect(deployer)
+      .approve(
+        uniswapRouterInstance.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(
+        uniswapRouterInstance.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+  ]);
+
+  await (uniswapRouterInstance as any).addLiquidity(
+    zrc20.target,
+    wzeta.target,
+    ethers.parseUnits("100", await (zrc20 as any).decimals()),
+    ethers.parseUnits("100", await (wzeta as any).decimals()),
+    ethers.parseUnits("90", await (zrc20 as any).decimals()),
+    ethers.parseUnits("90", await (wzeta as any).decimals()),
+    await deployer.getAddress(),
+    Math.floor(Date.now() / 1000) + 60 * 10,
+    deployOpts
+  );
+};
+
+const setupUniswapV3 = async (
+  deployer: any,
+  zrc20: any,
+  wzeta: any,
+  uniswapV3FactoryInstance: any,
+  uniswapRouterInstance: any
+) => {
+  // Create pools with different fee tiers
+  await Promise.all([
     (uniswapV3FactoryInstance as any).createPool(
       zrc20.target,
       wzeta.target,
@@ -159,158 +218,99 @@ export const createToken = async (
       10000,
       deployOpts
     ),
-    (async () => {
-      const pool500Address = await (uniswapV3FactoryInstance as any).getPool(
-        zrc20.target,
-        wzeta.target,
-        500
-      );
-      const pool3000Address = await (uniswapV3FactoryInstance as any).getPool(
-        zrc20.target,
-        wzeta.target,
-        3000
-      );
-      const pool10000Address = await (uniswapV3FactoryInstance as any).getPool(
-        zrc20.target,
-        wzeta.target,
-        10000
-      );
+  ]);
 
-      // Create Contract instances for each pool
-      const pool500 = new ethers.Contract(
-        pool500Address,
-        UniswapV3Pool.abi,
-        deployer
-      );
-      const pool3000 = new ethers.Contract(
-        pool3000Address,
-        UniswapV3Pool.abi,
-        deployer
-      );
-      const pool10000 = new ethers.Contract(
-        pool10000Address,
-        UniswapV3Pool.abi,
-        deployer
-      );
+  // Get pool addresses
+  const pool500Address = await (uniswapV3FactoryInstance as any).getPool(
+    zrc20.target,
+    wzeta.target,
+    500
+  );
+  const pool3000Address = await (uniswapV3FactoryInstance as any).getPool(
+    zrc20.target,
+    wzeta.target,
+    3000
+  );
+  const pool10000Address = await (uniswapV3FactoryInstance as any).getPool(
+    zrc20.target,
+    wzeta.target,
+    10000
+  );
 
-      await Promise.all([
-        (zrc20 as any)
-          .connect(deployer)
-          .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
-        (zrc20 as any)
-          .connect(deployer)
-          .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
-        (zrc20 as any)
-          .connect(deployer)
-          .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
-        (wzeta as any)
-          .connect(deployer)
-          .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
-        (wzeta as any)
-          .connect(deployer)
-          .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
-        (wzeta as any)
-          .connect(deployer)
-          .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
-      ]);
+  // Create Contract instances for each pool
+  const pool500 = new ethers.Contract(
+    pool500Address,
+    UniswapV3Pool.abi,
+    deployer
+  );
+  const pool3000 = new ethers.Contract(
+    pool3000Address,
+    UniswapV3Pool.abi,
+    deployer
+  );
+  const pool10000 = new ethers.Contract(
+    pool10000Address,
+    UniswapV3Pool.abi,
+    deployer
+  );
 
-      const sqrtPriceX96 = ethers.parseUnits("1", 18);
-      await Promise.all([
-        pool500.initialize(sqrtPriceX96, deployOpts),
-        pool3000.initialize(sqrtPriceX96, deployOpts),
-        pool10000.initialize(sqrtPriceX96, deployOpts),
-      ]);
-
-      const liquidity = ethers.parseUnits("100", 18);
-      const tickLower = -10;
-      const tickUpper = 10;
-      await Promise.all([
-        pool500.mint(
-          await deployer.getAddress(),
-          tickLower,
-          tickUpper,
-          liquidity,
-          "0x",
-          deployOpts
-        ),
-        pool3000.mint(
-          await deployer.getAddress(),
-          tickLower,
-          tickUpper,
-          liquidity,
-          "0x",
-          deployOpts
-        ),
-        pool10000.mint(
-          await deployer.getAddress(),
-          tickLower,
-          tickUpper,
-          liquidity,
-          "0x",
-          deployOpts
-        ),
-      ]);
-
-      console.log("✅ Mint operations completed for all V3 pools");
-
-      // Test pool functionality by attempting a swap
-      try {
-        const smallAmount = ethers.parseUnits("0.001", 18);
-
-        // Approve tokens for swap
-        await (zrc20 as any)
-          .connect(deployer)
-          .approve(uniswapRouterInstance.target, smallAmount, deployOpts);
-
-        // Attempt a swap which will only succeed if liquidity exists
-        const deadline = Math.floor(Date.now() / 1000) + 60 * 10;
-        const path = [zrc20.target, wzeta.target];
-        const amounts = await (uniswapRouterInstance as any).getAmountsOut(
-          smallAmount,
-          path,
-          deployOpts
-        );
-
-        console.log(
-          `Swap quote: ${ethers.formatUnits(
-            smallAmount,
-            18
-          )} ${symbol} = ${ethers.formatUnits(amounts[1], 18)} WZETA`
-        );
-        console.log("✅ Successfully got swap quote - liquidity confirmed");
-      } catch (error: any) {
-        console.log(
-          "ℹ️ Could not verify liquidity via swap quote:",
-          error.message
-        );
-        console.log(
-          "ℹ️ This might be normal if we're still in the setup process. Mint operations were successful."
-        );
-      }
-    })(),
+  // Approve tokens for pool operations
+  await Promise.all([
     (zrc20 as any)
       .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
+      .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
+    (zrc20 as any)
+      .connect(deployer)
+      .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
+    (zrc20 as any)
+      .connect(deployer)
+      .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
     (wzeta as any)
       .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (uniswapRouterInstance as any).addLiquidity(
-      zrc20.target,
-      wzeta.target,
-      ethers.parseUnits("100", await (zrc20 as any).decimals()),
-      ethers.parseUnits("100", await (wzeta as any).decimals()),
-      ethers.parseUnits("90", await (zrc20 as any).decimals()),
-      ethers.parseUnits("90", await (wzeta as any).decimals()),
+      .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
+  ]);
+
+  // Initialize pools
+  const sqrtPriceX96 = ethers.parseUnits("1", 18);
+  await Promise.all([
+    pool500.initialize(sqrtPriceX96, deployOpts),
+    pool3000.initialize(sqrtPriceX96, deployOpts),
+    pool10000.initialize(sqrtPriceX96, deployOpts),
+  ]);
+
+  // Add liquidity to pools
+  const liquidity = ethers.parseUnits("100", 18);
+  const tickLower = -10;
+  const tickUpper = 10;
+  await Promise.all([
+    pool500.mint(
       await deployer.getAddress(),
-      Math.floor(Date.now() / 1000) + 60 * 10,
+      tickLower,
+      tickUpper,
+      liquidity,
+      "0x",
+      deployOpts
+    ),
+    pool3000.mint(
+      await deployer.getAddress(),
+      tickLower,
+      tickUpper,
+      liquidity,
+      "0x",
+      deployOpts
+    ),
+    pool10000.mint(
+      await deployer.getAddress(),
+      tickLower,
+      tickUpper,
+      liquidity,
+      "0x",
       deployOpts
     ),
   ]);
