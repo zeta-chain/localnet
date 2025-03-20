@@ -1,7 +1,8 @@
 import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import * as UniswapV3Factory from "@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json";
-import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
+import * as UniswapV3Router from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
+import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
@@ -35,6 +36,8 @@ export const zetachainSetup = async (
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapV3FactoryInstance,
+    uniswapV3RouterInstance,
+    nonfungiblePositionManagerInstance,
   } = await prepareUniswap(deployer, tss, wzeta);
 
   const [
@@ -114,6 +117,8 @@ export const zetachainSetup = async (
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapV3FactoryInstance,
+    uniswapV3RouterInstance,
+    nonfungiblePositionManagerInstance,
     wzeta,
   };
 };
@@ -151,6 +156,34 @@ const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
 
   const uniswapV3FactoryInstance = await uniswapV3Factory.deploy(deployOpts);
 
+  // Deploy V3 Router
+  const uniswapV3RouterFactory = new ethers.ContractFactory(
+    UniswapV3Router.abi,
+    UniswapV3Router.bytecode,
+    deployer
+  );
+
+  const uniswapV3RouterInstance = await uniswapV3RouterFactory.deploy(
+    await uniswapV3FactoryInstance.getAddress(),
+    await wzeta.getAddress(),
+    deployOpts
+  );
+
+  // Deploy NonfungiblePositionManager
+  const nonfungiblePositionManagerFactory = new ethers.ContractFactory(
+    NonfungiblePositionManager.abi,
+    NonfungiblePositionManager.bytecode,
+    deployer
+  );
+
+  const nonfungiblePositionManagerInstance =
+    await nonfungiblePositionManagerFactory.deploy(
+      await uniswapV3FactoryInstance.getAddress(),
+      await wzeta.getAddress(),
+      await wzeta.getAddress(), // WETH9
+      deployOpts
+    );
+
   // Enable fee amounts for V3 pools
   await Promise.all([
     (uniswapV3FactoryInstance as any).enableFeeAmount(500, 10, deployOpts), // 0.05% fee
@@ -162,5 +195,7 @@ const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapV3FactoryInstance,
+    uniswapV3RouterInstance,
+    nonfungiblePositionManagerInstance,
   };
 };

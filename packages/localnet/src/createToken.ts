@@ -32,6 +32,7 @@ export const createToken = async (
     uniswapFactoryInstance,
     uniswapRouterInstance,
     uniswapV3FactoryInstance,
+    nonfungiblePositionManagerInstance,
     wzeta,
     fungibleModuleSigner,
   } = contracts.zetachainContracts;
@@ -148,7 +149,7 @@ export const createToken = async (
       zrc20,
       wzeta,
       uniswapV3FactoryInstance,
-      uniswapRouterInstance
+      nonfungiblePositionManagerInstance
     ),
   ]);
 };
@@ -196,7 +197,7 @@ const setupUniswapV3 = async (
   zrc20: any,
   wzeta: any,
   uniswapV3FactoryInstance: any,
-  uniswapRouterInstance: any
+  nonfungiblePositionManagerInstance: any
 ) => {
   // Create pools with different fee tiers
   await Promise.all([
@@ -237,80 +238,77 @@ const setupUniswapV3 = async (
     10000
   );
 
-  // Create Contract instances for each pool
-  const pool500 = new ethers.Contract(
-    pool500Address,
-    UniswapV3Pool.abi,
-    deployer
-  );
-  const pool3000 = new ethers.Contract(
-    pool3000Address,
-    UniswapV3Pool.abi,
-    deployer
-  );
-  const pool10000 = new ethers.Contract(
-    pool10000Address,
-    UniswapV3Pool.abi,
-    deployer
-  );
-
-  // Approve tokens for pool operations
+  // Approve tokens for position manager operations
   await Promise.all([
     (zrc20 as any)
       .connect(deployer)
-      .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
+      .approve(
+        nonfungiblePositionManagerInstance.target,
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
     (wzeta as any)
       .connect(deployer)
-      .approve(pool500Address, ethers.parseEther("1000"), deployOpts),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(pool3000Address, ethers.parseEther("1000"), deployOpts),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(pool10000Address, ethers.parseEther("1000"), deployOpts),
+      .approve(
+        nonfungiblePositionManagerInstance.target,
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
   ]);
 
-  // Initialize pools
-  const sqrtPriceX96 = ethers.parseUnits("1", 18);
-  await Promise.all([
-    pool500.initialize(sqrtPriceX96, deployOpts),
-    pool3000.initialize(sqrtPriceX96, deployOpts),
-    pool10000.initialize(sqrtPriceX96, deployOpts),
-  ]);
-
-  // Add liquidity to pools
+  // Add liquidity to pools using the position manager
   const liquidity = ethers.parseUnits("100", 18);
   const tickLower = -10;
   const tickUpper = 10;
+  const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
   await Promise.all([
-    pool500.mint(
-      await deployer.getAddress(),
-      tickLower,
-      tickUpper,
-      liquidity,
-      "0x",
+    (nonfungiblePositionManagerInstance as any).mint(
+      {
+        token0: zrc20.target,
+        token1: wzeta.target,
+        fee: 500,
+        tickLower,
+        tickUpper,
+        amount0Desired: liquidity,
+        amount1Desired: liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: await deployer.getAddress(),
+        deadline,
+      },
       deployOpts
     ),
-    pool3000.mint(
-      await deployer.getAddress(),
-      tickLower,
-      tickUpper,
-      liquidity,
-      "0x",
+    (nonfungiblePositionManagerInstance as any).mint(
+      {
+        token0: zrc20.target,
+        token1: wzeta.target,
+        fee: 3000,
+        tickLower,
+        tickUpper,
+        amount0Desired: liquidity,
+        amount1Desired: liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: await deployer.getAddress(),
+        deadline,
+      },
       deployOpts
     ),
-    pool10000.mint(
-      await deployer.getAddress(),
-      tickLower,
-      tickUpper,
-      liquidity,
-      "0x",
+    (nonfungiblePositionManagerInstance as any).mint(
+      {
+        token0: zrc20.target,
+        token1: wzeta.target,
+        fee: 10000,
+        tickLower,
+        tickUpper,
+        amount0Desired: liquidity,
+        amount1Desired: liquidity,
+        amount0Min: 0,
+        amount1Min: 0,
+        recipient: await deployer.getAddress(),
+        deadline,
+      },
       deployOpts
     ),
   ]);
