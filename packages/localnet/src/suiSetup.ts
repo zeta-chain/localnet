@@ -2,7 +2,7 @@ import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { mnemonicToSeedSync } from "bip39";
-import { exec, execSync, spawnSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
 import * as fs from "fs";
 import os from "os";
@@ -154,9 +154,16 @@ export const suiSetup = async ({
       change.objectType.includes("gateway::WithdrawCap")
   );
 
+  const whitelistCapObject = publishResult.objectChanges?.find(
+    (change: any) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::WhitelistCap")
+  );
+
   const moduleId = (publishedModule as any).packageId;
   const gatewayObjectId = (gatewayObject as any).objectId;
   const withdrawCapObjectId = (withdrawCapObject as any).objectId;
+  const whitelistCapObjectId = (whitelistCapObject as any).objectId;
 
   pollEvents({
     client,
@@ -199,6 +206,7 @@ export const suiSetup = async ({
       gatewayObjectId,
       keypair,
       moduleId,
+      whitelistCapObjectId,
       withdrawCapObjectId,
     },
   };

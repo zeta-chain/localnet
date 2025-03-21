@@ -12,21 +12,39 @@ export const zetachainDeposit = async ({
 }: any) => {
   const [, receiver, amount, asset] = args;
   let foreignCoin;
-  if (asset === ethers.ZeroAddress) {
+  // Check for both ZeroAddress and the full SUI path
+  if (
+    asset === ethers.ZeroAddress ||
+    asset ===
+      "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
+  ) {
     foreignCoin = foreignCoins.find(
       (coin: any) =>
-        coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
+        ((coin.coin_type === "Gas" || coin.coin_type === "SUI") &&
+          coin.foreign_chain_id === chainID) ||
+        (chainID === NetworkID.Sui && coin.symbol === "SUI")
     );
   } else {
-    foreignCoin = foreignCoins.find(
-      (coin: any) => coin.asset === asset.toString()
-    );
+    // For non-gas Sui tokens, match the full coin type path
+    if (chainID === NetworkID.Sui) {
+      foreignCoin = foreignCoins.find(
+        (coin: any) => coin.foreign_chain_id === chainID && coin.asset === asset
+      );
+    } else {
+      foreignCoin = foreignCoins.find(
+        (coin: any) =>
+          coin.foreign_chain_id === chainID &&
+          coin.coin_type === asset.toString()
+      );
+    }
   }
 
   if (!foreignCoin) {
     logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
     return;
   }
+
+  console.log("Matched foreign coin:", foreignCoin);
   const zrc20 = foreignCoin.zrc20_contract_address;
   const tx = await zetachainContracts.gatewayZEVM
     .connect(zetachainContracts.fungibleModuleSigner)
