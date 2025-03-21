@@ -8,6 +8,7 @@ import { ethers, Signer } from "ethers";
 
 import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { deployOpts } from "./deployOpts";
+import { prepareUniswapV3 } from "./uniswapV3Setup";
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -29,16 +30,19 @@ export const zetachainSetup = async (
   );
   const wzeta = await weth9Factory.deploy(deployOpts);
 
-  const { uniswapFactoryInstance, uniswapRouterInstance } =
-    await prepareUniswap(deployer, tss, wzeta);
+  // Setup both Uniswap V2 and V3
+  const [v2Setup, v3Setup] = await Promise.all([
+    prepareUniswap(deployer, tss, wzeta),
+    prepareUniswapV3(deployer, wzeta),
+  ]);
 
   const [
     uniswapFactoryInstanceAddress,
     uniswapRouterInstanceAddress,
     fungibleModuleSigner,
   ] = await Promise.all([
-    uniswapFactoryInstance.getAddress(),
-    uniswapRouterInstance.getAddress(),
+    v2Setup.uniswapFactoryInstance.getAddress(),
+    v2Setup.uniswapRouterInstance.getAddress(),
     provider.getSigner(FUNGIBLE_MODULE_ADDRESS),
   ]);
 
@@ -106,8 +110,15 @@ export const zetachainSetup = async (
     gatewayZEVM,
     systemContract,
     tss,
-    uniswapFactoryInstance,
-    uniswapRouterInstance,
+    uniswapV2: {
+      factory: v2Setup.uniswapFactoryInstance,
+      router: v2Setup.uniswapRouterInstance,
+    },
+    uniswapV3: {
+      factory: v3Setup.uniswapV3FactoryInstance,
+      router: v3Setup.swapRouterInstance,
+      positionManager: v3Setup.nonfungiblePositionManagerInstance,
+    },
     wzeta,
   };
 };
