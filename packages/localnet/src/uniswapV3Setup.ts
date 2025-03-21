@@ -7,7 +7,6 @@ import { ethers, Log, LogDescription, Signer } from "ethers";
 import { deployOpts } from "./deployOpts";
 
 export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
-  // Deploy UniswapV3Factory
   const uniswapV3Factory = new ethers.ContractFactory(
     UniswapV3Factory.abi,
     UniswapV3Factory.bytecode,
