@@ -116,8 +116,8 @@ export const zetachainSetup = async (
     },
     uniswapV3: {
       factory: v3Setup.uniswapV3FactoryInstance,
-      router: v3Setup.swapRouterInstance,
       positionManager: v3Setup.nonfungiblePositionManagerInstance,
+      router: v3Setup.swapRouterInstance,
     },
     wzeta,
   };

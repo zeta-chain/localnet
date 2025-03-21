@@ -217,11 +217,11 @@ export const createToken = async (
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     console.log("Adding liquidity to V3 pool with params:", {
-      token0,
-      token1,
       amount0: amount0.toString(),
       amount1: amount1.toString(),
       recipient: await deployer.getAddress(),
+      token0,
+      token1,
     });
 
     const { tx, tokenId } = await addLiquidityV3(

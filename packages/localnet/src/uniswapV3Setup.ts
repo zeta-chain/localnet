@@ -1,8 +1,9 @@
 import * as UniswapV3Factory from "@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json";
 import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
-import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
 import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json";
-import { ethers, Signer, Log, LogDescription } from "ethers";
+import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
+import { ethers, Log, LogDescription, Signer } from "ethers";
+
 import { deployOpts } from "./deployOpts";
 
 export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
@@ -42,9 +43,9 @@ export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
   await nonfungiblePositionManagerInstance.waitForDeployment();
 
   return {
-    uniswapV3FactoryInstance,
-    swapRouterInstance,
     nonfungiblePositionManagerInstance,
+    swapRouterInstance,
+    uniswapV3FactoryInstance,
   };
 };
 
@@ -86,17 +87,17 @@ export const addLiquidityV3 = async (
   tickUpper: number = 887220 // Example tick range for full range
 ) => {
   const params = {
-    token0,
-    token1,
+    amount0Desired: amount0,
+    amount0Min: 0,
+    amount1Desired: amount1,
+    amount1Min: 0,
+    deadline: Math.floor(Date.now() / 1000) + 60 * 20,
     fee,
+    recipient,
     tickLower,
     tickUpper,
-    amount0Desired: amount0,
-    amount1Desired: amount1,
-    amount0Min: 0,
-    amount1Min: 0,
-    recipient,
-    deadline: Math.floor(Date.now() / 1000) + 60 * 20,
+    token0,
+    token1,
   };
 
   const tx = await nonfungiblePositionManager.mint(params);
@@ -108,8 +109,8 @@ export const addLiquidityV3 = async (
     .map((log: Log) => {
       try {
         return iface.parseLog({
-          topics: log.topics,
           data: log.data,
+          topics: log.topics,
         });
       } catch (e) {
         return null;
@@ -122,15 +123,15 @@ export const addLiquidityV3 = async (
       hash: receipt.hash,
       logs: receipt.logs.map((log: Log) => ({
         address: log.address,
-        topics: log.topics,
         data: log.data,
+        topics: log.topics,
       })),
     });
     throw new Error("Could not find Transfer event in transaction receipt");
   }
 
   const tokenId = transferEvent.args[2];
-  return { tx, tokenId };
+  return { tokenId, tx };
 };
 
 export const verifyV3Liquidity = async (
@@ -156,21 +157,21 @@ export const verifyV3Liquidity = async (
     const position = await positionManager.positions(tokenId);
 
     console.log("Position data:", {
-      tokenId: tokenId.toString(),
       position: {
-        nonce: position[0]?.toString(),
-        operator: position[1],
-        token0: position[2],
-        token1: position[3],
         fee: position[4]?.toString(),
-        tickLower: position[5]?.toString(),
-        tickUpper: position[6]?.toString(),
-        liquidity: position[7]?.toString(),
         feeGrowthInside0LastX128: position[8]?.toString(),
         feeGrowthInside1LastX128: position[9]?.toString(),
+        liquidity: position[7]?.toString(),
+        nonce: position[0]?.toString(),
+        operator: position[1],
+        tickLower: position[5]?.toString(),
+        tickUpper: position[6]?.toString(),
+        token0: position[2],
+        token1: position[3],
         tokensOwed0: position[10]?.toString(),
         tokensOwed1: position[11]?.toString(),
       },
+      tokenId: tokenId.toString(),
     });
 
     if (!position || position.length < 12) {
@@ -211,18 +212,18 @@ export const verifyV3Liquidity = async (
     }
 
     return {
-      tokenId: tokenId.toString(),
-      poolLiquidity: liquidity.toString(),
-      positionLiquidity: position[7].toString(),
       currentSqrtPrice: slot0[0].toString(),
       currentTick: slot0[1],
+      owner: positionOwner,
+      poolLiquidity: liquidity.toString(),
       poolToken0,
       poolToken1,
+      positionLiquidity: position[7].toString(),
       positionToken0,
       positionToken1,
-      owner: positionOwner,
       tickLower: position[5].toString(),
       tickUpper: position[6].toString(),
+      tokenId: tokenId.toString(),
     };
   } catch (error) {
     console.error("Verification error details:", error);
