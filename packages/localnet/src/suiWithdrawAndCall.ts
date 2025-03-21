@@ -19,20 +19,6 @@ export const suiWithdrawAndCall = async ({
   const coinType =
     "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
 
-  // Decode the message
-  const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
-  const decodedMessage = AbiCoder.defaultAbiCoder().decode(
-    [
-      "tuple(string[] typeArguments, byte32[] objects, bytes message)",
-    ],
-    decodedBytes[0]
-  )[0];
-  const additionalTypeArguments = decodedMessage[0];
-  const objects = decodedMessage[1];
-  const data = decodedMessage[2];
-
-  // TODO: check all objects are shared and not owned by the sender
-
   // Withdraw the coins and get the coins ID
   const [coins, coinsBudget] = tx.moveCall({
     arguments: [
@@ -49,15 +35,39 @@ export const suiWithdrawAndCall = async ({
   // Transfer the amount for budget to the TSS
   tx.transferObjects([coinsBudget], tx.pure.address(keypair.getPublicKey().toSuiAddress()));
 
+  // Prepare on call arguments
+
+  // Decode the payload message
+  const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
+  const decodedMessage = AbiCoder.defaultAbiCoder().decode(
+    [
+      "tuple(string[] typeArguments, bytes32[] objects, bytes data)",
+    ],
+    decodedBytes[0]
+  )[0];
+  const additionalTypeArguments = decodedMessage[0];
+  const objects = decodedMessage[1];
+  const data = decodedMessage[2];
+
+  // TODO: check all objects are shared and not owned by the sender
+  log(
+    NetworkID.Sui,
+    `Calling with objects: ${objects} and type arguments: ${additionalTypeArguments} and data: ${data}`
+  );
+
+  const onCallTypeArguments = [coinType, ...additionalTypeArguments];
+  const onCallArguments = [
+    coins,
+    ...objects.map((obj: any) => tx.object(ethers.hexlify(obj))),
+    tx.pure.vector("u8", ethers.getBytes(data)),
+  ];
+
   // Call the target contract on_call
   // Sample arguments for now
   tx.moveCall({
-    arguments: [
-      coins,
-      tx.pure.u64(42),
-    ],
+    arguments: onCallArguments,
     target: `${targetModule}::universal::on_call`,
-    typeArguments: [coinType],
+    typeArguments: onCallTypeArguments,
   });
   tx.setGasBudget(100000000)
 
