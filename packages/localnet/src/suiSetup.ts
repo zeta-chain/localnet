@@ -308,8 +308,7 @@ const ensureDirectoryExists = () => {
     console.log(`✅ Directory is writable: ${LOCALNET_DIR}`);
   } catch (err) {
     console.log(
-      `🔒 Directory is not writable. Changing ownership to ${
-        os.userInfo().username
+      `🔒 Directory is not writable. Changing ownership to ${os.userInfo().username
       }...`
     );
     runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
