@@ -12,6 +12,11 @@ import { ethers } from "ethers";
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { ed25519KeyPairTSS as tssKeypair } from "./solanaSetup";
+import {
+  addLiquidityV3,
+  createUniswapV3Pool,
+  verifyV3Liquidity,
+} from "./uniswapV3Setup";
 
 export const createToken = async (
   contracts: any,
@@ -28,8 +33,8 @@ export const createToken = async (
   const {
     systemContract,
     gatewayZEVM,
-    uniswapFactoryInstance,
-    uniswapRouterInstance,
+    uniswapV2,
+    uniswapV3,
     wzeta,
     fungibleModuleSigner,
   } = contracts.zetachainContracts;
@@ -115,13 +120,17 @@ export const createToken = async (
     zrc20_contract_address: zrc20.target,
   });
 
+  // Prepare token amounts for liquidity
+  const zrc20Amount = ethers.parseUnits("100", await (zrc20 as any).decimals());
+  const wzetaAmount = ethers.parseUnits("100", await (wzeta as any).decimals());
+
   await Promise.all([
+    // Initial token setup
     (zrc20 as any).deposit(
       await deployer.getAddress(),
       ethers.parseEther("1000"),
       deployOpts
     ),
-
     (zrc20 as any)
       .connect(deployer)
       .transfer(
@@ -129,12 +138,12 @@ export const createToken = async (
         ethers.parseUnits("100", await (zrc20 as any).decimals()),
         deployOpts
       ),
-
     (wzeta as any)
       .connect(deployer)
       .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
 
-    (uniswapFactoryInstance as any).createPair(
+    // Uniswap V2 setup
+    (uniswapV2.factory as any).createPair(
       zrc20.target,
       wzeta.target,
       deployOpts
@@ -142,29 +151,116 @@ export const createToken = async (
     (zrc20 as any)
       .connect(deployer)
       .approve(
-        uniswapRouterInstance.getAddress(),
+        uniswapV2.router.getAddress(),
         ethers.parseEther("1000"),
         deployOpts
       ),
     (wzeta as any)
       .connect(deployer)
       .approve(
-        uniswapRouterInstance.getAddress(),
+        uniswapV2.router.getAddress(),
         ethers.parseEther("1000"),
         deployOpts
       ),
-    (uniswapRouterInstance as any).addLiquidity(
-      zrc20.target,
-      wzeta.target,
-      ethers.parseUnits("100", await (zrc20 as any).decimals()), // Amount of ZRC-20
-      ethers.parseUnits("100", await (wzeta as any).decimals()), // Amount of ZETA
-      ethers.parseUnits("90", await (zrc20 as any).decimals()), // Min amount of ZRC-20 to add (slippage tolerance)
-      ethers.parseUnits("90", await (wzeta as any).decimals()), // Min amount of ZETA to add (slippage tolerance)
-      await deployer.getAddress(),
-      Math.floor(Date.now() / 1000) + 60 * 10, // Deadline
-      deployOpts
-    ),
+
+    // Uniswap V3 approvals
+    (zrc20 as any)
+      .connect(deployer)
+      .approve(
+        uniswapV3.positionManager.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(
+        uniswapV3.positionManager.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
   ]);
+
+  // Add liquidity to Uniswap V2
+  await (uniswapV2.router as any).addLiquidity(
+    zrc20.target,
+    wzeta.target,
+    zrc20Amount,
+    wzetaAmount,
+    ethers.parseUnits("90", await (zrc20 as any).decimals()),
+    ethers.parseUnits("90", await (wzeta as any).decimals()),
+    await deployer.getAddress(),
+    Math.floor(Date.now() / 1000) + 60 * 10,
+    deployOpts
+  );
+
+  // Create and add liquidity to Uniswap V3
+  const [token0Address, token1Address] = await Promise.all([
+    zrc20.target,
+    wzeta.target,
+  ]);
+
+  const [token0, token1] =
+    String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
+      ? [token0Address, token1Address]
+      : [token1Address, token0Address];
+
+  const [amount0, amount1] =
+    String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
+      ? [zrc20Amount, wzetaAmount]
+      : [wzetaAmount, zrc20Amount];
+
+  try {
+    const pool = await createUniswapV3Pool(uniswapV3.factory, token0, token1);
+    console.log("Created Uniswap V3 pool:", await pool.getAddress());
+
+    // Wait for pool initialization
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log("Adding liquidity to V3 pool with params:", {
+      amount0: amount0.toString(),
+      amount1: amount1.toString(),
+      recipient: await deployer.getAddress(),
+      token0,
+      token1,
+    });
+
+    const { tx, tokenId } = await addLiquidityV3(
+      uniswapV3.positionManager,
+      token0,
+      token1,
+      amount0,
+      amount1,
+      3000,
+      await deployer.getAddress()
+    );
+    const receipt = await tx.wait();
+    console.log("Liquidity addition transaction:", receipt.hash);
+
+    // Wait for position to be minted
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const liquidityInfo = await verifyV3Liquidity(
+      pool,
+      token0,
+      token1,
+      uniswapV3.positionManager,
+      await deployer.getAddress(),
+      tokenId
+    );
+
+    console.log("Uniswap V3 Pool Liquidity Info:", {
+      poolAddress: await pool.getAddress(),
+      ...liquidityInfo,
+    });
+  } catch (error: any) {
+    console.error("Error adding liquidity to Uniswap V3:", error);
+    if (error.message?.includes("LOK")) {
+      console.error(
+        "Pool initialization error - pool may already be initialized"
+      );
+    }
+    throw error;
+  }
 };
 
 const createSolanaSPL = async (env: any, symbol: string) => {
