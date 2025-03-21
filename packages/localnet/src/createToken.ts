@@ -12,7 +12,11 @@ import { ethers } from "ethers";
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { ed25519KeyPairTSS as tssKeypair } from "./solanaSetup";
-import { addLiquidityV3, createUniswapV3Pool } from "./uniswapV3Setup";
+import {
+  addLiquidityV3,
+  createUniswapV3Pool,
+  verifyV3Liquidity,
+} from "./uniswapV3Setup";
 
 export const createToken = async (
   contracts: any,
@@ -206,11 +210,21 @@ export const createToken = async (
       : [wzetaAmount, zrc20Amount];
 
   try {
-    // Create and initialize the pool
     const pool = await createUniswapV3Pool(uniswapV3.factory, token0, token1);
+    console.log("Created Uniswap V3 pool:", await pool.getAddress());
 
-    // Add liquidity
-    const tx = await addLiquidityV3(
+    // Wait for pool initialization
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log("Adding liquidity to V3 pool with params:", {
+      token0,
+      token1,
+      amount0: amount0.toString(),
+      amount1: amount1.toString(),
+      recipient: await deployer.getAddress(),
+    });
+
+    const { tx, tokenId } = await addLiquidityV3(
       uniswapV3.positionManager,
       token0,
       token1,
@@ -219,9 +233,32 @@ export const createToken = async (
       3000,
       await deployer.getAddress()
     );
-    await tx.wait();
-  } catch (error) {
+    const receipt = await tx.wait();
+    console.log("Liquidity addition transaction:", receipt.hash);
+
+    // Wait for position to be minted
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const liquidityInfo = await verifyV3Liquidity(
+      pool,
+      token0,
+      token1,
+      uniswapV3.positionManager,
+      await deployer.getAddress(),
+      tokenId
+    );
+
+    console.log("Uniswap V3 Pool Liquidity Info:", {
+      poolAddress: await pool.getAddress(),
+      ...liquidityInfo,
+    });
+  } catch (error: any) {
     console.error("Error adding liquidity to Uniswap V3:", error);
+    if (error.message?.includes("LOK")) {
+      console.error(
+        "Pool initialization error - pool may already be initialized"
+      );
+    }
     throw error;
   }
 };
