@@ -110,15 +110,11 @@ export const zetachainSetup = async (
     gatewayZEVM,
     systemContract,
     tss,
-    uniswapV2: {
-      factory: v2Setup.uniswapFactoryInstance,
-      router: v2Setup.uniswapRouterInstance,
-    },
-    uniswapV3: {
-      factory: v3Setup.uniswapV3FactoryInstance,
-      positionManager: v3Setup.nonfungiblePositionManagerInstance,
-      router: v3Setup.swapRouterInstance,
-    },
+    uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,
+    uniswapRouterInstance: v2Setup.uniswapRouterInstance,
+    uniswapV3Factory: v3Setup.uniswapV3FactoryInstance,
+    uniswapV3PositionManager: v3Setup.nonfungiblePositionManagerInstance,
+    uniswapV3Router: v3Setup.swapRouterInstance,
     wzeta,
   };
 };

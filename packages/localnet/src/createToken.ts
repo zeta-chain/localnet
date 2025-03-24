@@ -33,8 +33,10 @@ export const createToken = async (
   const {
     systemContract,
     gatewayZEVM,
-    uniswapV2,
-    uniswapV3,
+    uniswapFactoryInstance,
+    uniswapRouterInstance,
+    uniswapV3Factory,
+    uniswapV3PositionManager,
     wzeta,
     fungibleModuleSigner,
   } = contracts.zetachainContracts;
@@ -143,7 +145,7 @@ export const createToken = async (
       .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
 
     // Uniswap V2 setup
-    (uniswapV2.factory as any).createPair(
+    (uniswapFactoryInstance as any).createPair(
       zrc20.target,
       wzeta.target,
       deployOpts
@@ -151,14 +153,14 @@ export const createToken = async (
     (zrc20 as any)
       .connect(deployer)
       .approve(
-        uniswapV2.router.getAddress(),
+        uniswapRouterInstance.getAddress(),
         ethers.parseEther("1000"),
         deployOpts
       ),
     (wzeta as any)
       .connect(deployer)
       .approve(
-        uniswapV2.router.getAddress(),
+        uniswapRouterInstance.getAddress(),
         ethers.parseEther("1000"),
         deployOpts
       ),
@@ -167,21 +169,21 @@ export const createToken = async (
     (zrc20 as any)
       .connect(deployer)
       .approve(
-        uniswapV3.positionManager.getAddress(),
+        uniswapV3PositionManager.getAddress(),
         ethers.parseEther("1000"),
         deployOpts
       ),
     (wzeta as any)
       .connect(deployer)
       .approve(
-        uniswapV3.positionManager.getAddress(),
+        uniswapV3PositionManager.getAddress(),
         ethers.parseEther("1000"),
         deployOpts
       ),
   ]);
 
   // Add liquidity to Uniswap V2
-  await (uniswapV2.router as any).addLiquidity(
+  await (uniswapRouterInstance as any).addLiquidity(
     zrc20.target,
     wzeta.target,
     zrc20Amount,
@@ -210,7 +212,7 @@ export const createToken = async (
       : [wzetaAmount, zrc20Amount];
 
   try {
-    const pool = await createUniswapV3Pool(uniswapV3.factory, token0, token1);
+    const pool = await createUniswapV3Pool(uniswapV3Factory, token0, token1);
     console.log("Created Uniswap V3 pool:", await pool.getAddress());
 
     // Wait for pool initialization
@@ -225,7 +227,7 @@ export const createToken = async (
     });
 
     const { tx, tokenId } = await addLiquidityV3(
-      uniswapV3.positionManager,
+      uniswapV3PositionManager,
       token0,
       token1,
       amount0,
@@ -243,7 +245,7 @@ export const createToken = async (
       pool,
       token0,
       token1,
-      uniswapV3.positionManager,
+      uniswapV3PositionManager,
       await deployer.getAddress(),
       tokenId
     );

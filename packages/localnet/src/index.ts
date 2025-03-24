@@ -115,7 +115,7 @@ export const initLocalnet = async ({
   zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
     zetachainWithdrawAndCall({ args, contracts, exitOnError })
   );
-
+  console.log("zetachainContracts", zetachainContracts);
   let res = [
     ...Object.entries(zetachainContracts)
       .filter(([, value]) => value.target !== undefined)
