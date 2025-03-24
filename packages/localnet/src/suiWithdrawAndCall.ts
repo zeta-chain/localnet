@@ -48,6 +48,7 @@ export const suiWithdrawAndCall = async ({
     const data = decodedMessage[2];
 
     // TODO: check all objects are shared and not owned by the sender
+    // https://github.com/zeta-chain/localnet/issues/134
 
     const onCallTypeArguments = [coinType, ...additionalTypeArguments];
     const onCallArguments = [
