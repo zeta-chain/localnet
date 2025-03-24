@@ -33,11 +33,26 @@ export const suiWithdraw = async ({
   });
 
   try {
+    // send the transaction
     const result = await client.signAndExecuteTransaction({
       signer: keypair,
       transaction: tx,
     });
     await client.waitForTransaction({ digest: result.digest });
+
+    // check if the tx has succeeded
+    const txDetails = await client.getTransactionBlock({
+      digest: result.digest,
+      options: {
+        showEffects: true,
+      },
+    });
+    const status = txDetails.effects?.status?.status;
+    if (status !== "success") {
+      const errorMessage = txDetails.effects?.status?.error;
+      throw new Error(`Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
+    }
+
     log(
       NetworkID.Sui,
       `Withdrawing ${ethers.formatUnits(

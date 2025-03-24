@@ -14,69 +14,81 @@ export const suiWithdrawAndCall = async ({
   gatewayObjectId,
   withdrawCapObjectId,
 }: any) => {
-  const nonce = await fetchGatewayNonce(client, gatewayObjectId);
-  const tx = new Transaction();
-  const coinType =
-    "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
-
-  // Withdraw the coins and get the coins ID
-  const [coins, coinsBudget] = tx.moveCall({
-    arguments: [
-      tx.object(gatewayObjectId),
-      tx.pure.u64(amount),
-      tx.pure.u64(nonce),
-      tx.pure.u64(100000),
-      tx.object(withdrawCapObjectId),
-    ],
-    target: `${moduleId}::gateway::withdraw_impl`,
-    typeArguments: [coinType],
-  });
-
-  // Transfer the amount for budget to the TSS
-  tx.transferObjects([coinsBudget], tx.pure.address(keypair.getPublicKey().toSuiAddress()));
-
-  // Prepare on call arguments
-
-  // Decode the payload message
-  const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
-  const decodedMessage = AbiCoder.defaultAbiCoder().decode(
-    [
-      "tuple(string[] typeArguments, bytes32[] objects, bytes data)",
-    ],
-    decodedBytes[0]
-  )[0];
-  const additionalTypeArguments = decodedMessage[0];
-  const objects = decodedMessage[1];
-  const data = decodedMessage[2];
-
-  // TODO: check all objects are shared and not owned by the sender
-  log(
-    NetworkID.Sui,
-    `Calling with objects: ${objects} and type arguments: ${additionalTypeArguments} and data: ${data}`
-  );
-
-  const onCallTypeArguments = [coinType, ...additionalTypeArguments];
-  const onCallArguments = [
-    coins,
-    ...objects.map((obj: any) => tx.object(ethers.hexlify(obj))),
-    tx.pure.vector("u8", ethers.getBytes(data)),
-  ];
-
-  // Call the target contract on_call
-  // Sample arguments for now
-  tx.moveCall({
-    arguments: onCallArguments,
-    target: `${targetModule}::universal::on_call`,
-    typeArguments: onCallTypeArguments,
-  });
-  tx.setGasBudget(100000000)
-
   try {
+    const nonce = await fetchGatewayNonce(client, gatewayObjectId);
+    const tx = new Transaction();
+    const coinType =
+      "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+
+    // withdraw the coins and get the coins ID
+    const [coins, coinsBudget] = tx.moveCall({
+      arguments: [
+        tx.object(gatewayObjectId),
+        tx.pure.u64(amount),
+        tx.pure.u64(nonce),
+        tx.pure.u64(100000),
+        tx.object(withdrawCapObjectId),
+      ],
+      target: `${moduleId}::gateway::withdraw_impl`,
+      typeArguments: [coinType],
+    });
+
+    // transfer the amount for budget to the TSS
+    tx.transferObjects([coinsBudget], tx.pure.address(keypair.getPublicKey().toSuiAddress()));
+
+    // prepare on call arguments
+    const decodedMessage = AbiCoder.defaultAbiCoder().decode(
+      [
+        "tuple(string[] typeArguments, bytes32[] objects, bytes data)",
+      ],
+      message
+    )[0];
+    const additionalTypeArguments = decodedMessage[0];
+    const objects = decodedMessage[1];
+    const data = decodedMessage[2];
+
+    // TODO: check all objects are shared and not owned by the sender
+
+    const onCallTypeArguments = [coinType, ...additionalTypeArguments];
+    const onCallArguments = [
+      coins,
+      ...objects.map((obj: any) => tx.object(ethers.hexlify(obj))),
+      tx.pure.vector("u8", ethers.getBytes(data)),
+    ];
+
+    // call the target contract on_call
+    tx.moveCall({
+      arguments: onCallArguments,
+      target: `${targetModule}::universal::on_call`,
+      typeArguments: onCallTypeArguments,
+    });
+    tx.setGasBudget(100000000)
+
+
+    // send the transaction and wait for it
     const result = await await client.signAndExecuteTransaction({
       signer: keypair,
       transaction: tx,
     });
-    await client.waitForTransaction({ digest: result.digest });
+    await client.waitForTransaction({
+      digest: result.digest,
+    });
+
+    // check if the tx has succeeded
+    const txDetails = await client.getTransactionBlock({
+      digest: result.digest,
+      options: {
+        showEffects: true,
+      },
+    });
+    // console.log("txDetails")
+    console.dir(txDetails.effects, { depth: null });
+    const status = txDetails.effects?.status?.status;
+    if (status !== "success") {
+      const errorMessage = txDetails.effects?.status?.error;
+      throw new Error(`Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
+    }
+
     log(
       NetworkID.Sui,
       `Withdrawing ${ethers.formatUnits(
