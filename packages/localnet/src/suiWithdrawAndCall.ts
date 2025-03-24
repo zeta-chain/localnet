@@ -81,8 +81,6 @@ export const suiWithdrawAndCall = async ({
         showEffects: true,
       },
     });
-    // console.log("txDetails")
-    console.dir(txDetails.effects, { depth: null });
     const status = txDetails.effects?.status?.status;
     if (status !== "success") {
       const errorMessage = txDetails.effects?.status?.error;
