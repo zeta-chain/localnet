@@ -34,13 +34,14 @@ export const suiWithdrawAndCall = async ({
     });
 
     // transfer the amount for budget to the TSS
-    tx.transferObjects([coinsBudget], tx.pure.address(keypair.getPublicKey().toSuiAddress()));
+    tx.transferObjects(
+      [coinsBudget],
+      tx.pure.address(keypair.getPublicKey().toSuiAddress())
+    );
 
     // prepare on call arguments
     const decodedMessage = AbiCoder.defaultAbiCoder().decode(
-      [
-        "tuple(string[] typeArguments, bytes32[] objects, bytes data)",
-      ],
+      ["tuple(string[] typeArguments, bytes32[] objects, bytes data)"],
       message
     )[0];
     const additionalTypeArguments = decodedMessage[0];
@@ -63,8 +64,7 @@ export const suiWithdrawAndCall = async ({
       target: `${targetModule}::universal::on_call`,
       typeArguments: onCallTypeArguments,
     });
-    tx.setGasBudget(100000000)
-
+    tx.setGasBudget(100000000);
 
     // send the transaction and wait for it
     const result = await await client.signAndExecuteTransaction({
@@ -85,7 +85,9 @@ export const suiWithdrawAndCall = async ({
     const status = txDetails.effects?.status?.status;
     if (status !== "success") {
       const errorMessage = txDetails.effects?.status?.error;
-      throw new Error(`Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
+      throw new Error(
+        `Transaction ${result.digest} failed: ${errorMessage}, status ${status}`
+      );
     }
 
     log(

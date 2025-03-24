@@ -50,7 +50,8 @@ export const suiWithdraw = async ({
     const status = txDetails.effects?.status?.status;
     if (status !== "success") {
       const errorMessage = txDetails.effects?.status?.error;
-      throw new Error(`Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
+      throw new Error(`
+        Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
     }
 
     log(

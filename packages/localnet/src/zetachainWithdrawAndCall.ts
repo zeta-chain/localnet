@@ -7,8 +7,8 @@ import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
 import { log, logErr } from "./log";
 import { solanaExecute } from "./solanaExecute";
-import { zetachainOnRevert } from "./zetachainOnRevert";
 import { suiWithdrawAndCall } from "./suiWithdrawAndCall";
+import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdrawAndCall = async ({
   args,
