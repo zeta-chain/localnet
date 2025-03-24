@@ -86,12 +86,17 @@ const localnet = async (args: any) => {
   if ((await isSolanaAvailable()) && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
 
+    // Record the output of the solana-test-validator.
+    // solanaError accumulates both errors and logs, but we only console log
+    // the value if the solana-test-validator exits with a non-zero code, so
+    // only errors are printed.
     if (solanaTestValidator.stdout) {
       solanaTestValidator.stdout.on("data", (data: string) => {
         solanaError += data;
       });
     }
 
+    // If the solana-test-validator exits with a non-zero code, print the error and exit.
     solanaTestValidator.on("exit", (code: number) => {
       if (code !== 0) {
         console.error(ansis.red(solanaError));
