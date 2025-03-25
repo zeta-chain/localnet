@@ -61,7 +61,7 @@ export const suiWithdrawAndCall = async ({
     // call the target contract on_call
     tx.moveCall({
       arguments: onCallArguments,
-      target: `${targetModule}::universal::on_call`,
+      target: `${targetModule}::connected::on_call`,
       typeArguments: onCallTypeArguments,
     });
     tx.setGasBudget(100000000);
