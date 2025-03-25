@@ -107,6 +107,9 @@ export const suiSetup = async ({
   const privateKeyBech32 = keypair.getSecretKey();
   console.log("Private Key (Bech32):", privateKeyBech32);
   try {
+    execSync(`sui keytool import ${user.keypair.getSecretKey()} ed25519`, {
+      stdio: "inherit",
+    });
     execSync(`sui keytool import ${privateKeyBech32} ed25519`, {
       stdio: "inherit",
     });
