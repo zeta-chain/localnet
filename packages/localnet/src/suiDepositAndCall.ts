@@ -19,8 +19,22 @@ export const suiDepositAndCall = async ({
   provider,
   withdrawCapObjectId,
 }: any) => {
-  const asset = ethers.ZeroAddress;
   const chainID = NetworkID.Sui;
+
+  // Find the matching foreign coin based on the coin type from the event
+  const matchingCoin = foreignCoins.find(
+    (coin: any) =>
+      coin.foreign_chain_id === chainID &&
+      ((coin.coin_type === "SUI" && event.coin_type === "0x2::sui::SUI") ||
+        coin.asset === event.coin_type)
+  );
+
+  // Use ZeroAddress for native SUI, otherwise use the found asset address
+  const asset =
+    event.coin_type === "0x2::sui::SUI"
+      ? ethers.ZeroAddress
+      : matchingCoin?.asset || ethers.ZeroAddress;
+
   try {
     log(
       NetworkID.Sui,

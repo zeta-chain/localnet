@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cpx 'packages/localnet/src/solana/**/*' dist/localnet/src/solana/ && cpx 'packages/localnet/src/sui/**/*' dist/localnet/src/sui/",
+    "build": "del-cli dist && tsc && cpx 'packages/localnet/src/solana/**/*' dist/localnet/src/solana/ && cpx 'packages/localnet/src/sui/token/token.json' dist/localnet/src/sui/token",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts .",
     "localnet": "yarn build && node dist/commands/src/program.js"
@@ -31,8 +31,7 @@
     "./solana/idl/gateway.json": "./dist/localnet/src/solana/idl/gateway.json",
     "./solana/deploy/gateway.so": "./dist/localnet/src/solana/deploy/gateway.so",
     "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/solana/deploy/gateway-keypair.json",
-    "./sui/gateway.mv": "./dist/localnet/src/sui/gateway.mv",
-    "./sui/gateway.json": "./dist/localnet/src/sui/gateway.json"
+    "./sui/token/token.json": "./dist/localnet/src/sui/token/token.json"
   },
   "keywords": [],
   "author": "ZetaChain",

@@ -102,6 +102,7 @@ export const initLocalnet = async ({
     createToken(contracts, "SOL", true, NetworkID.Solana, 9),
     createToken(contracts, "USDC", false, NetworkID.Solana, 9),
     createToken(contracts, "SUI", true, NetworkID.Sui, 9),
+    createToken(contracts, "USDC", false, NetworkID.Sui, 9),
   ]);
 
   zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
