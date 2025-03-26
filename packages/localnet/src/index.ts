@@ -2,7 +2,7 @@ import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { InitLocalnetAddress } from "../../types/zodSchemas";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
-import { createToken } from "./createToken";
+import { createToken } from "./tokens/createToken";
 import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
 import { suiSetup } from "./suiSetup";
@@ -116,7 +116,7 @@ export const initLocalnet = async ({
   zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
     zetachainWithdrawAndCall({ args, contracts, exitOnError })
   );
-  console.log("zetachainContracts", zetachainContracts);
+
   let res = [
     ...Object.entries(zetachainContracts)
       .filter(([, value]) => value.target !== undefined)

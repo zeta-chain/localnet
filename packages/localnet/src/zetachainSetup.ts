@@ -1,5 +1,3 @@
-import * as UniswapV2Factory from "@uniswap/v2-core/build/UniswapV2Factory.json";
-import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
@@ -8,7 +6,8 @@ import { ethers, Signer } from "ethers";
 
 import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
 import { deployOpts } from "./deployOpts";
-import { prepareUniswapV3 } from "./uniswapV3Setup";
+import { prepareUniswapV3 } from "./tokens/uniswapV3";
+import { prepareUniswapV2 } from "./tokens/uniswapV2";
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -32,7 +31,7 @@ export const zetachainSetup = async (
 
   // Setup both Uniswap V2 and V3
   const [v2Setup, v3Setup] = await Promise.all([
-    prepareUniswap(deployer, tss, wzeta),
+    prepareUniswapV2(deployer, wzeta),
     prepareUniswapV3(deployer, wzeta),
   ]);
 
@@ -117,30 +116,4 @@ export const zetachainSetup = async (
     uniswapV3Router: v3Setup.swapRouterInstance,
     wzeta,
   };
-};
-
-const prepareUniswap = async (deployer: Signer, TSS: Signer, wzeta: any) => {
-  const uniswapFactory = new ethers.ContractFactory(
-    UniswapV2Factory.abi,
-    UniswapV2Factory.bytecode,
-    deployer
-  );
-  const uniswapRouterFactory = new ethers.ContractFactory(
-    UniswapV2Router02.abi,
-    UniswapV2Router02.bytecode,
-    deployer
-  );
-
-  const uniswapFactoryInstance = await uniswapFactory.deploy(
-    await deployer.getAddress(),
-    deployOpts
-  );
-
-  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
-    await uniswapFactoryInstance.getAddress(),
-    await wzeta.getAddress(),
-    deployOpts
-  );
-
-  return { uniswapFactoryInstance, uniswapRouterInstance };
 };

@@ -4,7 +4,7 @@ import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/con
 import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
 import { ethers, Log, LogDescription, Signer } from "ethers";
 
-import { deployOpts } from "./deployOpts";
+import { deployOpts } from "../deployOpts";
 
 export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
   const uniswapV3Factory = new ethers.ContractFactory(
@@ -46,6 +46,96 @@ export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
     swapRouterInstance,
     uniswapV3FactoryInstance,
   };
+};
+
+export const uniswapV3AddLiquidity = async (
+  zrc20: any,
+  wzeta: any,
+  deployer: any,
+  zrc20Amount: any,
+  wzetaAmount: any,
+  uniswapV3Factory: any,
+  uniswapV3PositionManager: any,
+  verbose?: boolean
+) => {
+  // Create and add liquidity to Uniswap V3
+  const [token0Address, token1Address] = await Promise.all([
+    zrc20.target,
+    wzeta.target,
+  ]);
+
+  const [token0, token1] =
+    String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
+      ? [token0Address, token1Address]
+      : [token1Address, token0Address];
+
+  const [amount0, amount1] =
+    String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
+      ? [zrc20Amount, wzetaAmount]
+      : [wzetaAmount, zrc20Amount];
+
+  try {
+    const pool = await createUniswapV3Pool(uniswapV3Factory, token0, token1);
+    if (verbose) {
+      console.log("Created Uniswap V3 pool:", await pool.getAddress());
+    }
+
+    // Wait for pool initialization
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    if (verbose) {
+      console.log("Adding liquidity to V3 pool with params:", {
+        amount0: amount0.toString(),
+        amount1: amount1.toString(),
+        recipient: await deployer.getAddress(),
+        token0,
+        token1,
+      });
+    }
+
+    const { tx, tokenId } = await addLiquidityV3(
+      uniswapV3PositionManager,
+      token0,
+      token1,
+      amount0,
+      amount1,
+      3000,
+      await deployer.getAddress()
+    );
+    const receipt = await tx.wait();
+
+    if (verbose) {
+      console.log("Liquidity addition transaction:", receipt.hash);
+    }
+
+    // Wait for position to be minted
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const liquidityInfo = await verifyV3Liquidity(
+      pool,
+      token0,
+      token1,
+      uniswapV3PositionManager,
+      await deployer.getAddress(),
+      tokenId,
+      verbose
+    );
+
+    if (verbose) {
+      console.log("Uniswap V3 Pool Liquidity Info:", {
+        poolAddress: await pool.getAddress(),
+        ...liquidityInfo,
+      });
+    }
+  } catch (error: any) {
+    console.error("Error adding liquidity to Uniswap V3:", error);
+    if (error.message?.includes("LOK")) {
+      console.error(
+        "Pool initialization error - pool may already be initialized"
+      );
+    }
+    throw error;
+  }
 };
 
 export const createUniswapV3Pool = async (
@@ -139,7 +229,8 @@ export const verifyV3Liquidity = async (
   token1: string,
   positionManager: any,
   owner: string,
-  tokenId: bigint
+  tokenId: bigint,
+  verbose?: boolean
 ) => {
   try {
     const [liquidity, slot0, poolToken0, poolToken1] = await Promise.all([
@@ -155,23 +246,25 @@ export const verifyV3Liquidity = async (
 
     const position = await positionManager.positions(tokenId);
 
-    console.log("Position data:", {
-      position: {
-        fee: position[4]?.toString(),
-        feeGrowthInside0LastX128: position[8]?.toString(),
-        feeGrowthInside1LastX128: position[9]?.toString(),
-        liquidity: position[7]?.toString(),
-        nonce: position[0]?.toString(),
-        operator: position[1],
-        tickLower: position[5]?.toString(),
-        tickUpper: position[6]?.toString(),
-        token0: position[2],
-        token1: position[3],
-        tokensOwed0: position[10]?.toString(),
-        tokensOwed1: position[11]?.toString(),
-      },
-      tokenId: tokenId.toString(),
-    });
+    if (verbose) {
+      console.log("Position data:", {
+        position: {
+          fee: position[4]?.toString(),
+          feeGrowthInside0LastX128: position[8]?.toString(),
+          feeGrowthInside1LastX128: position[9]?.toString(),
+          liquidity: position[7]?.toString(),
+          nonce: position[0]?.toString(),
+          operator: position[1],
+          tickLower: position[5]?.toString(),
+          tickUpper: position[6]?.toString(),
+          token0: position[2],
+          token1: position[3],
+          tokensOwed0: position[10]?.toString(),
+          tokensOwed1: position[11]?.toString(),
+        },
+        tokenId: tokenId.toString(),
+      });
+    }
 
     if (!position || position.length < 12) {
       throw new Error(`Invalid position data for token ID ${tokenId}`);
