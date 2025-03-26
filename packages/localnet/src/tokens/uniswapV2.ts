@@ -32,12 +32,34 @@ export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
 
 export const uniswapV2AddLiquidity = async (
   uniswapRouterInstance: any,
+  uniswapFactoryInstance: any,
   zrc20: any,
   wzeta: any,
   deployer: any,
   zrc20Amount: any,
   wzetaAmount: any
 ) => {
+  Promise.all([
+    (uniswapFactoryInstance as any).createPair(
+      zrc20.target,
+      wzeta.target,
+      deployOpts
+    ),
+    (zrc20 as any)
+      .connect(deployer)
+      .approve(
+        uniswapRouterInstance.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+    (wzeta as any)
+      .connect(deployer)
+      .approve(
+        uniswapRouterInstance.getAddress(),
+        ethers.parseEther("1000"),
+        deployOpts
+      ),
+  ]);
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20.target,
     wzeta.target,

@@ -121,12 +121,10 @@ export const createToken = async (
     zrc20_contract_address: zrc20.target,
   });
 
-  // Prepare token amounts for liquidity
   const zrc20Amount = ethers.parseUnits("100", await (zrc20 as any).decimals());
   const wzetaAmount = ethers.parseUnits("100", await (wzeta as any).decimals());
 
   await Promise.all([
-    // Initial token setup
     (zrc20 as any).deposit(
       await deployer.getAddress(),
       ethers.parseEther("1000"),
@@ -142,48 +140,12 @@ export const createToken = async (
     (wzeta as any)
       .connect(deployer)
       .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
-
-    // Uniswap V2 setup
-    (uniswapFactoryInstance as any).createPair(
-      zrc20.target,
-      wzeta.target,
-      deployOpts
-    ),
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-
-    // Uniswap V3 approvals
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
   ]);
 
   Promise.all([
     await uniswapV2AddLiquidity(
       uniswapRouterInstance,
+      uniswapFactoryInstance,
       zrc20,
       wzeta,
       deployer,
