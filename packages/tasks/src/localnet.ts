@@ -82,9 +82,28 @@ const localnet = async (args: any) => {
   const skip = args.skip ? args.skip.split(",") : [];
 
   let solanaTestValidator: any;
+  let solanaError = "";
   if ((await isSolanaAvailable()) && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
-    await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+
+    // Record the output of the solana-test-validator.
+    // solanaError accumulates both errors and logs, but we only console log
+    // the value if the solana-test-validator exits with a non-zero code, so
+    // only errors are printed.
+    if (solanaTestValidator.stdout) {
+      solanaTestValidator.stdout.on("data", (data: string) => {
+        solanaError += data;
+      });
+    }
+
+    // If the solana-test-validator exits with a non-zero code, print the error and exit.
+    solanaTestValidator.on("exit", (code: number) => {
+      if (code !== 0) {
+        console.error(ansis.red(solanaError));
+        cleanup();
+        process.exit(1);
+      }
+    });
   }
 
   if ((await isSuiAvailable()) && !skip.includes("sui")) {
