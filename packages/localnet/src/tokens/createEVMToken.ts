@@ -1,5 +1,6 @@
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import { ethers } from "ethers";
+
 import { deployOpts } from "../deployOpts";
 
 export const createEVMToken = async (

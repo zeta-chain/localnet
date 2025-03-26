@@ -2,10 +2,10 @@ import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { InitLocalnetAddress } from "../../types/zodSchemas";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
-import { createToken } from "./tokens/createToken";
 import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
 import { suiSetup } from "./suiSetup";
+import { createToken } from "./tokens/createToken";
 import { zetachainCall } from "./zetachainCall";
 import { zetachainSetup } from "./zetachainSetup";
 import { zetachainWithdraw } from "./zetachainWithdraw";

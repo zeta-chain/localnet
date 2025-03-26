@@ -3,10 +3,9 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
-
+import { createEVMToken } from "./createEVMToken";
 import { createSolanaToken } from "./createSolanaToken";
 import { createSuiToken } from "./createSuiToken";
-import { createEVMToken } from "./createEVMToken";
 import { uniswapV2AddLiquidity } from "./uniswapV2";
 import { uniswapV3AddLiquidity } from "./uniswapV3";
 
