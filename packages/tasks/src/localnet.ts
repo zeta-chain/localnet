@@ -82,7 +82,9 @@ const localnet = async (args: any) => {
 
   const skip = args.skip ? args.skip.split(",") : [];
 
-  runZetaChainTonDocker();
+  if (!skip.includes("ton")) {
+    runZetaChainTonDocker();
+  }
 
   let solanaTestValidator: any;
   let solanaError = "";
@@ -202,5 +204,5 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
   .addFlag("exitOnError", "Exit with an error if a call is reverted")
   .addOptionalParam(
     "skip",
-    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'"
+    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui', 'ton'"
   );
