@@ -9,6 +9,7 @@ import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
+import { runZetaChainTonDocker } from "../../localnet/src/tonDocker";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -90,6 +91,8 @@ const startLocalnet = async (options: {
   }
 
   const skip = options.skip ? options.skip.split(",") : [];
+
+  runZetaChainTonDocker();
 
   let solanaTestValidator: ChildProcess;
 
