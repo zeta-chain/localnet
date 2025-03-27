@@ -1,7 +1,31 @@
 import Docker from "dockerode";
+import fs from "fs";
+import path from "path";
+import os from "os";
+
+function getDockerSocketPath(): string {
+  const defaultSocket = "/var/run/docker.sock";
+  if (fs.existsSync(defaultSocket)) {
+    return defaultSocket;
+  }
+
+  const colimaSocket = path.join(os.homedir(), ".colima/default/docker.sock");
+  if (fs.existsSync(colimaSocket)) {
+    return colimaSocket;
+  }
+
+  const limaSocket = path.join(os.homedir(), ".lima/default/sock/docker.sock");
+  if (fs.existsSync(limaSocket)) {
+    return limaSocket;
+  }
+
+  throw new Error(
+    "No Docker socket found. Please ensure Docker Desktop, Colima, or Lima is running."
+  );
+}
 
 const docker = new Docker({
-  socketPath: "/Users/fadeev/.colima/default/docker.sock",
+  socketPath: getDockerSocketPath(),
 });
 
 async function removeExistingContainer(containerName: string) {
