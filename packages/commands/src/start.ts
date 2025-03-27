@@ -9,8 +9,8 @@ import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { isTonAvailable } from "../../localnet/src/isTonAvailable";
-import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 import { tonStart } from "../../localnet/src/tonStart";
+import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 

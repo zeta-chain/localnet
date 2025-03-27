@@ -1,9 +1,9 @@
 import Docker from "dockerode";
 import fs from "fs";
-import path from "path";
 import os from "os";
+import path from "path";
 
-function getDockerSocketPath(): string {
+const getDockerSocketPath = (): string => {
   const defaultSocket = "/var/run/docker.sock";
   if (fs.existsSync(defaultSocket)) {
     return defaultSocket;
@@ -22,13 +22,13 @@ function getDockerSocketPath(): string {
   throw new Error(
     "No Docker socket found. Please ensure Docker Desktop, Colima, or Lima is running."
   );
-}
+};
 
 const docker = new Docker({
   socketPath: getDockerSocketPath(),
 });
 
-async function removeExistingContainer(containerName: string) {
+const removeExistingContainer = async (containerName: string) => {
   try {
     const container = docker.getContainer(containerName);
     await container.remove({ force: true });
@@ -38,9 +38,9 @@ async function removeExistingContainer(containerName: string) {
       console.error("Error removing container:", err);
     }
   }
-}
+};
 
-async function createNetworkIfNotExists(networkName: string) {
+const createNetworkIfNotExists = async (networkName: string) => {
   const networks = await docker.listNetworks();
   const networkExists = networks.some(
     (network: any) => network.Name === networkName
@@ -49,38 +49,37 @@ async function createNetworkIfNotExists(networkName: string) {
   if (!networkExists) {
     console.log(`Creating network: ${networkName}`);
     await docker.createNetwork({
-      Name: networkName,
       IPAM: {
-        Driver: "default",
         Config: [{ Subnet: "172.21.0.0/16" }],
+        Driver: "default",
       },
+      Name: networkName,
     });
     console.log(`Network ${networkName} created`);
   }
-}
+};
 
-async function pullWithRetry(
+const pullWithRetry = async (
   image: string,
   maxRetries = 3,
   delay = 5000
-): Promise<void> {
+): Promise<void> => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await new Promise<void>((resolve, reject) => {
         docker.pull(image, (err: any, stream: any) => {
-          if (err) return reject(err);
-
-          docker.modem.followProgress(stream, onFinished, onProgress);
-
-          function onFinished(err: any) {
+          const onFinished = (err: any) => {
             if (err) return reject(err);
             console.log("Image pulled successfully!");
             resolve();
-          }
+          };
 
-          function onProgress(event: any) {
+          const onProgress = (event: any) => {
             console.log(event.status, event.progress || "");
-          }
+          };
+          if (err) return reject(err);
+
+          docker.modem.followProgress(stream, onFinished, onProgress);
         });
       });
       return; // Success, exit the retry loop
@@ -95,9 +94,9 @@ async function pullWithRetry(
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-}
+};
 
-export async function tonStart() {
+export const tonStart = async () => {
   const containerName = "zeta_chain_ton_docker";
   const networkName = "mynetwork";
   const imageName = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
@@ -114,20 +113,19 @@ export async function tonStart() {
     console.log("Creating and starting the container...");
 
     const container = await docker.createContainer({
-      Image: imageName,
-      name: containerName,
+      Env: ["DOCKER_IP=172.21.0.104"],
       ExposedPorts: {
-        "8000/tcp": {},
         "4443/tcp": {},
+        "8000/tcp": {},
       },
       HostConfig: {
         AutoRemove: true,
         PortBindings: {
-          "8000/tcp": [{ HostPort: "8111" }],
           "4443/tcp": [{ HostPort: "4443" }],
+          "8000/tcp": [{ HostPort: "8111" }],
         },
       },
-      Env: ["DOCKER_IP=172.21.0.104"],
+      Image: imageName,
       NetworkingConfig: {
         EndpointsConfig: {
           [networkName]: {
@@ -137,6 +135,7 @@ export async function tonStart() {
           },
         },
       },
+      name: containerName,
     });
 
     await container.start();
@@ -147,4 +146,12 @@ export async function tonStart() {
     console.error("Error running container:", error);
     throw error; // Re-throw to ensure the error is properly handled by the caller
   }
-}
+};
+
+const stopTon = () => {
+  // Implementation for stopping TON
+};
+
+const checkTonStatus = () => {
+  // Implementation for checking TON status
+};
