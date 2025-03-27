@@ -8,8 +8,9 @@ import waitOn from "wait-on";
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
+import { isTonAvailable } from "../../localnet/src/isTonAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
-import { runZetaChainTonDocker } from "../../localnet/src/tonDocker";
+import { tonStart } from "../../localnet/src/tonStart";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -92,8 +93,8 @@ const startLocalnet = async (options: {
 
   const skip = options.skip ? options.skip.split(",") : [];
 
-  if (!skip.includes("ton")) {
-    runZetaChainTonDocker();
+  if (!skip.includes("ton") && isTonAvailable()) {
+    tonStart();
   }
 
   let solanaTestValidator: ChildProcess;

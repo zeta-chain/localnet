@@ -8,7 +8,8 @@ import waitOn from "wait-on";
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { runZetaChainTonDocker } from "../../localnet/src/tonDocker";
+import { isTonAvailable } from "../../localnet/src/isTonAvailable";
+import { tonStart } from "../../localnet/src/tonStart";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -82,8 +83,8 @@ const localnet = async (args: any) => {
 
   const skip = args.skip ? args.skip.split(",") : [];
 
-  if (!skip.includes("ton")) {
-    runZetaChainTonDocker();
+  if (!skip.includes("ton") && isTonAvailable()) {
+    tonStart();
   }
 
   let solanaTestValidator: any;
