@@ -41,21 +41,31 @@ const removeExistingContainer = async (containerName: string) => {
 };
 
 const createNetworkIfNotExists = async (networkName: string) => {
-  const networks = await docker.listNetworks();
-  const networkExists = networks.some(
-    (network: any) => network.Name === networkName
-  );
+  try {
+    const networks = await docker.listNetworks();
+    const networkExists = networks.some(
+      (network: any) => network.Name === networkName
+    );
 
-  if (!networkExists) {
-    console.log(`Creating network: ${networkName}`);
-    await docker.createNetwork({
-      IPAM: {
-        Config: [{ Subnet: "172.21.0.0/16" }],
-        Driver: "default",
-      },
-      Name: networkName,
-    });
-    console.log(`Network ${networkName} created`);
+    if (!networkExists) {
+      console.log(`Creating network: ${networkName}`);
+      await docker.createNetwork({
+        IPAM: {
+          Config: [{ Subnet: "172.25.0.0/24" }],
+          Driver: "default",
+        },
+        Name: networkName,
+      });
+      console.log(`Network ${networkName} created`);
+    }
+  } catch (error: any) {
+    if (error.statusCode === 403) {
+      console.error(
+        "Network creation failed due to subnet overlap. Please remove existing networks or use a different subnet."
+      );
+      throw error;
+    }
+    throw error;
   }
 };
 
@@ -113,7 +123,7 @@ export const tonStart = async () => {
     console.log("Creating and starting the container...");
 
     const container = await docker.createContainer({
-      Env: ["DOCKER_IP=172.21.0.104"],
+      Env: ["DOCKER_IP=172.25.0.2"],
       ExposedPorts: {
         "4443/tcp": {},
         "8000/tcp": {},
@@ -128,11 +138,7 @@ export const tonStart = async () => {
       Image: imageName,
       NetworkingConfig: {
         EndpointsConfig: {
-          [networkName]: {
-            IPAMConfig: {
-              IPv4Address: "172.21.0.104",
-            },
-          },
+          [networkName]: {},
         },
       },
       name: containerName,
