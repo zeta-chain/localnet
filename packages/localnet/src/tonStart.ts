@@ -133,6 +133,7 @@ export const tonStart = async () => {
         PortBindings: {
           // lite-client
           "4443/tcp": [{ HostPort: "4443" }],
+          // sidecar
           "8000/tcp": [{ HostPort: "8111" }],
         },
       },
