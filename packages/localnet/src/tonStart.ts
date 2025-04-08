@@ -24,14 +24,11 @@ const getDockerSocketPath = (): string => {
   );
 };
 
-const removeExistingContainer = async (
-  containerName: string,
-  docker: Docker
-) => {
+const removeExistingContainer = async (containerId: string, docker: Docker) => {
   try {
-    const container = docker.getContainer(containerName);
+    const container = docker.getContainer(containerId);
     await container.remove({ force: true });
-    console.log(`Removed existing container: ${containerName}`);
+    console.log(`Removed existing container with ID: ${containerId}`);
   } catch (err: any) {
     if (err.statusCode !== 404) {
       console.error("Error removing container:", err);
@@ -80,6 +77,7 @@ const pullWithRetry = async (
 export const tonStart = async () => {
   const containerName = "ton";
   const imageName = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
+  let containerId: string | undefined;
 
   try {
     const docker = new Docker({
@@ -89,8 +87,15 @@ export const tonStart = async () => {
     console.log("Pulling the ZetaChain TON Docker image...");
     await pullWithRetry(imageName, docker);
 
-    console.log("Removing any existing container...");
-    await removeExistingContainer(containerName, docker);
+    // Find and remove any existing container with the same name
+    const containers = await docker.listContainers({ all: true });
+    const existingContainer = containers.find((c) =>
+      c.Names.includes(`/${containerName}`)
+    );
+    if (existingContainer) {
+      console.log("Removing existing container...");
+      await removeExistingContainer(existingContainer.Id, docker);
+    }
 
     console.log("Creating and starting the container...");
 
@@ -108,9 +113,10 @@ export const tonStart = async () => {
       name: containerName,
     });
 
+    containerId = container.id;
     await container.start();
     console.log(
-      "ZetaChain TON Docker container started on ports 8111 and 4443!"
+      `ZetaChain TON Docker container started with ID ${containerId} on ports 8111 and 4443!`
     );
   } catch (error) {
     console.error("Error running container:", error);
