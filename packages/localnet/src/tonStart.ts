@@ -159,6 +159,6 @@ const stopTon = () => {
   // Implementation for stopping TON
 };
 
-const checkTonStatus = () => {
+const checkTonStatus = (containerId: string) => {
   // Implementation for checking TON status
 };
