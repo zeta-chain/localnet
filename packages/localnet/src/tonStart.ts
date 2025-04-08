@@ -131,6 +131,7 @@ export const tonStart = async () => {
       HostConfig: {
         AutoRemove: true,
         PortBindings: {
+          // lite-client
           "4443/tcp": [{ HostPort: "4443" }],
           "8000/tcp": [{ HostPort: "8111" }],
         },
