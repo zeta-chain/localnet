@@ -75,7 +75,6 @@ const pullWithRetry = async (
 };
 
 export const tonStart = async () => {
-  const containerName = "ton";
   const imageName = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
   let containerId: string | undefined;
 
@@ -87,11 +86,9 @@ export const tonStart = async () => {
     console.log("Pulling the ZetaChain TON Docker image...");
     await pullWithRetry(imageName, docker);
 
-    // Find and remove any existing container with the same name
+    // Find and remove any existing container with the same image
     const containers = await docker.listContainers({ all: true });
-    const existingContainer = containers.find((c) =>
-      c.Names.includes(`/${containerName}`)
-    );
+    const existingContainer = containers.find((c) => c.Image === imageName);
     if (existingContainer) {
       console.log("Removing existing container...");
       await removeExistingContainer(existingContainer.Id, docker);
@@ -110,7 +107,6 @@ export const tonStart = async () => {
         NetworkMode: "host",
       },
       Image: imageName,
-      name: containerName,
     });
 
     containerId = container.id;
