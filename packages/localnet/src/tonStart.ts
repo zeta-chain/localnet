@@ -117,11 +117,3 @@ export const tonStart = async () => {
     throw error;
   }
 };
-
-const stopTon = () => {
-  // Implementation for stopping TON
-};
-
-const checkTonStatus = (containerId: string) => {
-  // Implementation for checking TON status
-};
