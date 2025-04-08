@@ -107,7 +107,7 @@ const pullWithRetry = async (
 };
 
 export const tonStart = async () => {
-  const containerName = "zeta_chain_ton_docker";
+  const containerName = "ton";
   const networkName = "mynetwork";
   const imageName = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
 
