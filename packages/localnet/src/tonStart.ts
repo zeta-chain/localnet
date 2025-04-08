@@ -24,11 +24,10 @@ const getDockerSocketPath = (): string => {
   );
 };
 
-const docker = new Docker({
-  socketPath: getDockerSocketPath(),
-});
-
-const removeExistingContainer = async (containerName: string) => {
+const removeExistingContainer = async (
+  containerName: string,
+  docker: Docker
+) => {
   try {
     const container = docker.getContainer(containerName);
     await container.remove({ force: true });
@@ -40,7 +39,10 @@ const removeExistingContainer = async (containerName: string) => {
   }
 };
 
-const createNetworkIfNotExists = async (networkName: string) => {
+const createNetworkIfNotExists = async (
+  networkName: string,
+  docker: Docker
+) => {
   try {
     const networks = await docker.listNetworks();
     const networkExists = networks.some(
@@ -71,6 +73,7 @@ const createNetworkIfNotExists = async (networkName: string) => {
 
 const pullWithRetry = async (
   image: string,
+  docker: Docker,
   maxRetries = 3,
   delay = 5000
 ): Promise<void> => {
@@ -112,13 +115,17 @@ export const tonStart = async () => {
   const imageName = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
 
   try {
-    await createNetworkIfNotExists(networkName);
+    const docker = new Docker({
+      socketPath: getDockerSocketPath(),
+    });
+
+    await createNetworkIfNotExists(networkName, docker);
 
     console.log("Pulling the ZetaChain TON Docker image...");
-    await pullWithRetry(imageName);
+    await pullWithRetry(imageName, docker);
 
     console.log("Removing any existing container...");
-    await removeExistingContainer(containerName);
+    await removeExistingContainer(containerName, docker);
 
     console.log("Creating and starting the container...");
 

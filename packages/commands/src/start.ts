@@ -93,8 +93,11 @@ const startLocalnet = async (options: {
 
   const skip = options.skip ? options.skip.split(",") : [];
 
+  console.log("isTonAvailable", isTonAvailable());
   if (!skip.includes("ton") && isTonAvailable()) {
     tonStart();
+  } else {
+    console.log("Skipping Ton...");
   }
 
   let solanaTestValidator: ChildProcess;
