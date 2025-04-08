@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 
-export const isTonAvailable = (): boolean => {
+export const isDockerAvailable = (): boolean => {
   try {
     // Check if docker command is available
     execSync("docker --version", { stdio: "ignore" });

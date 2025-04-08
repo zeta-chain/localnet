@@ -8,7 +8,7 @@ import waitOn from "wait-on";
 import { initLocalnet } from "../../localnet/src";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { isTonAvailable } from "../../localnet/src/isTonAvailable";
+import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { tonStart } from "../../localnet/src/tonStart";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
@@ -93,8 +93,7 @@ const startLocalnet = async (options: {
 
   const skip = options.skip ? options.skip.split(",") : [];
 
-  console.log("isTonAvailable", isTonAvailable());
-  if (!skip.includes("ton") && isTonAvailable()) {
+  if (!skip.includes("ton") && isDockerAvailable()) {
     tonStart();
   } else {
     console.log("Skipping Ton...");
