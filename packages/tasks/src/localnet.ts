@@ -6,9 +6,9 @@ import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
+import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { tonStart } from "../../localnet/src/tonStart";
 
 const LOCALNET_JSON_FILE = "./localnet.json";

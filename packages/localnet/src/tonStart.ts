@@ -39,38 +39,6 @@ const removeExistingContainer = async (
   }
 };
 
-const createNetworkIfNotExists = async (
-  networkName: string,
-  docker: Docker
-) => {
-  try {
-    const networks = await docker.listNetworks();
-    const networkExists = networks.some(
-      (network: any) => network.Name === networkName
-    );
-
-    if (!networkExists) {
-      console.log(`Creating network: ${networkName}`);
-      await docker.createNetwork({
-        IPAM: {
-          Config: [{ Subnet: "172.25.0.0/24" }],
-          Driver: "default",
-        },
-        Name: networkName,
-      });
-      console.log(`Network ${networkName} created`);
-    }
-  } catch (error: any) {
-    if (error.statusCode === 403) {
-      console.error(
-        "Network creation failed due to subnet overlap. Please remove existing networks or use a different subnet."
-      );
-      throw error;
-    }
-    throw error;
-  }
-};
-
 const pullWithRetry = async (
   image: string,
   docker: Docker,
@@ -111,15 +79,12 @@ const pullWithRetry = async (
 
 export const tonStart = async () => {
   const containerName = "ton";
-  const networkName = "mynetwork";
   const imageName = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
 
   try {
     const docker = new Docker({
       socketPath: getDockerSocketPath(),
     });
-
-    await createNetworkIfNotExists(networkName, docker);
 
     console.log("Pulling the ZetaChain TON Docker image...");
     await pullWithRetry(imageName, docker);
@@ -130,26 +95,16 @@ export const tonStart = async () => {
     console.log("Creating and starting the container...");
 
     const container = await docker.createContainer({
-      Env: ["DOCKER_IP=172.25.0.2"],
+      Env: ["DOCKER_IP=127.0.0.1"],
       ExposedPorts: {
         "4443/tcp": {},
         "8000/tcp": {},
       },
       HostConfig: {
         AutoRemove: true,
-        PortBindings: {
-          // lite-client
-          "4443/tcp": [{ HostPort: "4443" }],
-          // sidecar
-          "8000/tcp": [{ HostPort: "8111" }],
-        },
+        NetworkMode: "host",
       },
       Image: imageName,
-      NetworkingConfig: {
-        EndpointsConfig: {
-          [networkName]: {},
-        },
-      },
       name: containerName,
     });
 
@@ -159,7 +114,7 @@ export const tonStart = async () => {
     );
   } catch (error) {
     console.error("Error running container:", error);
-    throw error; // Re-throw to ensure the error is properly handled by the caller
+    throw error;
   }
 };
 
