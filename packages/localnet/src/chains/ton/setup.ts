@@ -2,6 +2,7 @@ import Docker, { Container } from "dockerode";
 import * as dockerTools from "../../docker";
 import * as utils from "../../utils";
 import * as ton from "ton";
+import { makeFaucet } from "./faucet";
 
 const IMAGE = "ghcr.io/zeta-chain/ton-docker:3875bb4";
 const CONTAINER_NAME = "ton";
@@ -13,11 +14,23 @@ const PORT_SIDECAR = 8000;
 const PORT_RPC = 8081;
 
 const ENDPOINT_HEALTH = sidecarPath("status");
+const ENDPOINT_FAUCET = sidecarPath("faucet.json");
+
 const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
 
+const ENV_SKIP_CONTAINER = "TON_SKIP_CONTAINER";
+
 export async function start(): Promise<void> {
+    // Skip container creation if ENV_SKIP_CONTAINER is set to true
+    // (speeds up localnet development)
+    const skipContainerStep = !!process.env[ENV_SKIP_CONTAINER];
+
     try {
-        await startUnsafe(IMAGE);
+        if (skipContainerStep) {
+            console.log("Skipping TON container creation");
+        } else {
+            await startUnsafe(IMAGE);
+        }
     } catch (error) {
         console.error("Unable to initialize TON container", error);
         throw error;
@@ -27,7 +40,14 @@ export async function start(): Promise<void> {
         const rpcClient = new ton.TonClient({ endpoint: ENDPOINT_RPC });
         await waitForNodeWithRPC(ENDPOINT_HEALTH, rpcClient);
 
-        const faucet = await ensureFaucet();
+        const faucet = await makeFaucet(ENDPOINT_FAUCET, rpcClient);
+        const faucetBalance = await faucet.getBalance();
+
+        console.log("TON faucet created 💸", {
+            address: faucet.address().toRawString(),
+            balance: utils.tonFormatCoin(faucetBalance),
+        })
+
         // todo deploy gateway
         // todo donate to gateway
         // todo create generate a user
@@ -112,23 +132,6 @@ async function waitForNodeWithRPC(healthCheckURL: string, rpcClient: ton.TonClie
     console.log(`TON RPC is ready in ${since(startRPC)}s`);
 }
 
-async function ensureFaucet(): Promise<any> {
-    type FaucetInfo = {
-        privateKey: string;
-        publicKey: string;
-        walletRawAddress: string;
-        mnemonic: string;
-        walletVersion: string;
-        workChain: number;
-        subWalletId: number;
-        created: boolean;
-    }
-
-    const url = sidecarPath("faucet.json");
-
-    const res = await utils.getJSON(url);
-    const faucetInfo = res as FaucetInfo;
-}
 
 function sidecarPath(path: string): string {
     return `http://${HOST}:${PORT_SIDECAR}/${path}`;
