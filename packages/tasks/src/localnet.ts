@@ -9,7 +9,7 @@ import { initLocalnet } from "../../localnet/src";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { start as tonStart } from "../../localnet/src/ton";
+import { start as tonStart } from "../../localnet/src/chains/ton";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 

@@ -1,5 +1,6 @@
 import Docker, { Container } from "dockerode";
-import * as dockerTools from "../docker";
+import * as dockerTools from "../../docker";
+import * as requests from "../../requests";
 
 const HOST = "127.0.0.1";
 const PORT_LITE_SERVER = 4443;
@@ -57,8 +58,27 @@ async function startUnsafe(dockerImage: string): Promise<Container> {
     return container
 }
 
-function ensureFaucet(): any {
-    // todo check that 
-    return {}
+async function ensureFaucet(): Promise<any> {
+    // not shared outside this function on purpose.
+    type Faucet = {
+        privateKey: string;
+        publicKey: string;
+        walletRawAddress: string;
+        mnemonic: string;
+        walletVersion: string;
+        workChain: number;
+        subWalletId: number;
+        created: boolean;
+    }
+
+    const res = await requests.getJSON(sidecarPath("faucet.json"));
+    const faucetData = res as Faucet;
+
+    console.log('TON faucet', faucetData);
+
+    return faucetData as Faucet;
 }
 
+function sidecarPath(path: string): string {
+    return `http://${HOST}:${PORT_SIDECAR}/${path}`;
+}
