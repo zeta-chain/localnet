@@ -44,7 +44,6 @@ export const zetachainDepositAndCall = async ({
     return;
   }
 
-  console.log("Matched foreign coin:", foreignCoin);
   const zrc20 = foreignCoin.zrc20_contract_address;
 
   const context = {
