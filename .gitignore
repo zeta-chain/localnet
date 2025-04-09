@@ -27,3 +27,6 @@ localnet.pid
 test-ledger
 
 localnet.json
+
+.vscode
+.idea
