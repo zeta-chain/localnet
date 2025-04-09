@@ -1,24 +1,33 @@
 import Docker, { Container } from "dockerode";
 import * as dockerTools from "../../docker";
-import * as requests from "../../requests";
+import * as utils from "../../utils";
+import * as ton from "ton";
+
+const IMAGE = "ghcr.io/zeta-chain/ton-docker:3875bb4";
+const CONTAINER_NAME = "ton";
 
 const HOST = "127.0.0.1";
+
 const PORT_LITE_SERVER = 4443;
 const PORT_SIDECAR = 8000;
+const PORT_RPC = 8081;
 
-const IMAGE = "ghcr.io/zeta-chain/ton-docker:a69ea0f";
-const CONTAINER_NAME = "ton";
+const ENDPOINT_HEALTH = sidecarPath("status");
+const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
 
 export async function start(): Promise<void> {
     try {
-        const container = await startUnsafe(IMAGE);
+        await startUnsafe(IMAGE);
     } catch (error) {
         console.error("Unable to initialize TON container", error);
         throw error;
     }
 
     try {
-        const faucet = ensureFaucet();
+        const rpcClient = new ton.TonClient({ endpoint: ENDPOINT_RPC });
+        await waitForNodeWithRPC(ENDPOINT_HEALTH, rpcClient);
+
+        const faucet = await ensureFaucet();
         // todo deploy gateway
         // todo donate to gateway
         // todo create generate a user
@@ -48,19 +57,63 @@ async function startUnsafe(dockerImage: string): Promise<Container> {
             [`${PORT_LITE_SERVER}/tcp`]: {},
             [`${PORT_SIDECAR}/tcp`]: {},
         },
-        Env: ["DOCKER_IP=127.0.0.1"],
+        Env: [
+            "DOCKER_IP=127.0.0.1",
+            "ENABLE_RPC=true",
+        ],
     });
 
     await container.start();
 
-    console.log(`TON container started on ports ${PORT_LITE_SERVER} (lite-server) and ${PORT_SIDECAR} (sidecar)`);
+    console.log(`TON container started on ports [${PORT_LITE_SERVER}, ${PORT_SIDECAR}, ${PORT_RPC}]`);
 
     return container
 }
 
+// Lite-server & RPC processes take some time to start
+async function waitForNodeWithRPC(healthCheckURL: string, rpcClient: ton.TonClient): Promise<void> {
+    const start = Date.now();
+    const since = (ts: number) => ((Date.now() - ts) / 1000).toFixed(2);
+
+    const retries = 10;
+
+    // 1. Ensure TON & lite-server are ready
+    const healthCheck = async () => {
+        const res = await utils.getJSON(healthCheckURL);
+        if (res.status !== "OK") {
+            throw new Error(JSON.stringify(res));
+        }
+    }
+
+    const onHealthCheckFailure = (error: Error, attempt: number, isLastAttempt: boolean) => {
+        console.error(`TON lite-server is not ready. Attempt ${attempt + 1}/${retries}`);
+        if (isLastAttempt) {
+            console.error("TON lite-server is not ready. Giving up.", error);
+        }
+    }
+
+    await utils.retry(healthCheck, retries, onHealthCheckFailure);
+
+    console.log(`TON lite-server is ready in ${since(start)}s`);
+    const startRPC = Date.now();
+
+    // 2. Ensure TON HTTP RPC is ready
+    const rpcCheck = async () => { await rpcClient.getMasterchainInfo(); }
+
+    const onRPCFailure = (error: Error, attempt: number, isLastAttempt: boolean) => {
+        console.error(`TON RPC is not ready yet. Attempt ${attempt + 1}/${retries}`);
+        if (isLastAttempt) {
+            console.error("TON RPC is not ready. Giving up.", error);
+        }
+    }
+
+    await utils.retry(rpcCheck, retries, onRPCFailure);
+
+    console.log(`TON RPC is ready in ${since(startRPC)}s`);
+}
+
 async function ensureFaucet(): Promise<any> {
-    // not shared outside this function on purpose.
-    type Faucet = {
+    type FaucetInfo = {
         privateKey: string;
         publicKey: string;
         walletRawAddress: string;
@@ -71,12 +124,10 @@ async function ensureFaucet(): Promise<any> {
         created: boolean;
     }
 
-    const res = await requests.getJSON(sidecarPath("faucet.json"));
-    const faucetData = res as Faucet;
+    const url = sidecarPath("faucet.json");
 
-    console.log('TON faucet', faucetData);
-
-    return faucetData as Faucet;
+    const res = await utils.getJSON(url);
+    const faucetInfo = res as FaucetInfo;
 }
 
 function sidecarPath(path: string): string {
