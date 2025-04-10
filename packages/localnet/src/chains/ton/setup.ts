@@ -29,7 +29,7 @@ export async function start(): Promise<void> {
         if (skipContainerStep) {
             console.log("Skipping TON container creation");
         } else {
-            await startUnsafe(IMAGE);
+            await startContainer(IMAGE);
         }
     } catch (error) {
         console.error("Unable to initialize TON container", error);
@@ -59,7 +59,7 @@ export async function start(): Promise<void> {
     }
 };
 
-async function startUnsafe(dockerImage: string): Promise<Container> {
+async function startContainer(dockerImage: string): Promise<Container> {
     const socketPath = dockerTools.getSocketPath();
     const docker = new Docker({ socketPath });
 

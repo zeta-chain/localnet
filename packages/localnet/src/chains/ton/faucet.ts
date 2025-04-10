@@ -63,9 +63,7 @@ export async function makeFaucet(faucetURL: string, client: ton.TonClient): Prom
         throw new Error(`Expected faucet to have address ${want}, got ${got}`);
     }
 
-
     const words = faucetInfo.mnemonic.split(" ");
-
     const keyPair = await mnemonicToPrivateKey(words);
     if (!keyPair.publicKey.equals(publicKey)) {
         throw new Error("TON public key mismatch");
