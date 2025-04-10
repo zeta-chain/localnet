@@ -1,18 +1,32 @@
-import { task, types } from "hardhat/config";
 import { client, deployerFromFaucetURL, ENDPOINT_FAUCET } from "../../localnet/src/chains/ton";
 import { retry, tonFormatCoin } from "../../localnet/src/utils";
 import { Address } from "@ton/ton";
 import pc from "picocolors"
+import { Command } from "commander";
 
-export const tonBalanceTask = task("localnet:ton:balance", "Show TON balance", showBalance).
-    addParam("address", "Address")
 
-export const tonFaucetTask = task("localnet:ton:faucet", "Topup TON address", topup).
-    addParam("address", "Address").
-    addParam("amount", "Amount in TON", 100n, types.bigint)
+const balanceCommand = new Command("balance").
+    description("Show balance by address").
+    requiredOption("-a, --address <address>", "Address").
+    action(showBalance);
 
-export const tonWalletTask = task("localnet:ton:wallet", "Create TON wallet", createWallet).
-    addParam("amount", "Amount to topup in TON", 100n, types.bigint)
+const faucetCommand = new Command("faucet").
+    description("Request TON from faucet").
+    requiredOption("-a, --address <address>", "Address").
+    option("-m, --amount <amount>", "Amount in TON", "100").
+    action(topup);
+
+const walletCommand = new Command("wallet").
+    description("Create & fund a wallet").
+    option("-m, --amount <amount>", "Amount to topup in TON", "100").
+    action(createWallet);
+
+export const tonCommand = new Command("ton").
+    description("TON commands").
+    addCommand(balanceCommand).
+    addCommand(faucetCommand).
+    addCommand(walletCommand);
+
 
 async function showBalance(args: any): Promise<void> {
     const c = client();
