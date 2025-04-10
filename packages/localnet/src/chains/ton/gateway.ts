@@ -1,8 +1,8 @@
 import { Deployer } from "./deployer";
 import gatewayJson from "@zetachain/protocol-contracts-ton/build/Gateway.compiled.json";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers";
-import { beginCell, Cell, contractAddress, OpenedContract } from "@ton/core";
-import { evmAddressToSlice, GatewayConfig } from "@zetachain/protocol-contracts-ton/dist/types";
+import { Cell, OpenedContract } from "@ton/core";
+import { GatewayConfig } from "@zetachain/protocol-contracts-ton/dist/types";
 import * as utils from "../../utils";
 import { ec } from "elliptic";
 import { ethers } from "ethers";
@@ -31,7 +31,7 @@ export async function provisionGateway(deployer: Deployer): Promise<OpenedContra
         authority: deployer.address(),
     }
 
-    const gateway = deployer.openContract(newGateway(config));
+    const gateway = deployer.openContract(Gateway.createFromConfig(config, getCode()));
 
     // 2. Deploy Gateway
     console.log(`Deploying TON gateway at ${gateway.address.toRawString()}`);
@@ -61,18 +61,6 @@ export async function provisionGateway(deployer: Deployer): Promise<OpenedContra
     return gateway;
 }
 
-function newGateway(config: GatewayConfig): Gateway {
-    const code = getCode();
-    const stateInit = {
-        code,
-        data: gatewayConfigToCell(config),
-    }
-
-    const address = contractAddress(0, stateInit);
-
-    return new Gateway(address, stateInit);
-}
-
 // Example of a compiled TON program:
 // {
 //   "hash": "...",
@@ -88,17 +76,4 @@ function getCode(): Cell {
     }
 
     return cells[0];
-}
-
-// todo remove after publishing protocol-contracts-ton to NPM
-function gatewayConfigToCell(config: GatewayConfig): Cell {
-    const tss = evmAddressToSlice(config.tss);
-
-    return beginCell()
-        .storeUint(config.depositsEnabled ? 1 : 0, 1) // deposits_enabled
-        .storeCoins(0) // total_locked
-        .storeUint(0, 32) // seqno
-        .storeSlice(tss) // tss_address
-        .storeAddress(config.authority) // authority_address
-        .endCell();
 }

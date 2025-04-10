@@ -1898,6 +1898,13 @@
   dependencies:
     dotenv "^16.1.4"
 
+"@zetachain/protocol-contracts-ton@1.0.0-rc2":
+  version "1.0.0-rc2"
+  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts-ton/-/protocol-contracts-ton-1.0.0-rc2.tgz#cac00ff4c3ffbfe97a2ab59921b293824bcfff25"
+  integrity sha512-mRwGX0WD2yfpqtxdMlKv0z4fJboGosr0oA80R8G16Tfv2CbiKB8KBPsaFIHTg3edf9y5F0NisLgqwZ3B6jWdiQ==
+  dependencies:
+    ethers "^6.13.2"
+
 "@zetachain/protocol-contracts@12.0.0":
   version "12.0.0"
   resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-12.0.0.tgz#42897490f4ec798213e5ef06dcc464a21f944771"
