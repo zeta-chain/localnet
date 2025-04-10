@@ -1,8 +1,9 @@
 import Docker, { Container } from "dockerode";
 import * as dockerTools from "../../docker";
 import * as utils from "../../utils";
-import * as ton from "ton";
+import * as ton from "@ton/ton";
 import { makeFaucet } from "./faucet";
+import { provisionGateway } from "./gateway";
 
 const IMAGE = "ghcr.io/zeta-chain/ton-docker:3875bb4";
 const CONTAINER_NAME = "ton";
@@ -48,14 +49,15 @@ export async function start(): Promise<void> {
             balance: utils.tonFormatCoin(faucetBalance),
         })
 
-        // todo deploy gateway
-        // todo donate to gateway
+        const gw = await provisionGateway(faucet);
+
         // todo create generate a user
         // todo donate from faucet to a user
         // todo implement localnet TON gw logic (deposit, ...)
         // todo return faucet, gateway, user, ...
     } catch (error) {
         console.error("Unable to provision TON", error);
+        throw error;
     }
 };
 

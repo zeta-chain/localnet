@@ -1,22 +1,30 @@
-import * as ton from "ton";
+import * as ton from "@ton/ton";
 import * as utils from "../../utils";
-import { KeyPair, mnemonicToPrivateKey } from "ton-crypto";
+import { KeyPair, mnemonicToPrivateKey } from "@ton/crypto";
 
 const FAUCET_WALLET_VERSION = "V3R2";
 
 export class Faucet {
-    private readonly keyPair: KeyPair;
-    private readonly wallet: ton.WalletContractV3R2;
     private readonly client: ton.TonClient;
+    private readonly wallet: ton.OpenedContract<ton.WalletContractV3R2>;
+    private readonly sender: ton.Sender;
 
     constructor(
-        keyPair: KeyPair,
-        wallet: ton.WalletContractV3R2,
         client: ton.TonClient,
+        wallet: ton.WalletContractV3R2,
+        keyPair: KeyPair,
     ) {
-        this.keyPair = keyPair;
-        this.wallet = wallet;
         this.client = client;
+        this.wallet = client.open(wallet);
+        this.sender = this.wallet.sender(keyPair.secretKey);
+    }
+
+    openContract<T extends ton.Contract>(contract: T): ton.OpenedContract<T> {
+        return this.client.open(contract);
+    }
+
+    getSender(): ton.Sender {
+        return this.sender;
     }
 
     address(): ton.Address {
@@ -24,8 +32,7 @@ export class Faucet {
     }
 
     async getBalance(): Promise<bigint> {
-        const balance = await this.client.getBalance(this.wallet.address);
-        return balance;
+        return this.wallet.getBalance();
     }
 }
 
@@ -69,5 +76,5 @@ export async function makeFaucet(faucetURL: string, client: ton.TonClient): Prom
         throw new Error("TON public key mismatch");
     }
 
-    return new Faucet(keyPair, wallet, client);
+    return new Faucet(client, wallet, keyPair);
 }
