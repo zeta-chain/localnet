@@ -14,10 +14,14 @@ const PORT_SIDECAR = 8000;
 const PORT_RPC = 8081;
 
 const ENDPOINT_HEALTH = sidecarURL("status");
-const ENDPOINT_FAUCET = sidecarURL("faucet.json");
+export const ENDPOINT_FAUCET = sidecarURL("faucet.json");
 const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
 
 const ENV_SKIP_CONTAINER = "TON_SKIP_CONTAINER";
+
+export function client(): ton.TonClient {
+    return new ton.TonClient({ endpoint: ENDPOINT_RPC });
+}
 
 /**
  * - Create TON container
@@ -42,7 +46,7 @@ export async function start(): Promise<void> {
     }
 
     try {
-        const rpcClient = new ton.TonClient({ endpoint: ENDPOINT_RPC });
+        const rpcClient = await client();
         await waitForNodeWithRPC(ENDPOINT_HEALTH, rpcClient);
 
         const deployer = await deployerFromFaucetURL(ENDPOINT_FAUCET, rpcClient);

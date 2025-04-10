@@ -7,3 +7,4 @@ export { localnetStopTask } from "./stop";
 export { suiBalanceTask } from "./suiBalance";
 export { suiDepositTask } from "./suiDeposit";
 export { suiDepositAndCallTask } from "./suiDepositAndCall";
+export * from "./tonTasks";
