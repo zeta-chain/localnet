@@ -2,9 +2,11 @@ import * as ton from "@ton/ton";
 import * as utils from "../../utils";
 import { KeyPair, mnemonicToPrivateKey } from "@ton/crypto";
 
-const FAUCET_WALLET_VERSION = "V3R2";
-
-export class Faucet {
+/**
+ * A deployer is a TON wallet that can provision other wallets and contracts.
+ * It is derived from a faucet of dockerized TON node.
+ */
+export class Deployer {
     private readonly client: ton.TonClient;
     private readonly wallet: ton.OpenedContract<ton.WalletContractV3R2>;
     private readonly sender: ton.Sender;
@@ -19,6 +21,10 @@ export class Faucet {
         this.sender = this.wallet.sender(keyPair.secretKey);
     }
 
+    address(): ton.Address {
+        return this.wallet.address;
+    }
+
     openContract<T extends ton.Contract>(contract: T): ton.OpenedContract<T> {
         return this.client.open(contract);
     }
@@ -27,16 +33,18 @@ export class Faucet {
         return this.sender;
     }
 
-    address(): ton.Address {
-        return this.wallet.address;
-    }
-
     async getBalance(): Promise<bigint> {
         return this.wallet.getBalance();
     }
+
+    createWallet(balance: bigint): void {
+        // todo provision a new wallet
+    }
 }
 
-export async function makeFaucet(faucetURL: string, client: ton.TonClient): Promise<Faucet> {
+const FAUCET_WALLET_VERSION = "V3R2";
+
+export async function deployerFromFaucetURL(faucetURL: string, client: ton.TonClient): Promise<Deployer> {
     type FaucetInfo = {
         privateKey: string;
         publicKey: string;
@@ -48,19 +56,18 @@ export async function makeFaucet(faucetURL: string, client: ton.TonClient): Prom
         created: boolean;
     }
 
-    const faucetInfo = await utils.getJSON(faucetURL) as FaucetInfo;
-
-    if (faucetInfo.walletVersion !== FAUCET_WALLET_VERSION) {
-        throw new Error(`Expected faucet to be ${FAUCET_WALLET_VERSION}, got ${faucetInfo.walletVersion}`);
+    const faucet = await utils.getJSON(faucetURL) as FaucetInfo;
+    if (faucet.walletVersion !== FAUCET_WALLET_VERSION) {
+        throw new Error(`Expected faucet to be ${FAUCET_WALLET_VERSION}, got ${faucet.walletVersion}`);
     }
 
-    const expectedAddress = ton.Address.parse(faucetInfo.walletRawAddress);
+    const expectedAddress = ton.Address.parse(faucet.walletRawAddress);
 
-    const publicKey = Buffer.from(faucetInfo.publicKey, "hex");
+    const publicKey = Buffer.from(faucet.publicKey, "hex");
     const wallet = ton.WalletContractV3R2.create({
         publicKey,
-        workchain: faucetInfo.workChain,
-        walletId: faucetInfo.subWalletId,
+        workchain: faucet.workChain,
+        walletId: faucet.subWalletId,
     })
 
     if (!wallet.address.equals(expectedAddress)) {
@@ -70,11 +77,11 @@ export async function makeFaucet(faucetURL: string, client: ton.TonClient): Prom
         throw new Error(`Expected faucet to have address ${want}, got ${got}`);
     }
 
-    const words = faucetInfo.mnemonic.split(" ");
+    const words = faucet.mnemonic.split(" ");
     const keyPair = await mnemonicToPrivateKey(words);
     if (!keyPair.publicKey.equals(publicKey)) {
         throw new Error("TON public key mismatch");
     }
 
-    return new Faucet(client, wallet, keyPair);
+    return new Deployer(client, wallet, keyPair);
 }

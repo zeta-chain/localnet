@@ -2,25 +2,29 @@ import Docker, { Container } from "dockerode";
 import * as dockerTools from "../../docker";
 import * as utils from "../../utils";
 import * as ton from "@ton/ton";
-import { makeFaucet } from "./faucet";
+import { deployerFromFaucetURL } from "./deployer";
 import { provisionGateway } from "./gateway";
 
 const IMAGE = "ghcr.io/zeta-chain/ton-docker:3875bb4";
 const CONTAINER_NAME = "ton";
 
 const HOST = "127.0.0.1";
-
 const PORT_LITE_SERVER = 4443;
 const PORT_SIDECAR = 8000;
 const PORT_RPC = 8081;
 
-const ENDPOINT_HEALTH = sidecarPath("status");
-const ENDPOINT_FAUCET = sidecarPath("faucet.json");
-
+const ENDPOINT_HEALTH = sidecarURL("status");
+const ENDPOINT_FAUCET = sidecarURL("faucet.json");
 const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
 
 const ENV_SKIP_CONTAINER = "TON_SKIP_CONTAINER";
 
+/**
+ * - Create TON container
+ * - Provision TON deployer & faucet
+ * - Deploy TON gateway
+ * 
+ */
 export async function start(): Promise<void> {
     // Skip container creation if ENV_SKIP_CONTAINER is set to true
     // (speeds up localnet development)
@@ -41,20 +45,11 @@ export async function start(): Promise<void> {
         const rpcClient = new ton.TonClient({ endpoint: ENDPOINT_RPC });
         await waitForNodeWithRPC(ENDPOINT_HEALTH, rpcClient);
 
-        const faucet = await makeFaucet(ENDPOINT_FAUCET, rpcClient);
-        const faucetBalance = await faucet.getBalance();
+        const deployer = await deployerFromFaucetURL(ENDPOINT_FAUCET, rpcClient);
+        console.log(`TON deployer: ${deployer.address().toRawString()}`);
 
-        console.log("TON faucet created 💸", {
-            address: faucet.address().toRawString(),
-            balance: utils.tonFormatCoin(faucetBalance),
-        })
+        const gateway = await provisionGateway(deployer);
 
-        const gw = await provisionGateway(faucet);
-
-        // todo create generate a user
-        // todo donate from faucet to a user
-        // todo implement localnet TON gw logic (deposit, ...)
-        // todo return faucet, gateway, user, ...
     } catch (error) {
         console.error("Unable to provision TON", error);
         throw error;
@@ -134,7 +129,6 @@ async function waitForNodeWithRPC(healthCheckURL: string, rpcClient: ton.TonClie
     console.log(`TON RPC is ready in ${since(startRPC)}s`);
 }
 
-
-function sidecarPath(path: string): string {
+function sidecarURL(path: string): string {
     return `http://${HOST}:${PORT_SIDECAR}/${path}`;
 }

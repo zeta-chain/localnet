@@ -1,35 +1,42 @@
-import { Faucet } from "./faucet";
+import { Deployer } from "./deployer";
 import gatewayJson from "@zetachain/protocol-contracts-ton/build/Gateway.compiled.json";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers";
-import { Address, beginCell, Cell, contractAddress, OpenedContract } from "@ton/core";
+import { beginCell, Cell, contractAddress, OpenedContract } from "@ton/core";
 import { evmAddressToSlice, GatewayConfig } from "@zetachain/protocol-contracts-ton/dist/types";
 import * as utils from "../../utils";
+import { ec } from "elliptic";
+import { ethers } from "ethers";
 
-// todo, convert to an argument
-const tss = "0xa449bCF5cebdb267e8021A871C22BDCc8659D4aC"
+// It' okay to use arbitrary private key for TSS because it's a localnet
+const tssPrivateKeyHex = "0xede604e10a5ac4a08b7f6e10033514e1811f17200d69a04882aab91ade23a968"
+const tssKeyPair = (new ec("secp256k1")).keyFromPrivate(tssPrivateKeyHex)
 
 const oneTon = 10n ** 9n
 const donation = 10n * oneTon;
 
 /**
  * Provision a TON gateway contract
- * @param faucet - a faucet contract instance
+ * @param deployer - a deployer contract instance
  * @returns a deployed Gateway
  */
-export async function provisionGateway(faucet: Faucet): Promise<OpenedContract<Gateway>> {
+export async function provisionGateway(deployer: Deployer): Promise<OpenedContract<Gateway>> {
     // 1. Construct Gateway
+    const tssAddress = ethers.computeAddress(
+        "0x" + tssKeyPair.getPublic().encode('hex', false)
+    )
+
     const config: GatewayConfig = {
         depositsEnabled: true,
-        tss,
-        authority: faucet.address(),
+        tss: tssAddress,
+        authority: deployer.address(),
     }
 
-    const gateway = faucet.openContract(newGateway(config));
+    const gateway = deployer.openContract(newGateway(config));
 
     // 2. Deploy Gateway
     console.log(`Deploying TON gateway at ${gateway.address.toRawString()}`);
 
-    await gateway.sendDeploy(faucet.getSender(), oneTon)
+    await gateway.sendDeploy(deployer.getSender(), oneTon)
 
     // Transactions are async, wait for deployment
     await utils.retry(async () => {
@@ -39,7 +46,7 @@ export async function provisionGateway(faucet: Faucet): Promise<OpenedContract<G
 
 
     // 3. Send a donation
-    await gateway.sendDonation(faucet.getSender(), donation);
+    await gateway.sendDonation(deployer.getSender(), donation);
 
     await utils.retry(async () => {
         const balance = await gateway.getBalance();

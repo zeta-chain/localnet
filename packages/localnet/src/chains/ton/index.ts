@@ -1,3 +1,3 @@
-export * from "./setup";
-export * from "./faucet";
+export * from "./ton";
+export * from "./deployer";
 export * from "./gateway";
