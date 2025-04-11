@@ -42,6 +42,10 @@ export class Deployer {
         return this.sender;
     }
 
+    getClient(): ton.TonClient {
+        return this.client;
+    }
+
     async getBalance(): Promise<bigint> {
         return this.wallet.getBalance();
     }
