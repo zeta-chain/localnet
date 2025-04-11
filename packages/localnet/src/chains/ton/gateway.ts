@@ -4,12 +4,6 @@ import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers";
 import { Cell, OpenedContract } from "@ton/core";
 import { GatewayConfig } from "@zetachain/protocol-contracts-ton/dist/types";
 import * as utils from "../../utils";
-import { ec } from "elliptic";
-import { ethers } from "ethers";
-
-// It' okay to use arbitrary private key for TSS because it's a localnet
-const tssPrivateKeyHex = "0xede604e10a5ac4a08b7f6e10033514e1811f17200d69a04882aab91ade23a968"
-const tssKeyPair = (new ec("secp256k1")).keyFromPrivate(tssPrivateKeyHex)
 
 const oneTon = 10n ** 9n
 const donation = 10n * oneTon;
@@ -19,12 +13,8 @@ const donation = 10n * oneTon;
  * @param deployer - a deployer contract instance
  * @returns a deployed Gateway
  */
-export async function provisionGateway(deployer: Deployer): Promise<OpenedContract<Gateway>> {
+export async function provisionGateway(deployer: Deployer, tssAddress: string): Promise<OpenedContract<Gateway>> {
     // 1. Construct Gateway
-    const tssAddress = ethers.computeAddress(
-        "0x" + tssKeyPair.getPublic().encode('hex', false)
-    )
-
     const config: GatewayConfig = {
         depositsEnabled: true,
         tss: tssAddress,
@@ -34,7 +24,7 @@ export async function provisionGateway(deployer: Deployer): Promise<OpenedContra
     const gateway = deployer.openContract(Gateway.createFromConfig(config, getCode()));
 
     // 2. Deploy Gateway
-    console.log(`Deploying TON gateway at ${gateway.address.toRawString()}`);
+    console.log("Deploying TON gateway");
 
     await gateway.sendDeploy(deployer.getSender(), oneTon)
 

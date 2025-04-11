@@ -10,6 +10,7 @@ import { zetachainCall } from "./zetachainCall";
 import { zetachainSetup } from "./zetachainSetup";
 import { zetachainWithdraw } from "./zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
+import * as ton from "./chains/ton";
 
 const foreignCoins: any[] = [];
 
@@ -80,6 +81,10 @@ export const initLocalnet = async ({
         tss,
         zetachainContracts,
       }),
+      ton.setup({
+        chainId: NetworkID.TON,
+        tss,
+      }),
     ]);
 
   const contracts = {
@@ -103,6 +108,7 @@ export const initLocalnet = async ({
     createToken(contracts, "USDC", false, NetworkID.Solana, 9),
     createToken(contracts, "SUI", true, NetworkID.Sui, 9),
     createToken(contracts, "USDC", false, NetworkID.Sui, 9),
+    createToken(contracts, "TON", true, NetworkID.TON, 9),
   ]);
 
   zetachainContracts.gatewayZEVM.on("Called", async (...args) =>

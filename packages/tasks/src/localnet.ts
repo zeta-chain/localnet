@@ -9,7 +9,7 @@ import { initLocalnet } from "../../localnet/src";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { start as tonStart } from "../../localnet/src/chains/ton";
+import * as ton from "../../localnet/src/chains/ton";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -84,7 +84,7 @@ const localnet = async (args: any) => {
   const skip = args.skip ? args.skip.split(",") : [];
 
   if (!skip.includes("ton") && isDockerAvailable()) {
-    tonStart();
+    await ton.startNode();
   }
 
   let solanaTestValidator: any;
@@ -189,7 +189,7 @@ const localnet = async (args: any) => {
     process.exit(0);
   }
 
-  await new Promise(() => {});
+  await new Promise(() => { });
 };
 
 export const localnetTask = task("localnet", "Start localnet", localnet)

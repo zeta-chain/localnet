@@ -13,4 +13,6 @@ export const NetworkID = {
   Solana: "901",
   Sui: "103",
   ZetaChain: "7001",
+  // ton testnet id
+  TON: "2015141",
 };

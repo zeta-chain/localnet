@@ -1,82 +1,45 @@
 import Docker, { Container } from "dockerode";
 import * as dockerTools from "../../docker";
 import * as utils from "../../utils";
+import * as cfg from "./config";
 import * as ton from "@ton/ton";
-import { deployerFromFaucetURL } from "./deployer";
-import { provisionGateway } from "./gateway";
 
-const IMAGE = "ghcr.io/zeta-chain/ton-docker:3875bb4";
-const CONTAINER_NAME = "ton";
-
-const HOST = "127.0.0.1";
-const PORT_LITE_SERVER = 4443;
-const PORT_SIDECAR = 8000;
-const PORT_RPC = 8081;
-
-const ENDPOINT_HEALTH = sidecarURL("status");
-export const ENDPOINT_FAUCET = sidecarURL("faucet.json");
-const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
-
-const ENV_SKIP_CONTAINER = "TON_SKIP_CONTAINER";
-
-export function client(): ton.TonClient {
-    return new ton.TonClient({ endpoint: ENDPOINT_RPC });
-}
-
-/**
- * - Create TON container
- * - Provision TON deployer & faucet
- * - Deploy TON gateway
- * 
- */
-export async function start(): Promise<void> {
+export async function startNode(): Promise<void> {
     // Skip container creation if ENV_SKIP_CONTAINER is set to true
     // (speeds up localnet development)
-    const skipContainerStep = !!process.env[ENV_SKIP_CONTAINER];
+    const skipContainerStep = !!process.env[cfg.ENV_SKIP_CONTAINER];
+
+    // noop
+    if (skipContainerStep) {
+        console.log("Skipping TON container creation");
+        return
+    }
 
     try {
-        if (skipContainerStep) {
-            console.log("Skipping TON container creation");
-        } else {
-            await startContainer(IMAGE);
-        }
+        await startContainer(cfg.IMAGE);
     } catch (error) {
         console.error("Unable to initialize TON container", error);
         throw error;
     }
-
-    try {
-        const rpcClient = await client();
-        await waitForNodeWithRPC(ENDPOINT_HEALTH, rpcClient);
-
-        const deployer = await deployerFromFaucetURL(ENDPOINT_FAUCET, rpcClient);
-        console.log(`TON deployer: ${deployer.address().toRawString()}`);
-
-        const gateway = await provisionGateway(deployer);
-
-    } catch (error) {
-        console.error("Unable to provision TON", error);
-        throw error;
-    }
-};
+}
 
 async function startContainer(dockerImage: string): Promise<Container> {
     const socketPath = dockerTools.getSocketPath();
     const docker = new Docker({ socketPath });
 
     await dockerTools.pullWithRetry(dockerImage, docker);
-    await dockerTools.removeExistingContainer(docker, CONTAINER_NAME);
+    await dockerTools.removeExistingContainer(docker, cfg.CONTAINER_NAME);
 
     const container = await docker.createContainer({
         Image: dockerImage,
-        name: CONTAINER_NAME,
+        name: cfg.CONTAINER_NAME,
         HostConfig: {
             AutoRemove: true,
             NetworkMode: "host",
         },
         ExposedPorts: {
-            [`${PORT_LITE_SERVER}/tcp`]: {},
-            [`${PORT_SIDECAR}/tcp`]: {},
+            [`${cfg.PORT_LITE_SERVER}/tcp`]: {},
+            [`${cfg.PORT_SIDECAR}/tcp`]: {},
         },
         Env: [
             "DOCKER_IP=127.0.0.1",
@@ -86,13 +49,13 @@ async function startContainer(dockerImage: string): Promise<Container> {
 
     await container.start();
 
-    console.log(`TON container started on ports [${PORT_LITE_SERVER}, ${PORT_SIDECAR}, ${PORT_RPC}]`);
+    console.log(`TON container started on ports [${cfg.PORT_LITE_SERVER}, ${cfg.PORT_SIDECAR}, ${cfg.PORT_RPC}]`);
 
     return container
 }
 
 // Lite-server & RPC processes take some time to start
-async function waitForNodeWithRPC(healthCheckURL: string, rpcClient: ton.TonClient): Promise<void> {
+export async function waitForNodeWithRPC(healthCheckURL: string, rpcClient: ton.TonClient): Promise<void> {
     const start = Date.now();
     const since = (ts: number) => ((Date.now() - ts) / 1000).toFixed(2);
 
@@ -131,8 +94,4 @@ async function waitForNodeWithRPC(healthCheckURL: string, rpcClient: ton.TonClie
     await utils.retry(rpcCheck, retries, onRPCFailure);
 
     console.log(`TON RPC is ready in ${since(startRPC)}s`);
-}
-
-function sidecarURL(path: string): string {
-    return `http://${HOST}:${PORT_SIDECAR}/${path}`;
 }
