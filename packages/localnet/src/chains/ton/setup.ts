@@ -63,7 +63,7 @@ async function setupThrowable(opts: SetupOptions) {
 
 
     // Observe inbound transactions (async)
-    observerInbounds(rpcClient, gateway, onInbound(opts, rpcClient, gateway));
+    observerInbounds(rpcClient, gateway, onInbound(opts));
 
     return {
         addresses: [
@@ -86,11 +86,7 @@ async function setupThrowable(opts: SetupOptions) {
     }
 }
 
-function onInbound(
-    opts: SetupOptions,
-    rpcClient: ton.TonClient,
-    gateway: ton.OpenedContract<Gateway>,
-) {
+function onInbound(opts: SetupOptions) {
     // gas coin
     const asset = ethers.ZeroAddress
 

@@ -42,37 +42,52 @@ export const zetachainWithdraw = async ({
 
     if (chainID === NetworkID.Solana) {
       const receiverAddress = ethers.toUtf8String(receiver);
-      if (asset) {
-        await solanaWithdrawSPL({
+
+      return asset
+        ? await solanaWithdrawSPL({
           amount: amount,
           decimals: 9,
           mint: asset,
           recipient: receiverAddress,
+        })
+        : await solanaWithdraw({
+          amount: amount,
+          recipient: receiverAddress
         });
-      } else {
-        await solanaWithdraw({ amount: amount, recipient: receiverAddress });
-      }
-    } else if (chainID === NetworkID.Sui) {
+    }
+
+    if (chainID === NetworkID.Sui) {
       await suiWithdraw({
         amount,
         sender: receiver,
         ...contracts.suiContracts.env,
       });
-    } else {
-      if (isGasToken) {
-        await evmTSSTransfer({ args, foreignCoins, tss });
-      } else if (isERC20orZETA) {
-        const evmContracts =
-          chainID === NetworkID.Ethereum
-            ? contracts.ethereumContracts
-            : contracts.bnbContracts;
-        await evmCustodyWithdraw({ args, evmContracts, foreignCoins, tss });
-      }
     }
+
+    // EVM chain
+    if (isGasToken) {
+      return await evmTSSTransfer({ args, foreignCoins, tss });
+    }
+
+    if (isERC20orZETA) {
+      const evmContracts = chainID === NetworkID.Ethereum
+        ? contracts.ethereumContracts
+        : contracts.bnbContracts;
+
+      return await evmCustodyWithdraw({
+        args,
+        evmContracts,
+        foreignCoins,
+        tss,
+      });
+    }
+
+
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);
     }
+
     return await zetachainOnRevert({
       amount,
       asset: zrc20,
