@@ -88,7 +88,19 @@ export async function observerInbounds(
     console.log("TON: starting observer with tx", oldLT, oldHash);
 
     while (true) {
-        const { lt, hash } = await latestTx();
+        let lt = ""
+        let hash = ""
+
+        try {
+            const tx = await latestTx();
+
+            lt = tx.lt
+            hash = tx.hash
+        } catch (e) {
+            console.error("TON: error getting latest tx", e);
+            await sleep(1);
+            continue;
+        }
 
         // noop
         if (oldLT == lt) {
@@ -158,13 +170,14 @@ function processDeposit(tx: ton.Transaction): void {
         return;
     }
 
-    const isDeposit = opCode === types.GatewayOp.Deposit
-        || opCode === types.GatewayOp.DepositAndCall
-
+    const isDeposit = opCode === types.GatewayOp.Deposit || opCode === types.GatewayOp.DepositAndCall
     if (!isDeposit) {
         console.log(`TON: irrelevant opCode ${opCode} for deposit (tx ${lt}:${hash})`);
         return;
     }
+
+    // skip query_id
+    body.skip(64)
 
     const logMessage = tx.outMessages.get(0)
     if (!logMessage) {
@@ -172,37 +185,24 @@ function processDeposit(tx: ton.Transaction): void {
         return;
     }
 
-    const sender = (info.src as ton.Address).toRawString()
-    let zetaRecipient: string
-    let depositAmount: bigint
-    let callData: string | null = null
+    const tonSender = (info.src as ton.Address).toRawString()
+    const zetaRecipient = types.bufferToHexString(body.loadBuffer(20))
+    const depositLog = types.depositLogFromCell(logMessage.body)
+    const depositAmount = depositLog.amount
 
-    const log = types.depositLogFromCell(logMessage.body)
-
-    console.log('deposit log', log)
-
-    depositAmount = log.amount
-
-    // skip query_id
-    body.skip(64)
-
-    zetaRecipient = types.bufferToHexString(body.loadBuffer(20))
-
-    console.log('zeta recipient', zetaRecipient)
+    let callDataHex: string | null = null
 
     if (opCode === types.GatewayOp.DepositAndCall) {
-        const callDataCell = body.loadRef()
-        callData = readString(callDataCell.asSlice())
+        const callDataSlice = body.loadRef().asSlice()
+        callDataHex = types.sliceToHexString(callDataSlice)
     }
-
-    // todo figure out Buffer data
 
     console.log('TON deposit', {
         opCode,
-        sender,
+        sender: tonSender,
         zetaRecipient,
         depositAmount,
-        callData,
+        callDataHex,
     })
 
     // todo wire to zetachain
