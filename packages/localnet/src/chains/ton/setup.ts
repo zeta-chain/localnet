@@ -126,6 +126,7 @@ function onInbound(opts: SetupOptions, client: ton.TonClient, gateway: OpenedCon
             inbound.recipient,
             inbound.amount,
             asset,
+            inbound.callDataHex!,
         ]
 
         await zetachainDepositAndCall({ args, ...opts });
