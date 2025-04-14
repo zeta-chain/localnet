@@ -101,6 +101,7 @@ export const initLocalnet = async ({
     suiContracts,
     tss,
     zetachainContracts,
+    tonContracts,
   };
 
   await Promise.all([

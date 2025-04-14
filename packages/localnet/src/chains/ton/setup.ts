@@ -1,5 +1,5 @@
 import * as ton from "@ton/ton";
-import { deployerFromFaucetURL } from "./deployer";
+import { Deployer, deployerFromFaucetURL } from "./deployer";
 import { observerInbounds, provisionGateway, Inbound } from "./gateway";
 import * as cfg from "./config";
 import * as node from "./node";
@@ -9,6 +9,7 @@ import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { log } from "../../log";
 import { zetachainDeposit } from "../../zetachainDeposit";
 import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
+import { OpenedContract } from "@ton/ton";
 
 export function client(): ton.TonClient {
     return new ton.TonClient({ endpoint: cfg.ENDPOINT_RPC });
@@ -22,6 +23,12 @@ export interface SetupOptions {
     foreignCoins: any[];
     provider: any;
     zetachainContracts: any;
+}
+
+export interface Env {
+    client: ton.TonClient;
+    deployer: Deployer;
+    gateway: OpenedContract<Gateway>;
 }
 
 export async function setup(opts: SetupOptions) {
@@ -65,6 +72,12 @@ async function setupThrowable(opts: SetupOptions) {
     // Observe inbound transactions (async)
     observerInbounds(rpcClient, gateway, onInbound(opts));
 
+    const env: Env = {
+        client: rpcClient,
+        deployer,
+        gateway,
+    }
+
     return {
         addresses: [
             {
@@ -78,11 +91,7 @@ async function setupThrowable(opts: SetupOptions) {
                 type: "gateway"
             }
         ],
-        env: {
-            client: rpcClient,
-            deployer,
-            gateway,
-        }
+        env,
     }
 }
 

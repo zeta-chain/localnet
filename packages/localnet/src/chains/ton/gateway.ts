@@ -2,10 +2,12 @@ import { Deployer } from "./deployer";
 import gatewayJson from "@zetachain/protocol-contracts-ton/build/Gateway.compiled.json";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers";
 import { Cell, OpenedContract } from "@ton/core";
-import { readString } from '@ton/core/dist/boc/utils/strings';
 import * as types from "@zetachain/protocol-contracts-ton/dist/types";
 import * as utils from "../../utils";
 import * as ton from "@ton/ton";
+import { NetworkID } from "../../constants";
+import { log as chainLog } from "../../log";
+import * as ethers from "ethers";
 
 const oneTon = 10n ** 9n
 const donation = 10n * oneTon;
@@ -102,7 +104,6 @@ export async function observerInbounds(
 
         // noop
         if (oldLT == lt) {
-            console.log("TON: no new txs. Sleeping...");
             await sleep(1);
             continue;
         }
@@ -223,6 +224,32 @@ async function observeInbound(
     await onInbound(inbound)
 }
 
+export interface WithdrawArgs {
+    gateway: OpenedContract<Gateway>,
+    tss: any,
+    amount: bigint,
+    recipient: ton.Address
+}
+
+export async function withdrawTON(
+    client: ton.TonClient,
+    gateway: OpenedContract<Gateway>,
+    tss: ethers.NonceManager,
+    recipient: ton.Address,
+    amount: bigint,
+) {
+    chainLog(NetworkID.TON, 'Executing withdrawal', recipient.toRawString(), amount.toString());
+
+    const seqno = await gateway.getSeqno();
+    const body = types.messageWithdraw(seqno, recipient, amount);
+    const signature = await ecdsaSignCell(tss, body);
+
+    await client.sendExternalMessage(
+        gateway,
+        types.messageExternal(signature, body),
+    );
+}
+
 function ltToString(lt: bigint): string {
     return lt.toString();
 }
@@ -237,4 +264,22 @@ function hashToString(hash: Buffer | bigint): string {
 
 async function sleep(seconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+}
+
+async function ecdsaSignCell(signer: ethers.NonceManager, cell: Cell): Promise<ton.Slice> {
+    const hash = cell.hash();
+    const sigRaw = await signer.signer.signMessage(hash);
+    const sig = ethers.Signature.from(sigRaw);
+
+    // https://docs.ton.org/learn/tvm-instructions/instructions
+    //
+    // `ECRECOVER` Recovers public key from signature...
+    // Takes 32-byte hash as uint256 hash; 65-byte signature as uint8 v and uint256 r, s.
+    const [v, r, s] = [Number(sig.v), BigInt(sig.r), BigInt(sig.s)];
+
+    return ton.beginCell().
+        storeUint(v, 8).
+        storeUint(r, 256).
+        storeUint(s, 256).
+        asSlice();
 }

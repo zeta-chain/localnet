@@ -10,6 +10,8 @@ import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
+import * as ton from "./chains/ton";
+import * as tonTypes from "@ton/ton";
 
 export const zetachainWithdraw = async ({
   contracts,
@@ -54,6 +56,20 @@ export const zetachainWithdraw = async ({
           amount: amount,
           recipient: receiverAddress
         });
+    }
+
+    if (chainID === NetworkID.TON) {
+      const env = contracts.tonContracts.env as ton.Env;
+      const nonceManager = tss as NonceManager;
+      const recipient = tonTypes.Address.parse(receiver);
+
+      return await ton.withdrawTON(
+        env.client,
+        env.gateway,
+        nonceManager,
+        recipient,
+        amount
+      )
     }
 
     if (chainID === NetworkID.Sui) {
