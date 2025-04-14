@@ -94,11 +94,17 @@ function onInbound(
     // gas coin
     const asset = ethers.ZeroAddress
 
+    // https://github.com/zeta-chain/node/blob/f1040148d015f47c87526f60d83868500f901545/pkg/chains/chain.go#L127
+    const byteOrigin = (addr: ton.Address) => {
+        const rawString = addr.toRawString()
+        return ethers.hexlify(ethers.toUtf8Bytes(rawString));
+    }
+
     const onDeposit = async (inbound: Inbound) => {
         await zetachainDeposit({
             chainID: opts.chainId,
             args: [
-                inbound.sender.toRawString(),
+                byteOrigin(inbound.sender),
                 inbound.recipient,
                 inbound.amount,
                 asset,
@@ -112,7 +118,7 @@ function onInbound(
         await zetachainDepositAndCall({
             chainID: opts.chainId,
             args: [
-                inbound.sender.toRawString(),
+                byteOrigin(inbound.sender),
                 inbound.recipient,
                 inbound.amount,
                 asset,
@@ -125,7 +131,7 @@ function onInbound(
     }
 
     return async (inbound: Inbound) => {
-          try {
+        try {
             if (inbound.opCode === GatewayOp.Deposit) {
                 log(opts.chainId, `Gateway deposit: ${JSON.stringify(inbound)}`);
                 return await onDeposit(inbound);
