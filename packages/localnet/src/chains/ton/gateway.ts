@@ -8,6 +8,8 @@ import * as ton from "@ton/ton";
 import { NetworkID } from "../../constants";
 import { log as chainLog } from "../../log";
 import * as ethers from "ethers";
+import axios from "axios";
+import { HDNodeWallet, NonceManager } from "ethers";
 
 const oneTon = 10n ** 9n
 const donation = 10n * oneTon;
@@ -242,12 +244,20 @@ export async function withdrawTON(
 
     const seqno = await gateway.getSeqno();
     const body = types.messageWithdraw(seqno, recipient, amount);
-    const signature = await ecdsaSignCell(tss, body);
+    const signature = ecdsaSignCell(tss, body);
 
-    await client.sendExternalMessage(
-        gateway,
-        types.messageExternal(signature, body),
-    );
+    try {
+        await client.sendExternalMessage(
+            gateway,
+            types.messageExternal(signature, body),
+        );
+    } catch (err) {
+        if (axios.isAxiosError(err)) {
+            console.log("Axios error", err.response?.data);
+        }
+
+        throw err;
+    }
 }
 
 function ltToString(lt: bigint): string {
@@ -266,10 +276,10 @@ async function sleep(seconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
-async function ecdsaSignCell(signer: ethers.NonceManager, cell: Cell): Promise<ton.Slice> {
+function ecdsaSignCell(signer: NonceManager, cell: Cell): ton.Slice {
+    const wallet = signer.signer as HDNodeWallet
     const hash = cell.hash();
-    const sigRaw = await signer.signer.signMessage(hash);
-    const sig = ethers.Signature.from(sigRaw);
+    const sig = wallet.signingKey.sign(hash);
 
     // https://docs.ton.org/learn/tvm-instructions/instructions
     //

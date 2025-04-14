@@ -5,7 +5,7 @@ import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
-import { log } from "./log";
+import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
@@ -61,7 +61,10 @@ export const zetachainWithdraw = async ({
     if (chainID === NetworkID.TON) {
       const env = contracts.tonContracts.env as ton.Env;
       const nonceManager = tss as NonceManager;
-      const recipient = tonTypes.Address.parse(receiver);
+      const recipient = tonTypes.Address.parse(
+        ethers.toUtf8String(receiver)
+      );
+
 
       return await ton.withdrawTON(
         env.client,
@@ -103,6 +106,8 @@ export const zetachainWithdraw = async ({
     if (exitOnError) {
       throw new Error(err);
     }
+
+    logErr(NetworkID.ZetaChain, "Error withdrawing. Reverting.", err);
 
     return await zetachainOnRevert({
       amount,
