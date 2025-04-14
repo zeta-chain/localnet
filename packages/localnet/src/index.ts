@@ -82,10 +82,11 @@ export const initLocalnet = async ({
         zetachainContracts,
       }),
       ton.setup({
-        chainId: NetworkID.TON,
+        chainID: NetworkID.TON,
         skip: skip.includes("ton"),
         tss,
         provider,
+        deployer,
         foreignCoins,
         zetachainContracts,
       }),
