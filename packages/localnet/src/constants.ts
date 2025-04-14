@@ -12,7 +12,8 @@ export const NetworkID = {
   Ethereum: "5",
   Solana: "901",
   Sui: "103",
-  ZetaChain: "7001",
   // ton testnet id
   TON: "2015141",
+
+  ZetaChain: "7001",
 };

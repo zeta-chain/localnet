@@ -1,6 +1,8 @@
+import * as tonTypes from "@ton/ton";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
+import * as ton from "./chains/ton";
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
@@ -10,8 +12,6 @@ import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
-import * as ton from "./chains/ton";
-import * as tonTypes from "@ton/ton";
 
 export const zetachainWithdraw = async ({
   contracts,
@@ -47,24 +47,21 @@ export const zetachainWithdraw = async ({
 
       return asset
         ? await solanaWithdrawSPL({
-          amount: amount,
-          decimals: 9,
-          mint: asset,
-          recipient: receiverAddress,
-        })
+            amount: amount,
+            decimals: 9,
+            mint: asset,
+            recipient: receiverAddress,
+          })
         : await solanaWithdraw({
-          amount: amount,
-          recipient: receiverAddress
-        });
+            amount: amount,
+            recipient: receiverAddress,
+          });
     }
 
     if (chainID === NetworkID.TON) {
       const env = contracts.tonContracts.env as ton.Env;
       const nonceManager = tss as NonceManager;
-      const recipient = tonTypes.Address.parse(
-        ethers.toUtf8String(receiver)
-      );
-
+      const recipient = tonTypes.Address.parse(ethers.toUtf8String(receiver));
 
       return await ton.withdrawTON(
         env.client,
@@ -72,7 +69,7 @@ export const zetachainWithdraw = async ({
         nonceManager,
         recipient,
         amount
-      )
+      );
     }
 
     if (chainID === NetworkID.Sui) {
@@ -89,9 +86,10 @@ export const zetachainWithdraw = async ({
     }
 
     if (isERC20orZETA) {
-      const evmContracts = chainID === NetworkID.Ethereum
-        ? contracts.ethereumContracts
-        : contracts.bnbContracts;
+      const evmContracts =
+        chainID === NetworkID.Ethereum
+          ? contracts.ethereumContracts
+          : contracts.bnbContracts;
 
       return await evmCustodyWithdraw({
         args,
@@ -100,8 +98,6 @@ export const zetachainWithdraw = async ({
         tss,
       });
     }
-
-
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);

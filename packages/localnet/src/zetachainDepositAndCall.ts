@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 
-const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui]
+const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];
 
 export const zetachainDepositAndCall = async ({
   provider,

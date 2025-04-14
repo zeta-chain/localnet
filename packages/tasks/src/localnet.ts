@@ -6,10 +6,10 @@ import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
+import * as ton from "../../localnet/src/chains/ton";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import * as ton from "../../localnet/src/chains/ton";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -189,7 +189,7 @@ const localnet = async (args: any) => {
     process.exit(0);
   }
 
-  await new Promise(() => { });
+  await new Promise(() => {});
 };
 
 export const localnetTask = task("localnet", "Start localnet", localnet)

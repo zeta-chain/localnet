@@ -13,5 +13,5 @@ export const ENDPOINT_FAUCET = sidecarURL("faucet.json");
 export const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
 
 function sidecarURL(path: string): string {
-    return `http://${HOST}:${PORT_SIDECAR}/${path}`;
+  return `http://${HOST}:${PORT_SIDECAR}/${path}`;
 }
