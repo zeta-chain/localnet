@@ -47,7 +47,7 @@ export const initLocalnet = async ({
 
   const zetachainContracts = await zetachainSetup(deployer, tss, provider);
 
-  const [solanaContracts, suiContracts, ethereumContracts, bnbContracts] =
+  const [solanaContracts, suiContracts, ethereumContracts, bnbContracts, tonContracts] =
     await Promise.all([
       solanaSetup({
         deployer,
@@ -83,7 +83,11 @@ export const initLocalnet = async ({
       }),
       ton.setup({
         chainId: NetworkID.TON,
+        skip: skip.includes("ton"),
         tss,
+        provider,
+        foreignCoins,
+        zetachainContracts,
       }),
     ]);
 
@@ -193,6 +197,11 @@ export const initLocalnet = async ({
   if (suiContracts) {
     res = [...res, ...suiContracts.addresses];
   }
+
+  if (tonContracts) {
+    res = [...res, ...tonContracts.addresses];
+  }
+
   if (solanaContracts) {
     res = [
       ...res,
@@ -204,6 +213,7 @@ export const initLocalnet = async ({
       },
     ];
   }
+
 
   return res;
 };

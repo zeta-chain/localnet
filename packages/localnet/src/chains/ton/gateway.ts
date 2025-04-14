@@ -50,9 +50,6 @@ export async function provisionGateway(deployer: Deployer, tssAddress: string): 
         console.log(`TON Gateway received a donation! Balance ${utils.tonFormatCoin(balance)}ton`)
     }, 10);
 
-    // 4. Observe inbound transactions (async)
-    observerInbounds(deployer.getClient(), gateway);
-
     return gateway;
 }
 
@@ -76,6 +73,7 @@ function getCode(): Cell {
 export async function observerInbounds(
     client: ton.TonClient,
     gateway: OpenedContract<Gateway>,
+    onInbound: (inbound: Inbound) => Promise<void>,
 ): Promise<void> {
     const latestTx = async () => {
         const state = await client.getContractState(gateway.address);
@@ -131,7 +129,7 @@ export async function observerInbounds(
             }
 
             try {
-                processDeposit(tx);
+                observeInbound(tx, onInbound);
             } catch (e) {
                 console.error(`TON: error processing tx ${lt}:${hash}; skipped`, e);
             }
@@ -142,7 +140,22 @@ export async function observerInbounds(
     }
 }
 
-function processDeposit(tx: ton.Transaction): void {
+export interface Inbound {
+    lt: string,
+    hash: string,
+    opCode: types.GatewayOp,
+
+    sender: ton.Address,
+    recipient: string,
+    amount: bigint,
+
+    callDataHex: string | null,
+}
+
+async function observeInbound(
+    tx: ton.Transaction,
+    onInbound: (inbound: Inbound) => Promise<void>,
+): Promise<void> {
     const hash = hashToString(tx.hash())
     const lt = ltToString(tx.lt)
 
@@ -185,7 +198,7 @@ function processDeposit(tx: ton.Transaction): void {
         return;
     }
 
-    const tonSender = (info.src as ton.Address).toRawString()
+    const tonSender = info.src as ton.Address
     const zetaRecipient = types.bufferToHexString(body.loadBuffer(20))
     const depositLog = types.depositLogFromCell(logMessage.body)
     const depositAmount = depositLog.amount
@@ -197,15 +210,17 @@ function processDeposit(tx: ton.Transaction): void {
         callDataHex = types.sliceToHexString(callDataSlice)
     }
 
-    console.log('TON deposit', {
+    const inbound: Inbound = {
+        lt,
+        hash,
         opCode,
         sender: tonSender,
-        zetaRecipient,
-        depositAmount,
+        recipient: zetaRecipient,
+        amount: depositAmount,
         callDataHex,
-    })
+    }
 
-    // todo wire to zetachain
+    await onInbound(inbound)
 }
 
 function ltToString(lt: bigint): string {
