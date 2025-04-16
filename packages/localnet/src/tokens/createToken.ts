@@ -137,9 +137,25 @@ export const createToken = async (
     }
   }
 
+  let coin_type: string;
+  if (isGasToken) {
+    coin_type = "Gas";
+  } else {
+    switch (chainID) {
+      case NetworkID.Sui:
+        coin_type = "SUI";
+        break;
+      case NetworkID.Solana:
+        coin_type = "SPL";
+        break;
+      default:
+        coin_type = "ERC20";
+    }
+  }
+
   foreignCoins.push({
     asset,
-    coin_type: isGasToken ? "Gas" : chainID === NetworkID.Sui ? "SUI" : "ERC20",
+    coin_type,
     decimals: decimals,
     foreign_chain_id: chainID,
     gas_limit: null,
