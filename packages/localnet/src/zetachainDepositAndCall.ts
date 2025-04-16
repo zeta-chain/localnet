@@ -35,8 +35,7 @@ export const zetachainDepositAndCall = async ({
     } else {
       foreignCoin = foreignCoins.find(
         (coin: any) =>
-          coin.foreign_chain_id === chainID &&
-          coin.coin_type === asset.toString()
+          coin.foreign_chain_id === chainID && coin.asset === asset.toString()
       );
     }
   }
