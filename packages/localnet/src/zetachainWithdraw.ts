@@ -73,7 +73,7 @@ export const zetachainWithdraw = async ({
     }
 
     if (chainID === NetworkID.Sui) {
-      await suiWithdraw({
+      return await suiWithdraw({
         amount,
         sender: receiver,
         ...contracts.suiContracts.env,
