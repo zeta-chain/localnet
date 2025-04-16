@@ -6,6 +6,8 @@ import fs from "fs";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
+import * as ton from "../../localnet/src/chains/ton";
+import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
@@ -90,6 +92,12 @@ const startLocalnet = async (options: {
   }
 
   const skip = options.skip ? options.skip.split(",") : [];
+
+  if (!skip.includes("ton") && isDockerAvailable()) {
+    await ton.startNode();
+  } else {
+    console.log("Skipping Ton...");
+  }
 
   let solanaTestValidator: ChildProcess;
 
@@ -201,7 +209,7 @@ export const startCommand = new Command("start")
   )
   .option(
     "--skip <string>,<string>",
-    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'",
+    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui', 'ton'",
     ""
   )
   .action(async (options) => {

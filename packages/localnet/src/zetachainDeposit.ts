@@ -44,7 +44,6 @@ export const zetachainDeposit = async ({
     return;
   }
 
-  console.log("Matched foreign coin:", foreignCoin);
   const zrc20 = foreignCoin.zrc20_contract_address;
   const tx = await zetachainContracts.gatewayZEVM
     .connect(zetachainContracts.fungibleModuleSigner)
