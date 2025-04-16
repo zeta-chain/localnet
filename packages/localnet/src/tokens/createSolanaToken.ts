@@ -8,13 +8,13 @@ import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 
 import { ed25519KeyPairTSS as tssKeypair } from "../solanaSetup";
 
-export const createSolanaToken = async (env: any) => {
+export const createSolanaToken = async (env: any, decimals: number) => {
   const mint = await createMint(
     env.gatewayProgram.provider.connection,
     tssKeypair,
     tssKeypair.publicKey,
     null,
-    9
+    decimals
   );
 
   const GATEWAY_PROGRAM_ID = env.gatewayProgram.programId;

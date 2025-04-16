@@ -69,7 +69,8 @@ export const createToken = async (
   } else {
     if (chainID === NetworkID.Solana) {
       const [assetAddr, gateway, user] = await createSolanaToken(
-        contracts.solanaContracts.env
+        contracts.solanaContracts.env,
+        decimals
       );
       asset = assetAddr;
       contracts.solanaContracts.addresses.push(
