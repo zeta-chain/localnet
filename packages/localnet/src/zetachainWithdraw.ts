@@ -98,6 +98,8 @@ export const zetachainWithdraw = async ({
         tss,
       });
     }
+
+    throw new Error(`Unsupported coin type ${coinType}`);
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);
