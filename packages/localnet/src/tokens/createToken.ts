@@ -86,44 +86,53 @@ export const createToken = async (
       .setGasPrice(chainID, 1);
     asset = "";
   } else {
-    if (chainID === NetworkID.Solana) {
-      const [assetAddr, gateway, user] = await createSolanaToken(
-        contracts.solanaContracts.env,
-        decimals
-      );
-      asset = assetAddr;
-      contracts.solanaContracts.addresses.push(
-        ...[
-          {
-            address: gateway,
-            chain: "solana",
-            type: `gatewayTokenAccount${symbol}`,
-          },
-          {
-            address: user,
-            chain: "solana",
-            type: `userTokenAccount${symbol}`,
-          },
-        ]
-      );
-    } else if (chainID === NetworkID.Ethereum) {
-      asset = await createEVMToken(
-        deployer,
-        contracts.ethereumContracts.custody,
-        symbol,
-        tss
-      );
-    } else if (chainID === NetworkID.BNB) {
-      asset = await createEVMToken(
-        deployer,
-        contracts.bnbContracts.custody,
-        symbol,
-        tss
-      );
-    } else if (chainID === NetworkID.Sui) {
-      asset = await createSuiToken(contracts, symbol);
-      if (!asset) {
-        throw new Error("Failed to create Sui token");
+    switch (chainID) {
+      case NetworkID.Ethereum: {
+        asset = await createEVMToken(
+          deployer,
+          contracts.ethereumContracts.custody,
+          symbol,
+          tss
+        );
+        break;
+      }
+      case NetworkID.BNB: {
+        asset = await createEVMToken(
+          deployer,
+          contracts.bnbContracts.custody,
+          symbol,
+          tss
+        );
+        break;
+      }
+      case NetworkID.Solana: {
+        const [assetAddr, gateway, user] = await createSolanaToken(
+          contracts.solanaContracts.env,
+          decimals
+        );
+        asset = assetAddr;
+        contracts.solanaContracts.addresses.push(
+          ...[
+            {
+              address: gateway,
+              chain: "solana",
+              type: `gatewayTokenAccount${symbol}`,
+            },
+            {
+              address: user,
+              chain: "solana",
+              type: `userTokenAccount${symbol}`,
+            },
+          ]
+        );
+        break;
+      }
+      case NetworkID.Sui: {
+        asset = await createSuiToken(contracts, symbol);
+        if (!asset) {
+          throw new Error("Failed to create Sui token");
+        }
+        break;
       }
     }
   }
