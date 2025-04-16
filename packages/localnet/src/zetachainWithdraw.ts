@@ -1,11 +1,13 @@
+import * as tonTypes from "@ton/ton";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
+import * as ton from "./chains/ton";
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
-import { log } from "./log";
+import { log, logErr } from "./log";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
@@ -42,37 +44,69 @@ export const zetachainWithdraw = async ({
 
     if (chainID === NetworkID.Solana) {
       const receiverAddress = ethers.toUtf8String(receiver);
-      if (asset) {
-        await solanaWithdrawSPL({
-          amount: amount,
-          decimals: 9,
-          mint: asset,
-          recipient: receiverAddress,
-        });
-      } else {
-        await solanaWithdraw({ amount: amount, recipient: receiverAddress });
-      }
-    } else if (chainID === NetworkID.Sui) {
-      await suiWithdraw({
+
+      return asset
+        ? await solanaWithdrawSPL({
+            amount: amount,
+            decimals: 9,
+            mint: asset,
+            recipient: receiverAddress,
+          })
+        : await solanaWithdraw({
+            amount: amount,
+            recipient: receiverAddress,
+          });
+    }
+
+    if (chainID === NetworkID.TON) {
+      const env = contracts.tonContracts.env as ton.Env;
+      const nonceManager = tss as NonceManager;
+      const recipient = tonTypes.Address.parse(ethers.toUtf8String(receiver));
+
+      return await ton.withdrawTON(
+        env.client,
+        env.gateway,
+        nonceManager,
+        recipient,
+        amount
+      );
+    }
+
+    if (chainID === NetworkID.Sui) {
+      return await suiWithdraw({
         amount,
         sender: receiver,
         ...contracts.suiContracts.env,
       });
-    } else {
-      if (isGasToken) {
-        await evmTSSTransfer({ args, foreignCoins, tss });
-      } else if (isERC20orZETA) {
-        const evmContracts =
-          chainID === NetworkID.Ethereum
-            ? contracts.ethereumContracts
-            : contracts.bnbContracts;
-        await evmCustodyWithdraw({ args, evmContracts, foreignCoins, tss });
-      }
     }
+
+    // EVM chain
+    if (isGasToken) {
+      return await evmTSSTransfer({ args, foreignCoins, tss });
+    }
+
+    if (isERC20orZETA) {
+      const evmContracts =
+        chainID === NetworkID.Ethereum
+          ? contracts.ethereumContracts
+          : contracts.bnbContracts;
+
+      return await evmCustodyWithdraw({
+        args,
+        evmContracts,
+        foreignCoins,
+        tss,
+      });
+    }
+
+    throw new Error(`Unsupported coin type ${coinType}`);
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);
     }
+
+    logErr(NetworkID.ZetaChain, "Error withdrawing. Reverting.", err);
+
     return await zetachainOnRevert({
       amount,
       asset: zrc20,

@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 import { NetworkID } from "./constants";
 import { log, logErr } from "./log";
 
+const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];
+
 export const zetachainDepositAndCall = async ({
   provider,
   zetachainContracts,
@@ -48,12 +50,8 @@ export const zetachainDepositAndCall = async ({
 
   const context = {
     chainID,
-    origin: [NetworkID.Solana, NetworkID.Sui].includes(chainID)
-      ? sender
-      : ethers.ZeroAddress,
-    sender: [NetworkID.Solana, NetworkID.Sui].includes(chainID)
-      ? ethers.ZeroAddress
-      : sender,
+    origin: nonEVM.includes(chainID) ? sender : ethers.ZeroAddress,
+    sender: nonEVM.includes(chainID) ? ethers.ZeroAddress : sender,
   };
 
   log(
