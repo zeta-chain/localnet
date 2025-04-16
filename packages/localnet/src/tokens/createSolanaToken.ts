@@ -8,6 +8,23 @@ import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 
 import { ed25519KeyPairTSS as tssKeypair } from "../solanaSetup";
 
+/**
+ * Creates and deploys an SPL token on Solana.
+ *
+ * @param env - The Solana environment containing program and connection information
+ * @param decimals - The number of decimal places for the token
+ * @returns A tuple containing:
+ *   - The mint address of the created token
+ *   - The gateway token account address
+ *   - The user token account address
+ *
+ * @remarks
+ * This function:
+ * 1. Creates a new SPL token mint
+ * 2. Creates associated token accounts for gateway, TSS, and user
+ * 3. Mints tokens to the TSS, user, and gateway accounts
+ * 4. Whitelists the token in the gateway program
+ */
 export const createSolanaToken = async (env: any, decimals: number) => {
   const mint = await createMint(
     env.gatewayProgram.provider.connection,

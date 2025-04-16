@@ -6,6 +6,16 @@ import { ethers, Log, LogDescription, Signer } from "ethers";
 
 import { deployOpts } from "../deployOpts";
 
+/**
+ * Prepares and deploys Uniswap V3 contracts.
+ *
+ * @param deployer - The deployer account that will deploy the contracts
+ * @param wzeta - The WZETA token contract
+ * @returns An object containing:
+ *   - nonfungiblePositionManagerInstance: The deployed NonfungiblePositionManager contract
+ *   - swapRouterInstance: The deployed SwapRouter contract
+ *   - uniswapV3FactoryInstance: The deployed UniswapV3Factory contract
+ */
 export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
   const uniswapV3Factory = new ethers.ContractFactory(
     UniswapV3Factory.abi,
@@ -48,6 +58,25 @@ export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
   };
 };
 
+/**
+ * Adds liquidity to a Uniswap V3 pool for a token pair.
+ *
+ * @param zrc20 - The ZRC20 token contract
+ * @param wzeta - The WZETA token contract
+ * @param deployer - The deployer account
+ * @param zrc20Amount - The amount of ZRC20 tokens to add
+ * @param wzetaAmount - The amount of WZETA tokens to add
+ * @param uniswapV3Factory - The Uniswap V3 factory contract
+ * @param uniswapV3PositionManager - The Uniswap V3 position manager contract
+ * @param verbose - Whether to log detailed information about the process
+ *
+ * @remarks
+ * This function:
+ * 1. Creates a pool for the token pair if it doesn't exist
+ * 2. Approves the position manager to spend both tokens
+ * 3. Adds liquidity to the pool with the specified amounts
+ * 4. Verifies the liquidity position
+ */
 export const uniswapV3AddLiquidity = async (
   zrc20: any,
   wzeta: any,
@@ -155,6 +184,15 @@ export const uniswapV3AddLiquidity = async (
   }
 };
 
+/**
+ * Creates a new Uniswap V3 pool for a token pair.
+ *
+ * @param uniswapV3FactoryInstance - The Uniswap V3 factory contract instance
+ * @param token0 - The address of the first token
+ * @param token1 - The address of the second token
+ * @param fee - The fee tier for the pool (default: 3000 = 0.3%)
+ * @returns The deployed pool contract
+ */
 export const createUniswapV3Pool = async (
   uniswapV3FactoryInstance: any,
   token0: string,
@@ -181,6 +219,22 @@ export const createUniswapV3Pool = async (
   return pool;
 };
 
+/**
+ * Adds liquidity to an existing Uniswap V3 pool.
+ *
+ * @param nonfungiblePositionManager - The Uniswap V3 position manager contract
+ * @param token0 - The address of the first token
+ * @param token1 - The address of the second token
+ * @param amount0 - The amount of token0 to add
+ * @param amount1 - The amount of token1 to add
+ * @param fee - The fee tier for the pool
+ * @param recipient - The address that will receive the liquidity position NFT
+ * @param tickLower - The lower tick of the position
+ * @param tickUpper - The upper tick of the position
+ * @returns An object containing:
+ *   - tokenId: The ID of the created position NFT
+ *   - tx: The transaction object
+ */
 export const addLiquidityV3 = async (
   nonfungiblePositionManager: any,
   token0: string,
@@ -240,6 +294,20 @@ export const addLiquidityV3 = async (
   return { tokenId, tx };
 };
 
+/**
+ * Verifies the liquidity position in a Uniswap V3 pool.
+ *
+ * @param pool - The Uniswap V3 pool contract
+ * @param token0 - The address of the first token
+ * @param token1 - The address of the second token
+ * @param positionManager - The Uniswap V3 position manager contract
+ * @param owner - The address of the position owner
+ * @param tokenId - The ID of the position NFT
+ * @param verbose - Whether to log detailed information
+ * @returns An object containing detailed information about the position
+ *
+ * @throws Error if the position verification fails
+ */
 export const verifyV3Liquidity = async (
   pool: ethers.Contract,
   token0: string,

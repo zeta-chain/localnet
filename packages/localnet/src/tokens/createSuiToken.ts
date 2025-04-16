@@ -4,6 +4,22 @@ import * as fs from "fs";
 
 const GAS_BUDGET = 5_000_000_000;
 
+/**
+ * Creates and deploys a token on the Sui blockchain.
+ *
+ * @param contracts - The contracts object containing Sui-specific contracts and environment
+ * @param symbol - The symbol for the token
+ * @returns The address of the created token in the format "moduleId::token::TOKEN"
+ *
+ * @remarks
+ * This function:
+ * 1. Publishes the token module to the Sui blockchain
+ * 2. Whitelists the token in the gateway program
+ * 3. Mints tokens to the user and gateway accounts
+ * 4. Records the token information in the suiContracts.addresses array
+ *
+ * @throws Error if the token creation or whitelisting fails
+ */
 export const createSuiToken = async (contracts: any, symbol: string) => {
   const { suiContracts } = contracts;
   if (!suiContracts) return;

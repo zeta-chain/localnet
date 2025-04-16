@@ -3,6 +3,22 @@ import { ethers } from "ethers";
 
 import { deployOpts } from "../deployOpts";
 
+/**
+ * Creates and deploys an ERC20 token on an EVM-compatible chain.
+ *
+ * @param deployer - The deployer account that will deploy the token contract
+ * @param custody - The custody contract that will hold the token
+ * @param symbol - The symbol for the token
+ * @param tss - The TSS (Threshold Signature Scheme) account
+ * @returns The address of the deployed ERC20 token contract
+ *
+ * @remarks
+ * This function:
+ * 1. Deploys a new ERC20 token contract
+ * 2. Approves the custody contract to spend tokens
+ * 3. Mints tokens to the custody contract, TSS account, and deployer
+ * 4. Whitelists the token in the custody contract
+ */
 export const createEVMToken = async (
   deployer: any,
   custody: any,

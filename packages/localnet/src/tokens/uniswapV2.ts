@@ -4,6 +4,15 @@ import { ethers, Signer } from "ethers";
 
 import { deployOpts } from "../deployOpts";
 
+/**
+ * Prepares and deploys Uniswap V2 contracts.
+ *
+ * @param deployer - The deployer account that will deploy the contracts
+ * @param wzeta - The WZETA token contract
+ * @returns An object containing:
+ *   - uniswapFactoryInstance: The deployed Uniswap V2 factory contract
+ *   - uniswapRouterInstance: The deployed Uniswap V2 router contract
+ */
 export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
   const uniswapFactory = new ethers.ContractFactory(
     UniswapV2Factory.abi,
@@ -30,6 +39,23 @@ export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
   return { uniswapFactoryInstance, uniswapRouterInstance };
 };
 
+/**
+ * Adds liquidity to a Uniswap V2 pool for a token pair.
+ *
+ * @param uniswapRouterInstance - The Uniswap V2 router contract instance
+ * @param uniswapFactoryInstance - The Uniswap V2 factory contract instance
+ * @param zrc20 - The ZRC20 token contract
+ * @param wzeta - The WZETA token contract
+ * @param deployer - The deployer account
+ * @param zrc20Amount - The amount of ZRC20 tokens to add
+ * @param wzetaAmount - The amount of WZETA tokens to add
+ *
+ * @remarks
+ * This function:
+ * 1. Creates a pair for the token if it doesn't exist
+ * 2. Approves the router to spend both tokens
+ * 3. Adds liquidity to the pool with the specified amounts
+ */
 export const uniswapV2AddLiquidity = async (
   uniswapRouterInstance: any,
   uniswapFactoryInstance: any,

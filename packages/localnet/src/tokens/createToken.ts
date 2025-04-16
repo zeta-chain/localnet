@@ -9,6 +9,25 @@ import { createSuiToken } from "./createSuiToken";
 import { uniswapV2AddLiquidity } from "./uniswapV2";
 import { uniswapV3AddLiquidity } from "./uniswapV3";
 
+/**
+ * Creates a token on the specified chain and sets up its ZRC20 representation.
+ * This is a high-level function that orchestrates token creation across different chains
+ * (EVM, Solana, Sui) and sets up the necessary infrastructure for cross-chain operations.
+ *
+ * @param contracts - The contracts object containing all necessary contract instances
+ * @param symbol - The symbol for the token
+ * @param isGasToken - Whether this token is a gas token for the chain
+ * @param chainID - The ID of the chain where the token will be created
+ * @param decimals - The number of decimal places for the token
+ *
+ * @remarks
+ * This function:
+ * 1. Deploys a ZRC20 contract for the token
+ * 2. Creates the native token on the specified chain (EVM, Solana, or Sui)
+ * 3. Sets up the token in the system contract if it's a gas token
+ * 4. Adds liquidity to both Uniswap V2 and V3 pools
+ * 5. Records the token information in the foreignCoins array
+ */
 export const createToken = async (
   contracts: any,
   symbol: string,
