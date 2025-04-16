@@ -4,10 +4,13 @@ import { AbiCoder, ethers } from "ethers";
 import { NetworkID } from "./constants";
 import { log } from "./log";
 
+const suiCoinType = "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+
 export const suiWithdrawAndCall = async ({
   amount,
   targetModule,
   message,
+  assetCoinType,
   client,
   keypair,
   moduleId,
@@ -17,8 +20,11 @@ export const suiWithdrawAndCall = async ({
   try {
     const nonce = await fetchGatewayNonce(client, gatewayObjectId);
     const tx = new Transaction();
-    const coinType =
-      "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+
+    // when creating a tx, coin type that are not SUI token expect to have a prefix "0x"
+    if (assetCoinType !== suiCoinType) {
+      assetCoinType = `0x${assetCoinType}`;
+    }
 
     // withdraw the coins and get the coins ID
     const [coins, coinsBudget] = tx.moveCall({
@@ -30,7 +36,7 @@ export const suiWithdrawAndCall = async ({
         tx.object(withdrawCapObjectId),
       ],
       target: `${moduleId}::gateway::withdraw_impl`,
-      typeArguments: [coinType],
+      typeArguments: [assetCoinType],
     });
 
     // transfer the amount for budget to the TSS
@@ -51,7 +57,7 @@ export const suiWithdrawAndCall = async ({
     // TODO: check all objects are shared and not owned by the sender
     // https://github.com/zeta-chain/localnet/issues/134
 
-    const onCallTypeArguments = [coinType, ...additionalTypeArguments];
+    const onCallTypeArguments = [assetCoinType, ...additionalTypeArguments];
     const onCallArguments = [
       coins,
       ...objects.map((obj: any) => tx.object(ethers.hexlify(obj))),
