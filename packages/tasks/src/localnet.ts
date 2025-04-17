@@ -6,10 +6,10 @@ import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
+import * as ton from "../../localnet/src/chains/ton";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { tonStart } from "../../localnet/src/tonStart";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -84,7 +84,7 @@ const localnet = async (args: any) => {
   const skip = args.skip ? args.skip.split(",") : [];
 
   if (!skip.includes("ton") && isDockerAvailable()) {
-    tonStart();
+    await ton.startNode();
   }
 
   let solanaTestValidator: any;

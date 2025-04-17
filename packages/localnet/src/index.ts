@@ -1,6 +1,7 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { InitLocalnetAddress } from "../../types/zodSchemas";
+import * as ton from "./chains/ton";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { evmSetup } from "./evmSetup";
 import { solanaSetup } from "./solanaSetup";
@@ -46,41 +47,55 @@ export const initLocalnet = async ({
 
   const zetachainContracts = await zetachainSetup(deployer, tss, provider);
 
-  const [solanaContracts, suiContracts, ethereumContracts, bnbContracts] =
-    await Promise.all([
-      solanaSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: skip.includes("solana"),
-        zetachainContracts,
-      }),
-      suiSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: skip.includes("sui"),
-        zetachainContracts,
-      }),
-      evmSetup({
-        chainID: NetworkID.Ethereum,
-        deployer,
-        exitOnError,
-        foreignCoins,
-        provider,
-        tss,
-        zetachainContracts,
-      }),
-      evmSetup({
-        chainID: NetworkID.BNB,
-        deployer,
-        exitOnError,
-        foreignCoins,
-        provider,
-        tss,
-        zetachainContracts,
-      }),
-    ]);
+  const [
+    solanaContracts,
+    suiContracts,
+    ethereumContracts,
+    bnbContracts,
+    tonContracts,
+  ] = await Promise.all([
+    solanaSetup({
+      deployer,
+      foreignCoins,
+      provider,
+      skip: skip.includes("solana"),
+      zetachainContracts,
+    }),
+    suiSetup({
+      deployer,
+      foreignCoins,
+      provider,
+      skip: skip.includes("sui"),
+      zetachainContracts,
+    }),
+    evmSetup({
+      chainID: NetworkID.Ethereum,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      provider,
+      tss,
+      zetachainContracts,
+    }),
+    evmSetup({
+      chainID: NetworkID.BNB,
+      deployer,
+      exitOnError,
+      foreignCoins,
+      provider,
+      tss,
+      zetachainContracts,
+    }),
+    ton.setup({
+      chainID: NetworkID.TON,
+      deployer,
+      foreignCoins,
+      provider,
+      skip: skip.includes("ton"),
+      tss,
+      zetachainContracts,
+    }),
+  ]);
 
   const contracts = {
     bnbContracts,
@@ -90,6 +105,7 @@ export const initLocalnet = async ({
     provider,
     solanaContracts,
     suiContracts,
+    tonContracts,
     tss,
     zetachainContracts,
   };
@@ -103,6 +119,7 @@ export const initLocalnet = async ({
     createToken(contracts, "USDC", false, NetworkID.Solana, 9),
     createToken(contracts, "SUI", true, NetworkID.Sui, 9),
     createToken(contracts, "USDC", false, NetworkID.Sui, 9),
+    createToken(contracts, "TON", true, NetworkID.TON, 9),
   ]);
 
   zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
@@ -187,6 +204,11 @@ export const initLocalnet = async ({
   if (suiContracts) {
     res = [...res, ...suiContracts.addresses];
   }
+
+  if (tonContracts) {
+    res = [...res, ...tonContracts.addresses];
+  }
+
   if (solanaContracts) {
     res = [
       ...res,
