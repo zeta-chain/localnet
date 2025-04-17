@@ -6,8 +6,10 @@ import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
+import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
+import { tonStart } from "../../localnet/src/tonStart";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -80,6 +82,10 @@ const localnet = async (args: any) => {
   }
 
   const skip = args.skip ? args.skip.split(",") : [];
+
+  if (!skip.includes("ton") && isDockerAvailable()) {
+    tonStart();
+  }
 
   let solanaTestValidator: any;
   let solanaError = "";
@@ -199,5 +205,5 @@ export const localnetTask = task("localnet", "Start localnet", localnet)
   .addFlag("exitOnError", "Exit with an error if a call is reverted")
   .addOptionalParam(
     "skip",
-    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui'"
+    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui', 'ton'"
   );

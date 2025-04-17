@@ -10,7 +10,9 @@ Make sure you have the following installed to use Localnet:
 - [Foundry](https://getfoundry.sh/) `anvil` (required)
 - Solana support: [`solana`](https://docs.solana.com/cli/install) and
   `solana-test-validator`
-- Sui support: [`sui`](https://docs.sui.io/guides/developer/getting-started/sui-install)
+- Sui support:
+  [`sui`](https://docs.sui.io/guides/developer/getting-started/sui-install)
+- TON support: [`Docker`](https://docs.docker.com/get-docker/)
 
 ## Documentation
 
