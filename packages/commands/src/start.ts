@@ -116,6 +116,24 @@ const startLocalnet = async (options: {
   fs.writeFileSync(keysFile, JSON.stringify(keysData, null, 2));
   console.log(ansis.green(`EVM account details saved to: ${keysFile}`));
 
+  const solanaKeysDir = `${process.env.HOME}/.zetachain/keys/solana`;
+  if (!fs.existsSync(solanaKeysDir)) {
+    fs.mkdirSync(solanaKeysDir, { recursive: true });
+  }
+
+  const solanaKeysFile = `${solanaKeysDir}/localnet.json`;
+  const { MNEMONIC } = await import("../../localnet/src/constants");
+  const { keypairFromMnemonic } = await import(
+    "../../localnet/src/solanaSetup"
+  );
+  const keypair = await keypairFromMnemonic(MNEMONIC);
+
+  fs.writeFileSync(
+    solanaKeysFile,
+    JSON.stringify(Array.from(keypair.secretKey))
+  );
+  console.log(ansis.green(`Solana keypair saved to: ${solanaKeysFile}`));
+
   const skip = options.skip ? options.skip.split(",") : [];
 
   if (!skip.includes("ton") && isDockerAvailable()) {
