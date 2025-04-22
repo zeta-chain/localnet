@@ -173,7 +173,6 @@ async function observeInbound(
 
   const info = tx.inMessage?.info;
   if (info?.type !== "internal") {
-    console.log(`TON: not a deposit, skipping (tx ${lt}:${hash})`);
     return;
   }
 
