@@ -82,14 +82,57 @@ const startLocalnet = async (options: {
       `Starting anvil on port ${options.port} with args: ${options.anvil}`
     );
 
+  const configDir = `${process.env.HOME}/.zetachain/localnet`;
+  const configFile = `${configDir}/anvil.config.json`;
+
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+
   const anvilProcess = exec(
-    `anvil --auto-impersonate --port ${options.port} ${options.anvil}`
+    `anvil --auto-impersonate --port ${options.port} --config-out ${configFile} ${options.anvil}`
   );
 
   if (anvilProcess.stdout && anvilProcess.stderr) {
     anvilProcess.stdout.pipe(process.stdout);
     anvilProcess.stderr.pipe(process.stderr);
   }
+
+  await waitOn({ resources: [configFile] });
+  const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+
+  const keysDir = `${process.env.HOME}/.zetachain/keys/evm`;
+  if (!fs.existsSync(keysDir)) {
+    fs.mkdirSync(keysDir, { recursive: true });
+  }
+
+  const keysFile = `${keysDir}/localnet.json`;
+  const keysData = {
+    address: config.available_accounts[0],
+    mnemonic: config.wallet.mnemonic,
+    privateKey: config.private_keys[0],
+  };
+
+  fs.writeFileSync(keysFile, JSON.stringify(keysData, null, 2));
+  console.log(ansis.green(`EVM account details saved to: ${keysFile}`));
+
+  const solanaKeysDir = `${process.env.HOME}/.zetachain/keys/solana`;
+  if (!fs.existsSync(solanaKeysDir)) {
+    fs.mkdirSync(solanaKeysDir, { recursive: true });
+  }
+
+  const solanaKeysFile = `${solanaKeysDir}/localnet.json`;
+  const { MNEMONIC } = await import("../../localnet/src/constants");
+  const { keypairFromMnemonic } = await import(
+    "../../localnet/src/solanaSetup"
+  );
+  const keypair = await keypairFromMnemonic(MNEMONIC);
+
+  fs.writeFileSync(
+    solanaKeysFile,
+    JSON.stringify(Array.from(keypair.secretKey))
+  );
+  console.log(ansis.green(`Solana keypair saved to: ${solanaKeysFile}`));
 
   const skip = options.skip ? options.skip.split(",") : [];
 
