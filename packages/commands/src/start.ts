@@ -1,7 +1,7 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
 import { ChildProcess, exec, execSync } from "child_process";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -23,6 +23,8 @@ interface ProcessInfo {
   command: string;
   pid: number;
 }
+
+const chains = ["ton", "solana", "sui"];
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -71,7 +73,7 @@ const startLocalnet = async (options: {
   exitOnError: boolean;
   forceKill: boolean;
   port: number;
-  skip: string;
+  skip: string[];
   stopAfterInit: boolean;
 }) => {
   // Create the directory if it doesn't exist
@@ -115,9 +117,12 @@ const startLocalnet = async (options: {
     });
   }
 
-  await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
+  await waitOn({
+    resources: [`tcp:127.0.0.1:${options.port}`],
+    timeout: 30_000,
+  });
 
-  const skip = options.skip ? options.skip.split(",") : [];
+  const skip = options.skip || [];
 
   if (!skip.includes("ton") && isDockerAvailable()) {
     await ton.startNode();
@@ -142,7 +147,7 @@ const startLocalnet = async (options: {
         pid: solanaTestValidator.pid,
       });
     }
-    await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+    await waitOn({ resources: [`tcp:127.0.0.1:8899`], timeout: 30_000 });
   }
 
   let suiProcess: ChildProcess;
@@ -163,10 +168,8 @@ const startLocalnet = async (options: {
         pid: suiProcess.pid,
       });
     }
-    await waitOn({ resources: [`tcp:127.0.0.1:9000`] });
+    await waitOn({ resources: [`tcp:127.0.0.1:9000`], timeout: 30_000 });
   }
-
-  await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
 
   fs.writeFileSync(
     PROCESS_FILE,
@@ -283,10 +286,11 @@ export const startCommand = new Command("start")
     "Exit with an error if a call is reverted",
     false
   )
-  .option(
-    "--skip <string>,<string>",
-    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui', 'ton'",
-    ""
+  .addOption(
+    new Option(
+      "--skip [chains...]",
+      "Chains to skip when initializing localnet"
+    ).choices(chains)
   )
   .action(async (options) => {
     try {
