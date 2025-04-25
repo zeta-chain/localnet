@@ -1,12 +1,12 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
 import { ChildProcess, exec, execSync } from "child_process";
+import { spawn } from "child_process";
 import { Command, Option } from "commander";
 import fs from "fs";
-import path from "path";
 import os from "os";
+import path from "path";
 import waitOn from "wait-on";
-import { spawn } from "child_process";
 
 import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
