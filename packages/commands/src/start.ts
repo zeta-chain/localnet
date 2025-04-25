@@ -100,11 +100,13 @@ const startLocalnet = async (options: {
       `Starting anvil on port ${options.port} with args: ${options.anvil}`
     );
 
-  const anvilProcess = spawn(
-    "anvil",
-    ["--auto-impersonate", "--port", options.port.toString()],
-    { stdio: "inherit" }
-  );
+  const anvilArgs = [
+    "--auto-impersonate",
+    "--port",
+    options.port.toString(),
+    ...options.anvil.split(" ").filter(Boolean), // simple split on spaces
+  ];
+  const anvilProcess = spawn("anvil", anvilArgs, { stdio: "inherit" });
 
   if (anvilProcess.pid) {
     processes.push({
@@ -113,10 +115,7 @@ const startLocalnet = async (options: {
     });
   }
 
-  if (anvilProcess.stdout && anvilProcess.stderr) {
-    anvilProcess.stdout.pipe(process.stdout);
-    anvilProcess.stderr.pipe(process.stderr);
-  }
+  await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
 
   const skip = options.skip ? options.skip.split(",") : [];
 
