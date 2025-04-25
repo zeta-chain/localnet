@@ -126,7 +126,7 @@ const startLocalnet = async (options: {
 
   let solanaTestValidator: ChildProcess;
 
-  if (isSolanaAvailable()) {
+  if (!skip.includes("solana") && isSolanaAvailable()) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
     if (solanaTestValidator.pid) {
       processes.push({
@@ -138,7 +138,7 @@ const startLocalnet = async (options: {
   }
 
   let suiProcess: ChildProcess;
-  if (isSuiAvailable()) {
+  if (!skip.includes("sui") && isSuiAvailable()) {
     console.log("Starting Sui...");
     suiProcess = exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
