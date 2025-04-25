@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import waitOn from "wait-on";
+import { spawn } from "child_process";
 
 import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
@@ -99,8 +100,10 @@ const startLocalnet = async (options: {
       `Starting anvil on port ${options.port} with args: ${options.anvil}`
     );
 
-  const anvilProcess = exec(
-    `anvil --auto-impersonate --port ${options.port} ${options.anvil}`
+  const anvilProcess = spawn(
+    "anvil",
+    ["--auto-impersonate", "--port", options.port.toString()],
+    { stdio: "inherit" }
   );
 
   if (anvilProcess.pid) {
@@ -127,7 +130,13 @@ const startLocalnet = async (options: {
   let solanaTestValidator: ChildProcess;
 
   if (!skip.includes("solana") && isSolanaAvailable()) {
-    solanaTestValidator = exec(`solana-test-validator --reset`);
+    solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
+
+    solanaTestValidator.on("exit", (code) => {
+      console.log(`solana-test-validator exited with code ${code}`);
+      process.exit(code ?? 0);
+    });
+
     if (solanaTestValidator.pid) {
       processes.push({
         command: "solana-test-validator",
@@ -140,9 +149,15 @@ const startLocalnet = async (options: {
   let suiProcess: ChildProcess;
   if (!skip.includes("sui") && isSuiAvailable()) {
     console.log("Starting Sui...");
-    suiProcess = exec(
-      `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
-    );
+    suiProcess = spawn("sui", ["start", "--with-faucet", "--force-regenesis"], {
+      env: { ...process.env, RUST_LOG: "off,sui_node=info" },
+    });
+
+    suiProcess.on("exit", (code) => {
+      console.log(`sui exited with code ${code}`);
+      process.exit(code ?? 0);
+    });
+
     if (suiProcess?.pid) {
       processes.push({
         command: "sui",
@@ -154,60 +169,11 @@ const startLocalnet = async (options: {
 
   await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
 
-  // Write processes information to file
   fs.writeFileSync(
     PROCESS_FILE,
     JSON.stringify({ processes }, null, 2),
     "utf-8"
   );
-
-  const cleanup = () => {
-    console.log("\nShutting down processes and cleaning up...");
-
-    // Kill tracked processes from process.json
-    if (fs.existsSync(PROCESS_FILE)) {
-      try {
-        const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
-        if (processData && processData.processes) {
-          for (const proc of processData.processes) {
-            try {
-              execSync(`kill -9 ${proc.pid}`);
-              console.log(
-                ansis.green(
-                  `Successfully killed process ${proc.pid} (${proc.command}).`
-                )
-              );
-            } catch (error) {
-              console.log(
-                ansis.yellow(
-                  `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
-                )
-              );
-            }
-          }
-        }
-        // Remove the process file
-        fs.unlinkSync(PROCESS_FILE);
-      } catch (error) {
-        console.error(ansis.red(`Error cleaning up processes: ${error}`));
-      }
-    }
-
-    // // Also try to kill the processes directly if they're in memory
-    // if (anvilProcess) {
-    //   anvilProcess.kill();
-    // }
-    // if (solanaTestValidator) {
-    //   solanaTestValidator.kill();
-    // }
-    // if (suiProcess) {
-    //   suiProcess.kill();
-    // }
-
-    if (fs.existsSync(LOCALNET_JSON_FILE)) {
-      fs.unlinkSync(LOCALNET_JSON_FILE);
-    }
-  };
 
   try {
     const rawInitialAddresses = await initLocalnet({
@@ -234,7 +200,6 @@ const startLocalnet = async (options: {
       console.table(chainContracts);
     });
 
-    // Write PID to localnet.json in JSON format
     fs.writeFileSync(
       LOCALNET_JSON_FILE,
       JSON.stringify({ addresses, pid: process.pid }, null, 2),
@@ -246,26 +211,58 @@ const startLocalnet = async (options: {
     process.exit(1);
   }
 
-  const handleExit = (signal: string) => {
-    console.log(`\nReceived ${signal}, shutting down...`);
-    process.exit();
-  };
-
-  process.on("SIGINT", () => handleExit("SIGINT"));
-  process.on("SIGTERM", () => handleExit("SIGTERM"));
-
-  process.on("exit", () => {
-    console.log("Process exiting...");
-    cleanup();
-  });
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 
   if (options.stopAfterInit) {
     console.log(ansis.green("Localnet successfully initialized. Stopping..."));
     cleanup();
-    process.exit(0);
+  }
+};
+
+const cleanup = () => {
+  console.log("\nShutting down processes and cleaning up...");
+
+  if (fs.existsSync(PROCESS_FILE)) {
+    try {
+      const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
+      if (processData && processData.processes) {
+        for (const proc of processData.processes) {
+          try {
+            process.kill(proc.pid, "SIGKILL"); // 💥 kill directly via process.kill
+            console.log(
+              ansis.green(
+                `Successfully killed process ${proc.pid} (${proc.command}).`
+              )
+            );
+          } catch (error) {
+            console.log(
+              ansis.yellow(
+                `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
+              )
+            );
+          }
+        }
+      }
+      fs.unlinkSync(PROCESS_FILE);
+    } catch (error) {
+      console.error(ansis.red(`Error cleaning up processes: ${error}`));
+    }
   }
 
-  await new Promise(() => {});
+  if (fs.existsSync(LOCALNET_JSON_FILE)) {
+    fs.unlinkSync(LOCALNET_JSON_FILE);
+  }
+
+  try {
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(false);
+    }
+    process.stdin.pause();
+  } catch (err) {
+    // ignore
+  }
+  process.exit(0);
 };
 
 export const startCommand = new Command("start")
