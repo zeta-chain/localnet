@@ -3,6 +3,8 @@ import ansis from "ansis";
 import { ChildProcess, exec, execSync } from "child_process";
 import { Command } from "commander";
 import fs from "fs";
+import path from "path";
+import os from "os";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
@@ -13,6 +15,13 @@ import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
+const PROCESS_FILE_DIR = path.join(os.homedir(), ".zetachain", "localnet");
+const PROCESS_FILE = path.join(PROCESS_FILE_DIR, "process.json");
+
+interface ProcessInfo {
+  command: string;
+  pid: number;
+}
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -64,6 +73,14 @@ const startLocalnet = async (options: {
   skip: string;
   stopAfterInit: boolean;
 }) => {
+  // Create the directory if it doesn't exist
+  if (!fs.existsSync(PROCESS_FILE_DIR)) {
+    fs.mkdirSync(PROCESS_FILE_DIR, { recursive: true });
+  }
+
+  // Initialize the processes array
+  const processes: ProcessInfo[] = [];
+
   try {
     execSync("which anvil");
   } catch (error) {
@@ -86,6 +103,13 @@ const startLocalnet = async (options: {
     `anvil --auto-impersonate --port ${options.port} ${options.anvil}`
   );
 
+  if (anvilProcess.pid) {
+    processes.push({
+      command: "anvil",
+      pid: anvilProcess.pid,
+    });
+  }
+
   if (anvilProcess.stdout && anvilProcess.stderr) {
     anvilProcess.stdout.pipe(process.stdout);
     anvilProcess.stderr.pipe(process.stderr);
@@ -95,6 +119,7 @@ const startLocalnet = async (options: {
 
   if (!skip.includes("ton") && isDockerAvailable()) {
     await ton.startNode();
+    // Note: Docker processes are managed differently, not adding to processes array
   } else {
     console.log("Skipping Ton...");
   }
@@ -103,27 +128,82 @@ const startLocalnet = async (options: {
 
   if (isSolanaAvailable()) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
+    if (solanaTestValidator.pid) {
+      processes.push({
+        command: "solana-test-validator",
+        pid: solanaTestValidator.pid,
+      });
+    }
     await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
   }
 
+  let suiProcess: ChildProcess;
   if (isSuiAvailable()) {
     console.log("Starting Sui...");
-    exec(
+    suiProcess = exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
     );
+    if (suiProcess?.pid) {
+      processes.push({
+        command: "sui",
+        pid: suiProcess.pid,
+      });
+    }
     await waitOn({ resources: [`tcp:127.0.0.1:9000`] });
   }
 
   await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
 
+  // Write processes information to file
+  fs.writeFileSync(
+    PROCESS_FILE,
+    JSON.stringify({ processes }, null, 2),
+    "utf-8"
+  );
+
   const cleanup = () => {
-    console.log("\nShutting down anvil and cleaning up...");
-    if (anvilProcess) {
-      anvilProcess.kill();
+    console.log("\nShutting down processes and cleaning up...");
+
+    // Kill tracked processes from process.json
+    if (fs.existsSync(PROCESS_FILE)) {
+      try {
+        const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
+        if (processData && processData.processes) {
+          for (const proc of processData.processes) {
+            try {
+              execSync(`kill -9 ${proc.pid}`);
+              console.log(
+                ansis.green(
+                  `Successfully killed process ${proc.pid} (${proc.command}).`
+                )
+              );
+            } catch (error) {
+              console.log(
+                ansis.yellow(
+                  `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
+                )
+              );
+            }
+          }
+        }
+        // Remove the process file
+        fs.unlinkSync(PROCESS_FILE);
+      } catch (error) {
+        console.error(ansis.red(`Error cleaning up processes: ${error}`));
+      }
     }
-    if (solanaTestValidator) {
-      solanaTestValidator.kill();
-    }
+
+    // // Also try to kill the processes directly if they're in memory
+    // if (anvilProcess) {
+    //   anvilProcess.kill();
+    // }
+    // if (solanaTestValidator) {
+    //   solanaTestValidator.kill();
+    // }
+    // if (suiProcess) {
+    //   suiProcess.kill();
+    // }
+
     if (fs.existsSync(LOCALNET_JSON_FILE)) {
       fs.unlinkSync(LOCALNET_JSON_FILE);
     }

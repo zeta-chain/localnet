@@ -103,6 +103,7 @@ export const suiSetup = async ({
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.getPublicKey().toSuiAddress();
   console.log("Publisher address:", publisherAddress);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const privateKeyBech32 = keypair.getSecretKey();
   console.log("Private Key (Bech32):", privateKeyBech32);
