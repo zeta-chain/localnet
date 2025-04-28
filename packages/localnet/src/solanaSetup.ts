@@ -11,12 +11,12 @@ import * as os from "os";
 import path from "path";
 import util from "util";
 
+import { backgroundProcessIds } from "../../commands/src/start";
 import { MNEMONIC } from "./constants";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
-import { backgroundProcessIds } from "../../commands/src/start";
 
 const execAsync = util.promisify(exec);
 

@@ -3,20 +3,20 @@ import ansis from "ansis";
 import { ChildProcess, exec, execSync } from "child_process";
 import { spawn } from "child_process";
 import { Command, Option } from "commander";
+import Docker from "dockerode";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import readline from "readline/promises";
 import waitOn from "wait-on";
-import Docker from "dockerode";
-import { getSocketPath } from "../../localnet/src/docker";
 
 import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
+import { getSocketPath } from "../../localnet/src/docker";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
-import readline from "readline/promises";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE_DIR = path.join(os.homedir(), ".zetachain", "localnet");
