@@ -7,6 +7,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import waitOn from "wait-on";
+import Docker from "dockerode";
+import * as dockerTools from "../../localnet/src/docker";
 
 import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
@@ -150,7 +152,7 @@ const startLocalnet = async (options: {
 
     solanaTestValidator.on("exit", (code) => {
       console.log(`solana-test-validator exited with code ${code}`);
-      process.exit(code ?? 0);
+      // process.exit(code ?? 0);
     });
 
     if (solanaTestValidator.pid) {
@@ -171,7 +173,6 @@ const startLocalnet = async (options: {
 
     suiProcess.on("exit", (code) => {
       console.log(`sui exited with code ${code}`);
-      process.exit(code ?? 0);
     });
 
     if (suiProcess?.pid) {
@@ -231,6 +232,48 @@ const startLocalnet = async (options: {
   }
 };
 
+const waitForTonContainerToStop = async () => {
+  if (!isDockerAvailable()) {
+    return;
+  }
+
+  console.log("Waiting for TON container to stop...");
+
+  try {
+    const socketPath = dockerTools.getSocketPath();
+    const docker = new Docker({ socketPath });
+    console.log("Using Docker socket at:", socketPath);
+
+    const container = docker.getContainer("ton");
+    console.log("Found container:", container.id);
+
+    try {
+      console.log("Attempting to stop container...");
+      await container.stop();
+      console.log(
+        "Container stop command sent, waiting for container to stop..."
+      );
+      await container.wait();
+      console.log(ansis.green("TON container stopped successfully."));
+    } catch (stopError) {
+      console.error("Error stopping container:", stopError);
+      // Try force remove if stop fails
+      try {
+        console.log("Attempting to force remove container...");
+        await container.remove({ force: true });
+        console.log(ansis.green("TON container force removed successfully."));
+      } catch (removeError) {
+        console.error("Error force removing container:", removeError);
+        throw removeError;
+      }
+    }
+  } catch (error) {
+    console.error("Error accessing Docker:", error);
+    // Container might not exist or already be stopped
+    console.log(ansis.yellow("TON container not found or already stopped."));
+  }
+};
+
 const cleanup = async () => {
   console.log("\nShutting down processes and cleaning up...");
 
@@ -260,6 +303,9 @@ const cleanup = async () => {
       console.error(ansis.red(`Error cleaning up processes: ${error}`));
     }
   }
+
+  // Wait for TON container to stop
+  await waitForTonContainerToStop();
 
   if (fs.existsSync(LOCALNET_JSON_FILE)) {
     fs.unlinkSync(LOCALNET_JSON_FILE);
