@@ -234,9 +234,6 @@ const startLocalnet = async (options: {
 const cleanup = async () => {
   console.log("\nShutting down processes and cleaning up...");
 
-  // temporary
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
   if (fs.existsSync(PROCESS_FILE)) {
     try {
       const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
