@@ -1,18 +1,53 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
 import { ChildProcess, exec, execSync } from "child_process";
-import { Command } from "commander";
+import { spawn } from "child_process";
+import { Command, Option } from "commander";
+import Docker from "dockerode";
 import fs from "fs";
+import os from "os";
+import path from "path";
+import readline from "readline/promises";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
+import { getSocketPath } from "../../localnet/src/docker";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
+const PROCESS_FILE_DIR = path.join(os.homedir(), ".zetachain", "localnet");
+const PROCESS_FILE = path.join(PROCESS_FILE_DIR, "process.json");
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+let skip: string[];
+
+rl.on("close", async () => {
+  rl.close();
+  await cleanup();
+  process.exit(0);
+});
+
+interface ProcessInfo {
+  command: string;
+  pid: number;
+}
+
+/**
+ * Stores IDs for various long-running background processes that need to be
+ * cleaned up when the localnet is shut down (for example, Solana and Sui
+ * transaction monitors).
+ */
+export let backgroundProcessIds: NodeJS.Timeout[] = [];
+
+const chains = ["ton", "solana", "sui"];
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -61,9 +96,19 @@ const startLocalnet = async (options: {
   exitOnError: boolean;
   forceKill: boolean;
   port: number;
-  skip: string;
+  skip: string[];
   stopAfterInit: boolean;
 }) => {
+  skip = options.skip || [];
+
+  // Create the directory if it doesn't exist
+  if (!fs.existsSync(PROCESS_FILE_DIR)) {
+    fs.mkdirSync(PROCESS_FILE_DIR, { recursive: true });
+  }
+
+  // Initialize the processes array
+  const processes: ProcessInfo[] = [];
+
   try {
     execSync("which anvil");
   } catch (error) {
@@ -82,52 +127,68 @@ const startLocalnet = async (options: {
       `Starting anvil on port ${options.port} with args: ${options.anvil}`
     );
 
-  const anvilProcess = exec(
-    `anvil --auto-impersonate --port ${options.port} ${options.anvil}`
-  );
+  const anvilArgs = [
+    "--auto-impersonate",
+    "--port",
+    options.port.toString(),
+    ...options.anvil.split(" ").filter(Boolean), // simple split on spaces
+  ];
+  const anvilProcess = spawn("anvil", anvilArgs, { stdio: "inherit" });
 
-  if (anvilProcess.stdout && anvilProcess.stderr) {
-    anvilProcess.stdout.pipe(process.stdout);
-    anvilProcess.stderr.pipe(process.stderr);
+  if (anvilProcess.pid) {
+    processes.push({
+      command: "anvil",
+      pid: anvilProcess.pid,
+    });
   }
 
-  const skip = options.skip ? options.skip.split(",") : [];
+  await waitOn({
+    resources: [`tcp:127.0.0.1:${options.port}`],
+    timeout: 30_000,
+  });
 
   if (!skip.includes("ton") && isDockerAvailable()) {
     await ton.startNode();
+    // Note: Docker processes are managed differently, not adding to processes array
   } else {
     console.log("Skipping Ton...");
   }
 
   let solanaTestValidator: ChildProcess;
 
-  if (isSolanaAvailable()) {
-    solanaTestValidator = exec(`solana-test-validator --reset`);
-    await waitOn({ resources: [`tcp:127.0.0.1:8899`] });
+  if (!skip.includes("solana") && isSolanaAvailable()) {
+    solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
+
+    if (solanaTestValidator.pid) {
+      processes.push({
+        command: "solana-test-validator",
+        pid: solanaTestValidator.pid,
+      });
+    }
+    await waitOn({ resources: [`tcp:127.0.0.1:8899`], timeout: 30_000 });
   }
 
-  if (isSuiAvailable()) {
+  let suiProcess: ChildProcess;
+  if (!skip.includes("sui") && isSuiAvailable()) {
     console.log("Starting Sui...");
-    exec(
-      `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
-    );
-    await waitOn({ resources: [`tcp:127.0.0.1:9000`] });
+    suiProcess = spawn("sui", ["start", "--with-faucet", "--force-regenesis"], {
+      env: { ...process.env, RUST_LOG: "off,sui_node=info" },
+    });
+
+    if (suiProcess?.pid) {
+      processes.push({
+        command: "sui",
+        pid: suiProcess.pid,
+      });
+    }
+    await waitOn({ resources: [`tcp:127.0.0.1:9000`], timeout: 30_000 });
   }
 
-  await waitOn({ resources: [`tcp:127.0.0.1:${options.port}`] });
-
-  const cleanup = () => {
-    console.log("\nShutting down anvil and cleaning up...");
-    if (anvilProcess) {
-      anvilProcess.kill();
-    }
-    if (solanaTestValidator) {
-      solanaTestValidator.kill();
-    }
-    if (fs.existsSync(LOCALNET_JSON_FILE)) {
-      fs.unlinkSync(LOCALNET_JSON_FILE);
-    }
-  };
+  fs.writeFileSync(
+    PROCESS_FILE,
+    JSON.stringify({ processes }, null, 2),
+    "utf-8"
+  );
 
   try {
     const rawInitialAddresses = await initLocalnet({
@@ -154,7 +215,6 @@ const startLocalnet = async (options: {
       console.table(chainContracts);
     });
 
-    // Write PID to localnet.json in JSON format
     fs.writeFileSync(
       LOCALNET_JSON_FILE,
       JSON.stringify({ addresses, pid: process.pid }, null, 2),
@@ -166,26 +226,83 @@ const startLocalnet = async (options: {
     process.exit(1);
   }
 
-  const handleExit = (signal: string) => {
-    console.log(`\nReceived ${signal}, shutting down...`);
-    process.exit();
-  };
-
-  process.on("SIGINT", () => handleExit("SIGINT"));
-  process.on("SIGTERM", () => handleExit("SIGTERM"));
-
-  process.on("exit", () => {
-    console.log("Process exiting...");
-    cleanup();
-  });
-
   if (options.stopAfterInit) {
     console.log(ansis.green("Localnet successfully initialized. Stopping..."));
     cleanup();
-    process.exit(0);
+  }
+};
+
+const waitForTonContainerToStop = async () => {
+  if (!isDockerAvailable()) {
+    return;
   }
 
-  await new Promise(() => {});
+  try {
+    const socketPath = getSocketPath();
+    const docker = new Docker({ socketPath });
+
+    const container = docker.getContainer("ton");
+
+    try {
+      console.log(
+        "Waiting for TON container to stop. Please, don't close this terminal."
+      );
+      await container.stop();
+      await container.wait();
+      console.log(ansis.green("TON container stopped successfully."));
+    } catch (stopError) {
+      console.error("Error stopping container:", stopError);
+    }
+  } catch (error) {
+    console.error("Error accessing Docker:", error);
+    // Container might not exist or already be stopped
+    console.log(ansis.yellow("TON container not found or already stopped."));
+  }
+};
+
+const cleanup = async () => {
+  console.log("\nShutting down processes and cleaning up...");
+
+  // Stop all background processes
+  for (const intervalId of backgroundProcessIds) {
+    clearInterval(intervalId);
+  }
+  backgroundProcessIds = [];
+
+  if (fs.existsSync(PROCESS_FILE)) {
+    try {
+      const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
+      if (processData && processData.processes) {
+        for (const proc of processData.processes) {
+          try {
+            process.kill(proc.pid, "SIGKILL");
+            console.log(
+              ansis.green(
+                `Successfully killed process ${proc.pid} (${proc.command}).`
+              )
+            );
+          } catch (error) {
+            console.log(
+              ansis.yellow(
+                `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
+              )
+            );
+          }
+        }
+      }
+      fs.unlinkSync(PROCESS_FILE);
+    } catch (error) {
+      console.error(ansis.red(`Error cleaning up processes: ${error}`));
+    }
+  }
+
+  if (!skip.includes("ton")) {
+    await waitForTonContainerToStop();
+  }
+
+  if (fs.existsSync(LOCALNET_JSON_FILE)) {
+    fs.unlinkSync(LOCALNET_JSON_FILE);
+  }
 };
 
 export const startCommand = new Command("start")
@@ -207,10 +324,11 @@ export const startCommand = new Command("start")
     "Exit with an error if a call is reverted",
     false
   )
-  .option(
-    "--skip <string>,<string>",
-    "Comma-separated list of chains to skip when initializing localnet. Supported chains: 'solana', 'sui', 'ton'",
-    ""
+  .addOption(
+    new Option(
+      "--skip [chains...]",
+      "Chains to skip when initializing localnet"
+    ).choices(chains)
   )
   .action(async (options) => {
     try {

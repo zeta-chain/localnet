@@ -8,6 +8,7 @@ import * as fs from "fs";
 import os from "os";
 import path from "path";
 
+import { backgroundProcessIds } from "../../commands/src/start";
 import { cloneRepository } from "./cloneRepository";
 import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -103,6 +104,7 @@ export const suiSetup = async ({
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.getPublicKey().toSuiAddress();
   console.log("Publisher address:", publisherAddress);
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const privateKeyBech32 = keypair.getSecretKey();
   console.log("Private Key (Bech32):", privateKeyBech32);
@@ -243,7 +245,7 @@ const pollEvents = async (context: any) => {
   const DEPOSIT_EVENT = `${context.moduleId}::gateway::DepositEvent`;
   const DEPOSIT_AND_CALL_EVENT = `${context.moduleId}::gateway::DepositAndCallEvent`;
 
-  while (true) {
+  const pollInterval = setInterval(async () => {
     try {
       const { data, hasNextPage, nextCursor }: any =
         await context.client.queryEvents({
@@ -283,7 +285,9 @@ const pollEvents = async (context: any) => {
       console.log(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
-  }
+  }, POLLING_INTERVAL_MS);
+
+  backgroundProcessIds.push(pollInterval);
 };
 
 const runSudoCommand = (command: any, args: any) => {

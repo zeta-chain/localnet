@@ -11,6 +11,7 @@ import * as os from "os";
 import path from "path";
 import util from "util";
 
+import { backgroundProcessIds } from "../../commands/src/start";
 import { MNEMONIC } from "./constants";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 import Gateway_IDL from "./solana/idl/gateway.json";
@@ -229,7 +230,7 @@ export const solanaMonitorTransactions = async ({
 
   let lastSignature: string;
 
-  setInterval(async () => {
+  const intervalId = setInterval(async () => {
     let signatures;
     try {
       signatures = await connection.getSignaturesForAddress(
@@ -377,4 +378,6 @@ export const solanaMonitorTransactions = async ({
       }
     }
   }, 1000);
+
+  backgroundProcessIds.push(intervalId);
 };
