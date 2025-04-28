@@ -8,7 +8,7 @@ import os from "os";
 import path from "path";
 import waitOn from "wait-on";
 import Docker from "dockerode";
-import * as dockerTools from "../../localnet/src/docker";
+import { getSocketPath } from "../../localnet/src/docker";
 
 import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
@@ -38,7 +38,12 @@ interface ProcessInfo {
   pid: number;
 }
 
-export let intervalIDs: NodeJS.Timeout[] = [];
+/**
+ * Stores IDs for various long-running background processes that need to be
+ * cleaned up when the localnet is shut down (for example, Solana and Sui
+ * transaction monitors).
+ */
+export let backgroundProcessIds: NodeJS.Timeout[] = [];
 
 const chains = ["ton", "solana", "sui"];
 
@@ -152,11 +157,6 @@ const startLocalnet = async (options: {
   if (!skip.includes("solana") && isSolanaAvailable()) {
     solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
 
-    solanaTestValidator.on("exit", (code) => {
-      console.log(`solana-test-validator exited with code ${code}`);
-      // process.exit(code ?? 0);
-    });
-
     if (solanaTestValidator.pid) {
       processes.push({
         command: "solana-test-validator",
@@ -171,10 +171,6 @@ const startLocalnet = async (options: {
     console.log("Starting Sui...");
     suiProcess = spawn("sui", ["start", "--with-faucet", "--force-regenesis"], {
       env: { ...process.env, RUST_LOG: "off,sui_node=info" },
-    });
-
-    suiProcess.on("exit", (code) => {
-      console.log(`sui exited with code ${code}`);
     });
 
     if (suiProcess?.pid) {
@@ -239,35 +235,20 @@ const waitForTonContainerToStop = async () => {
     return;
   }
 
-  console.log("Waiting for TON container to stop...");
+  console.log("Waiting for TON container to stop. Don't close this terminal.");
 
   try {
-    const socketPath = dockerTools.getSocketPath();
+    const socketPath = getSocketPath();
     const docker = new Docker({ socketPath });
-    console.log("Using Docker socket at:", socketPath);
 
     const container = docker.getContainer("ton");
-    console.log("Found container:", container.id);
 
     try {
-      console.log("Attempting to stop container...");
       await container.stop();
-      console.log(
-        "Container stop command sent, waiting for container to stop..."
-      );
       await container.wait();
       console.log(ansis.green("TON container stopped successfully."));
     } catch (stopError) {
       console.error("Error stopping container:", stopError);
-      // Try force remove if stop fails
-      try {
-        console.log("Attempting to force remove container...");
-        await container.remove({ force: true });
-        console.log(ansis.green("TON container force removed successfully."));
-      } catch (removeError) {
-        console.error("Error force removing container:", removeError);
-        throw removeError;
-      }
     }
   } catch (error) {
     console.error("Error accessing Docker:", error);
@@ -279,12 +260,11 @@ const waitForTonContainerToStop = async () => {
 const cleanup = async () => {
   console.log("\nShutting down processes and cleaning up...");
 
-  // Clear all intervals
-  for (const intervalId of intervalIDs) {
+  // Stop all background processes
+  for (const intervalId of backgroundProcessIds) {
     clearInterval(intervalId);
   }
-  console.log(ansis.green(`Cleared ${intervalIDs.length} intervals.`));
-  intervalIDs = [];
+  backgroundProcessIds = [];
 
   if (fs.existsSync(PROCESS_FILE)) {
     try {
@@ -313,22 +293,11 @@ const cleanup = async () => {
     }
   }
 
-  // Wait for TON container to stop
   await waitForTonContainerToStop();
 
   if (fs.existsSync(LOCALNET_JSON_FILE)) {
     fs.unlinkSync(LOCALNET_JSON_FILE);
   }
-
-  try {
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false);
-    }
-    process.stdin.pause();
-  } catch (err) {
-    // ignore
-  }
-  process.exit(0);
 };
 
 export const startCommand = new Command("start")

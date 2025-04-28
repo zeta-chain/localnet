@@ -13,7 +13,7 @@ import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
-import { intervalIDs } from "../../commands/src/start";
+import { backgroundProcessIds } from "../../commands/src/start";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
@@ -287,7 +287,7 @@ const pollEvents = async (context: any) => {
     }
   }, POLLING_INTERVAL_MS);
 
-  intervalIDs.push(pollInterval);
+  backgroundProcessIds.push(pollInterval);
 };
 
 const runSudoCommand = (command: any, args: any) => {

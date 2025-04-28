@@ -16,7 +16,7 @@ import { isSolanaAvailable } from "./isSolanaAvailable";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
-import { intervalIDs } from "../../commands/src/start";
+import { backgroundProcessIds } from "../../commands/src/start";
 
 const execAsync = util.promisify(exec);
 
@@ -379,5 +379,5 @@ export const solanaMonitorTransactions = async ({
     }
   }, 1000);
 
-  intervalIDs.push(intervalId);
+  backgroundProcessIds.push(intervalId);
 };
