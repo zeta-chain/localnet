@@ -14,10 +14,22 @@ import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
+import readline from "readline/promises";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE_DIR = path.join(os.homedir(), ".zetachain", "localnet");
 const PROCESS_FILE = path.join(PROCESS_FILE_DIR, "process.json");
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+rl.on("close", async () => {
+  rl.close();
+  await cleanup();
+  process.exit(0);
+});
 
 interface ProcessInfo {
   command: string;
@@ -213,17 +225,17 @@ const startLocalnet = async (options: {
     process.exit(1);
   }
 
-  process.on("SIGINT", cleanup);
-  process.on("SIGTERM", cleanup);
-
   if (options.stopAfterInit) {
     console.log(ansis.green("Localnet successfully initialized. Stopping..."));
     cleanup();
   }
 };
 
-const cleanup = () => {
+const cleanup = async () => {
   console.log("\nShutting down processes and cleaning up...");
+
+  // temporary
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   if (fs.existsSync(PROCESS_FILE)) {
     try {
