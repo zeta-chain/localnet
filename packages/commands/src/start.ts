@@ -38,6 +38,8 @@ interface ProcessInfo {
   pid: number;
 }
 
+export let intervalIDs: NodeJS.Timeout[] = [];
+
 const chains = ["ton", "solana", "sui"];
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
@@ -276,6 +278,13 @@ const waitForTonContainerToStop = async () => {
 
 const cleanup = async () => {
   console.log("\nShutting down processes and cleaning up...");
+
+  // Clear all intervals
+  for (const intervalId of intervalIDs) {
+    clearInterval(intervalId);
+  }
+  console.log(ansis.green(`Cleared ${intervalIDs.length} intervals.`));
+  intervalIDs = [];
 
   if (fs.existsSync(PROCESS_FILE)) {
     try {

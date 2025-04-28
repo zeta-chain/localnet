@@ -13,6 +13,7 @@ import { MNEMONIC } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
+import { intervalIDs } from "../../commands/src/start";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
@@ -244,7 +245,7 @@ const pollEvents = async (context: any) => {
   const DEPOSIT_EVENT = `${context.moduleId}::gateway::DepositEvent`;
   const DEPOSIT_AND_CALL_EVENT = `${context.moduleId}::gateway::DepositAndCallEvent`;
 
-  while (true) {
+  const pollInterval = setInterval(async () => {
     try {
       const { data, hasNextPage, nextCursor }: any =
         await context.client.queryEvents({
@@ -284,7 +285,9 @@ const pollEvents = async (context: any) => {
       console.log(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
-  }
+  }, POLLING_INTERVAL_MS);
+
+  intervalIDs.push(pollInterval);
 };
 
 const runSudoCommand = (command: any, args: any) => {
