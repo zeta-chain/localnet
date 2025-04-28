@@ -27,6 +27,8 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+let skip: string[];
+
 rl.on("close", async () => {
   rl.close();
   await cleanup();
@@ -97,6 +99,8 @@ const startLocalnet = async (options: {
   skip: string[];
   stopAfterInit: boolean;
 }) => {
+  skip = options.skip || [];
+
   // Create the directory if it doesn't exist
   if (!fs.existsSync(PROCESS_FILE_DIR)) {
     fs.mkdirSync(PROCESS_FILE_DIR, { recursive: true });
@@ -142,8 +146,6 @@ const startLocalnet = async (options: {
     resources: [`tcp:127.0.0.1:${options.port}`],
     timeout: 30_000,
   });
-
-  const skip = options.skip || [];
 
   if (!skip.includes("ton") && isDockerAvailable()) {
     await ton.startNode();
@@ -235,8 +237,6 @@ const waitForTonContainerToStop = async () => {
     return;
   }
 
-  console.log("Waiting for TON container to stop. Don't close this terminal.");
-
   try {
     const socketPath = getSocketPath();
     const docker = new Docker({ socketPath });
@@ -244,6 +244,9 @@ const waitForTonContainerToStop = async () => {
     const container = docker.getContainer("ton");
 
     try {
+      console.log(
+        "Waiting for TON container to stop. Please, don't close this terminal."
+      );
       await container.stop();
       await container.wait();
       console.log(ansis.green("TON container stopped successfully."));
@@ -272,7 +275,7 @@ const cleanup = async () => {
       if (processData && processData.processes) {
         for (const proc of processData.processes) {
           try {
-            process.kill(proc.pid, "SIGKILL"); // 💥 kill directly via process.kill
+            process.kill(proc.pid, "SIGKILL");
             console.log(
               ansis.green(
                 `Successfully killed process ${proc.pid} (${proc.command}).`
@@ -293,7 +296,9 @@ const cleanup = async () => {
     }
   }
 
-  await waitForTonContainerToStop();
+  if (!skip.includes("ton")) {
+    await waitForTonContainerToStop();
+  }
 
   if (fs.existsSync(LOCALNET_JSON_FILE)) {
     fs.unlinkSync(LOCALNET_JSON_FILE);
