@@ -165,7 +165,7 @@ export const suiSetup = async ({
       change.objectType.includes("gateway::WhitelistCap")
   );
 
-  const moduleId = (publishedModule as any).packageId;
+  const packageId = (publishedModule as any).packageId;
   const gatewayObjectId = (gatewayObject as any).objectId;
   const withdrawCapObjectId = (withdrawCapObject as any).objectId;
   const whitelistCapObjectId = (whitelistCapObject as any).objectId;
@@ -177,7 +177,7 @@ export const suiSetup = async ({
     fungibleModuleSigner,
     gatewayObjectId,
     keypair,
-    moduleId,
+    packageId,
     provider,
     withdrawCapObjectId,
     zetachainContracts,
@@ -186,9 +186,9 @@ export const suiSetup = async ({
   return {
     addresses: [
       {
-        address: moduleId,
+        address: packageId,
         chain: "sui",
-        type: "gatewayPackageID",
+        type: "gatewayPackageId",
       },
       {
         address: gatewayObjectId,
@@ -210,7 +210,7 @@ export const suiSetup = async ({
       client,
       gatewayObjectId,
       keypair,
-      moduleId,
+      packageId,
       whitelistCapObjectId,
       withdrawCapObjectId,
     },
@@ -242,8 +242,8 @@ const waitForConfirmation = async (
 const pollEvents = async (context: any) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
-  const DEPOSIT_EVENT = `${context.moduleId}::gateway::DepositEvent`;
-  const DEPOSIT_AND_CALL_EVENT = `${context.moduleId}::gateway::DepositAndCallEvent`;
+  const DEPOSIT_EVENT = `${context.packageId}::gateway::DepositEvent`;
+  const DEPOSIT_AND_CALL_EVENT = `${context.packageId}::gateway::DepositAndCallEvent`;
 
   const pollInterval = setInterval(async () => {
     try {
@@ -255,7 +255,7 @@ const pollEvents = async (context: any) => {
           query: {
             MoveEventModule: {
               module: "gateway",
-              package: context.moduleId,
+              package: context.packageId,
             },
           },
         });

@@ -14,7 +14,7 @@ export const suiDepositAndCall = async ({
   fungibleModuleSigner,
   gatewayObjectId,
   keypair,
-  moduleId,
+  packageId,
   zetachainContracts,
   provider,
   withdrawCapObjectId,
@@ -68,7 +68,7 @@ export const suiDepositAndCall = async ({
         client: client,
         gatewayObjectId: gatewayObjectId,
         keypair: keypair,
-        moduleId: moduleId,
+        packageId,
         sender: event.sender,
         withdrawCapObjectId: withdrawCapObjectId,
       });

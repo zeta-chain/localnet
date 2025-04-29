@@ -15,9 +15,9 @@ const suiDeposit = async (args: any) => {
 
   const localnetConfig = getLocalnetConfig();
   const gatewayObjectId = gateway || localnetConfig.gatewayObjectId;
-  const moduleId = module || localnetConfig.moduleId;
+  const packageId = module || localnetConfig.packageId;
 
-  if (!gatewayObjectId || !moduleId) {
+  if (!gatewayObjectId || !packageId) {
     throw new Error(
       "Gateway object ID and module ID must be provided either as parameters or in localnet.json"
     );
@@ -27,7 +27,7 @@ const suiDeposit = async (args: any) => {
   const address = keypair.toSuiAddress();
   console.log(`Using Address: ${address}`);
   console.log(`Using Gateway Object: ${gatewayObjectId}`);
-  console.log(`Using Module ID: ${moduleId}`);
+  console.log(`Using Module ID: ${packageId}`);
 
   const fullCoinType = coinType || "0x2::sui::SUI";
   console.log(`Using Coin Type: ${fullCoinType}`);
@@ -103,7 +103,7 @@ const suiDeposit = async (args: any) => {
       splittedCoin,
       tx.pure.string(receiver),
     ],
-    target: `${moduleId}::gateway::deposit`,
+    target: `${packageId}::gateway::deposit`,
     typeArguments: [fullCoinType],
   });
 
