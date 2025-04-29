@@ -88,16 +88,20 @@ const startLocalnet = async (options: {
   skip: string[];
   stopAfterInit: boolean;
 }) => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  rl.on("close", async () => {
-    rl.close();
-    await cleanup();
-    process.exit(0);
-  });
+  let rl: readline.Interface | undefined;
+  if (process.stdin.isTTY) {
+    rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.on("close", async () => {
+      await cleanup();
+      process.exit(0);
+    });
+  } else {
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+  }
 
   skip = options.skip || [];
 
