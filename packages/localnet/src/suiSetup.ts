@@ -188,7 +188,7 @@ export const suiSetup = async ({
       {
         address: moduleId,
         chain: "sui",
-        type: "gatewayModuleID",
+        type: "gatewayPackageID",
       },
       {
         address: gatewayObjectId,
