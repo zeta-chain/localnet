@@ -22,18 +22,7 @@ const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE_DIR = path.join(os.homedir(), ".zetachain", "localnet");
 const PROCESS_FILE = path.join(PROCESS_FILE_DIR, "process.json");
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
 let skip: string[];
-
-rl.on("close", async () => {
-  rl.close();
-  await cleanup();
-  process.exit(0);
-});
 
 interface ProcessInfo {
   command: string;
@@ -99,6 +88,17 @@ const startLocalnet = async (options: {
   skip: string[];
   stopAfterInit: boolean;
 }) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  rl.on("close", async () => {
+    rl.close();
+    await cleanup();
+    process.exit(0);
+  });
+
   skip = options.skip || [];
 
   // Create the directory if it doesn't exist
