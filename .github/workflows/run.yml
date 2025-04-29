@@ -35,4 +35,4 @@ jobs:
         run: yarn build
 
       - name: Start Localnet
-        run: yarn localnet start --stop-after-init --skip solana sui ton
+        run: yarn localnet start --stop-after-init

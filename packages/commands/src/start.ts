@@ -232,7 +232,8 @@ const startLocalnet = async (options: {
 
   if (options.stopAfterInit) {
     console.log(ansis.green("Localnet successfully initialized. Stopping..."));
-    cleanup();
+    await cleanup();
+    process.exit(0);
   }
 };
 
