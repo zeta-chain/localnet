@@ -19,8 +19,8 @@ export const zetachainExecute = async ({
     (deployer as NonceManager).reset();
     const context = {
       chainID,
-      senderEVM: sender,
       sender,
+      senderEVM: sender,
     };
     const zrc20 = foreignCoins.find(
       (coin: any) =>
