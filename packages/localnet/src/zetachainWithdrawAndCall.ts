@@ -70,6 +70,7 @@ export const zetachainWithdrawAndCall = async ({
         await suiWithdrawAndCall({
           amount,
           message,
+          assetCoinType: coinType,
           targetModule: receiver,
           ...contracts.suiContracts.env,
         });
