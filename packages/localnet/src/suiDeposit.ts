@@ -13,7 +13,7 @@ export const suiDeposit = async ({
   foreignCoins,
   gatewayObjectId,
   keypair,
-  moduleId,
+  packageId,
   zetachainContracts,
   provider,
   withdrawCapObjectId,
@@ -68,7 +68,7 @@ export const suiDeposit = async ({
         coinType: event.coin_type,
         gatewayObjectId: gatewayObjectId,
         keypair: keypair,
-        moduleId: moduleId,
+        packageId,
         sender: event.sender,
         withdrawCapObjectId: withdrawCapObjectId,
       });

@@ -9,7 +9,7 @@ const GAS_BUDGET = 5_000_000_000;
  *
  * @param contracts - The contracts object containing Sui-specific contracts and environment
  * @param symbol - The symbol for the token
- * @returns The address of the created token in the format "moduleId::token::TOKEN"
+ * @returns The address of the created token in the format "packageId::token::TOKEN"
  *
  * @remarks
  * This function:
@@ -27,7 +27,7 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
   const {
     client,
     keypair,
-    moduleId: gatewayModuleId,
+    packageId: gatewayPackageId,
     gatewayObjectId,
     whitelistCapObjectId,
   } = suiContracts.env;
@@ -74,8 +74,8 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
     throw new Error("Failed to find published module in transaction results");
   }
 
-  const tokenModuleId = (publishedModule as any).packageId;
-  if (!tokenModuleId) {
+  const tokenPackageId = (publishedModule as any).packageId;
+  if (!tokenPackageId) {
     throw new Error("Failed to get token module ID");
   }
 
@@ -97,8 +97,8 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
       whitelistTx.object(gatewayObjectId),
       whitelistTx.object(whitelistCapObjectId),
     ],
-    target: `${gatewayModuleId}::gateway::whitelist`,
-    typeArguments: [`${tokenModuleId}::token::TOKEN`],
+    target: `${gatewayPackageId}::gateway::whitelist`,
+    typeArguments: [`${tokenPackageId}::token::TOKEN`],
   });
 
   const whitelistResult = await client.signAndExecuteTransaction({
@@ -143,7 +143,7 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
       mintTx.pure(amount),
       mintTx.pure.address(userAddress),
     ],
-    target: `${tokenModuleId}::token::mint`,
+    target: `${tokenPackageId}::token::mint`,
     typeArguments: [],
   });
 
@@ -154,7 +154,7 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
       mintTx.pure(amount),
       mintTx.pure.address(gatewayObjectId),
     ],
-    target: `${tokenModuleId}::token::mint`,
+    target: `${tokenPackageId}::token::mint`,
     typeArguments: [],
   });
 
@@ -176,7 +176,7 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
   }
 
   console.log(`✅ Minted ${symbol} tokens to user and gateway`);
-  const address = `${tokenModuleId.replace("0x", "")}::token::TOKEN`;
+  const address = `${tokenPackageId.replace("0x", "")}::token::TOKEN`;
   suiContracts.addresses.push({
     address,
     chain: "sui",

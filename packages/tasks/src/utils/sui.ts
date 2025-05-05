@@ -49,13 +49,13 @@ export const getLocalnetConfig = () => {
       const gatewayObjectId = config.addresses.find(
         (addr: any) => addr.chain === "sui" && addr.type === "gatewayObjectId"
       )?.address;
-      const moduleId = config.addresses.find(
-        (addr: any) => addr.chain === "sui" && addr.type === "gatewayModuleID"
+      const packageId = config.addresses.find(
+        (addr: any) => addr.chain === "sui" && addr.type === "gatewayPackageId"
       )?.address;
-      return { gatewayObjectId, moduleId };
+      return { gatewayObjectId, packageId };
     }
   } catch (error) {
     console.log("No localnet.json found or error reading it:", error);
   }
-  return { gatewayObjectId: null, moduleId: null };
+  return { gatewayObjectId: null, packageId: null };
 };

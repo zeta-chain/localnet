@@ -9,7 +9,7 @@ export const suiWithdraw = async ({
   sender,
   client,
   keypair,
-  moduleId,
+  packageId,
   gatewayObjectId,
   withdrawCapObjectId,
 }: any) => {
@@ -28,7 +28,7 @@ export const suiWithdraw = async ({
       tx.pure.u64(100000),
       tx.object(withdrawCapObjectId),
     ],
-    target: `${moduleId}::gateway::withdraw`,
+    target: `${packageId}::gateway::withdraw`,
     typeArguments: [coinType],
   });
 
