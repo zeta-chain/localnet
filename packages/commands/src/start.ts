@@ -88,16 +88,23 @@ const startLocalnet = async (options: {
   skip: string[];
   stopAfterInit: boolean;
 }) => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  rl.on("close", async () => {
-    rl.close();
-    await cleanup();
-    process.exit(0);
-  });
+  // Set up readline interface for interactive terminal sessions to handle process termination
+  // Only create the interface if we're running in a TTY (interactive terminal)
+  // This ensures proper cleanup and return of shell control when the program runs in background
+  let rl: readline.Interface | undefined;
+  if (process.stdin.isTTY) {
+    rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.on("close", async () => {
+      await cleanup();
+      process.exit(0);
+    });
+  } else {
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+  }
 
   skip = options.skip || [];
 
@@ -228,7 +235,8 @@ const startLocalnet = async (options: {
 
   if (options.stopAfterInit) {
     console.log(ansis.green("Localnet successfully initialized. Stopping..."));
-    cleanup();
+    await cleanup();
+    process.exit(0);
   }
 };
 
