@@ -19,8 +19,8 @@ import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
-const PROCESS_FILE_DIR = path.join(os.homedir(), ".zetachain", "localnet");
-const PROCESS_FILE = path.join(PROCESS_FILE_DIR, "process.json");
+const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
+const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 
 let skip: string[];
 
@@ -88,6 +88,10 @@ const startLocalnet = async (options: {
   skip: string[];
   stopAfterInit: boolean;
 }) => {
+  if (!fs.existsSync(LOCALNET_DIR)) {
+    fs.mkdirSync(LOCALNET_DIR, { recursive: true });
+  }
+
   // Set up readline interface for interactive terminal sessions to handle process termination
   // Only create the interface if we're running in a TTY (interactive terminal)
   // This ensures proper cleanup and return of shell control when the program runs in background
@@ -107,11 +111,6 @@ const startLocalnet = async (options: {
   }
 
   skip = options.skip || [];
-
-  // Create the directory if it doesn't exist
-  if (!fs.existsSync(PROCESS_FILE_DIR)) {
-    fs.mkdirSync(PROCESS_FILE_DIR, { recursive: true });
-  }
 
   // Initialize the processes array
   const processes: ProcessInfo[] = [];
@@ -136,6 +135,8 @@ const startLocalnet = async (options: {
 
   const anvilArgs = [
     "--auto-impersonate",
+    "--config-out",
+    path.join(LOCALNET_DIR, "anvil.json"),
     "--port",
     options.port.toString(),
     ...options.anvil.split(" ").filter(Boolean), // simple split on spaces
@@ -311,12 +312,21 @@ const cleanup = async () => {
   if (fs.existsSync(LOCALNET_JSON_FILE)) {
     fs.unlinkSync(LOCALNET_JSON_FILE);
   }
+
+  const anvilConfigPath = path.join(LOCALNET_DIR, "anvil.json");
+  if (fs.existsSync(anvilConfigPath)) {
+    try {
+      fs.unlinkSync(anvilConfigPath);
+    } catch (error) {
+      console.error(ansis.yellow(`Failed to remove anvil.json: ${error}`));
+    }
+  }
 };
 
 export const startCommand = new Command("start")
   .description("Start localnet")
   .option("-p, --port <number>", "Port to run anvil on", "8545")
-  .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "")
+  .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "-q")
   .option(
     "-f, --force-kill",
     "Force kill any process on the port without prompting",
