@@ -1,6 +1,8 @@
 import { bcs } from "@mysten/sui/bcs";
 import { Transaction } from "@mysten/sui/transactions";
 import * as fs from "fs";
+import logger from "../logger";
+import { NetworkID } from "../constants";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -175,7 +177,9 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
     );
   }
 
-  console.log(`✅ Minted ${symbol} tokens to user and gateway`);
+  logger.info(`Minted ${symbol} tokens to user and gateway`, {
+    chain: NetworkID.Sui,
+  });
   const address = `${tokenPackageId.replace("0x", "")}::token::TOKEN`;
   suiContracts.addresses.push({
     address,

@@ -3,6 +3,8 @@ import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Po
 import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json";
 import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
 import { ethers, Log, LogDescription, Signer } from "ethers";
+import logger from "../logger";
+import { NetworkID } from "../constants";
 
 import { deployOpts } from "../deployOpts";
 
@@ -123,20 +125,21 @@ export const uniswapV3AddLiquidity = async (
   try {
     const pool = await createUniswapV3Pool(uniswapV3Factory, token0, token1);
     if (verbose) {
-      console.log("Created Uniswap V3 pool:", await pool.getAddress());
+      logger.info(`Created Uniswap V3 pool: ${await pool.getAddress()}`, {
+        chain: NetworkID.ZetaChain,
+      });
     }
 
     // Wait for pool initialization
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (verbose) {
-      console.log("Adding liquidity to V3 pool with params:", {
-        amount0: amount0.toString(),
-        amount1: amount1.toString(),
-        recipient: await deployer.getAddress(),
-        token0,
-        token1,
-      });
+      logger.info(
+        `Adding liquidity to V3 pool: amount0=${amount0.toString()}, amount1=${amount1.toString()}, recipient=${await deployer.getAddress()}, token0=${token0}, token1=${token1}`,
+        {
+          chain: NetworkID.ZetaChain,
+        }
+      );
     }
 
     const { tx, tokenId } = await addLiquidityV3(
@@ -151,7 +154,9 @@ export const uniswapV3AddLiquidity = async (
     const receipt = await tx.wait();
 
     if (verbose) {
-      console.log("Liquidity addition transaction:", receipt.hash);
+      logger.info(`Liquidity addition transaction: ${receipt.hash}`, {
+        chain: NetworkID.ZetaChain,
+      });
     }
 
     // Wait for position to be minted
@@ -168,16 +173,25 @@ export const uniswapV3AddLiquidity = async (
     );
 
     if (verbose) {
-      console.log("Uniswap V3 Pool Liquidity Info:", {
-        poolAddress: await pool.getAddress(),
-        ...liquidityInfo,
-      });
+      logger.info(
+        `Uniswap V3 Pool Liquidity Info: poolAddress=${await pool.getAddress()}, ${JSON.stringify(
+          liquidityInfo
+        )}`,
+        {
+          chain: NetworkID.ZetaChain,
+        }
+      );
     }
   } catch (error: any) {
-    console.error("Error adding liquidity to Uniswap V3:", error);
+    logger.error(`Error adding liquidity to Uniswap V3: ${error.message}`, {
+      chain: NetworkID.ZetaChain,
+    });
     if (error.message?.includes("LOK")) {
-      console.error(
-        "Pool initialization error - pool may already be initialized"
+      logger.error(
+        "Pool initialization error - pool may already be initialized",
+        {
+          chain: NetworkID.ZetaChain,
+        }
       );
     }
     throw error;
@@ -332,23 +346,28 @@ export const verifyV3Liquidity = async (
     const position = await positionManager.positions(tokenId);
 
     if (verbose) {
-      console.log("Position data:", {
-        position: {
-          fee: position[4]?.toString(),
-          feeGrowthInside0LastX128: position[8]?.toString(),
-          feeGrowthInside1LastX128: position[9]?.toString(),
-          liquidity: position[7]?.toString(),
-          nonce: position[0]?.toString(),
-          operator: position[1],
-          tickLower: position[5]?.toString(),
-          tickUpper: position[6]?.toString(),
-          token0: position[2],
-          token1: position[3],
-          tokensOwed0: position[10]?.toString(),
-          tokensOwed1: position[11]?.toString(),
-        },
-        tokenId: tokenId.toString(),
-      });
+      logger.info(
+        `Position data: ${JSON.stringify({
+          position: {
+            fee: position[4]?.toString(),
+            feeGrowthInside0LastX128: position[8]?.toString(),
+            feeGrowthInside1LastX128: position[9]?.toString(),
+            liquidity: position[7]?.toString(),
+            nonce: position[0]?.toString(),
+            operator: position[1],
+            tickLower: position[5]?.toString(),
+            tickUpper: position[6]?.toString(),
+            token0: position[2],
+            token1: position[3],
+            tokensOwed0: position[10]?.toString(),
+            tokensOwed1: position[11]?.toString(),
+          },
+          tokenId: tokenId.toString(),
+        })}`,
+        {
+          chain: NetworkID.ZetaChain,
+        }
+      );
     }
 
     if (!position || position.length < 12) {
@@ -402,8 +421,15 @@ export const verifyV3Liquidity = async (
       tickUpper: position[6].toString(),
       tokenId: tokenId.toString(),
     };
-  } catch (error) {
-    console.error("Verification error details:", error);
+  } catch (error: any) {
+    logger.error(
+      `Verification error details: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      {
+        chain: NetworkID.ZetaChain,
+      }
+    );
     throw error;
   }
 };
