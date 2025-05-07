@@ -3,10 +3,15 @@ import ansis from "ansis";
 import { NetworkID } from "./constants";
 import { chains } from "./log";
 
-type ChainId = (typeof NetworkID)[keyof typeof NetworkID];
+type ChainId = (typeof NetworkID)[keyof typeof NetworkID] | "localnet";
 
 // Create a custom format for chain-based logging
 const chainFormat = winston.format.printf(({ level, message, chainId }) => {
+  if (chainId === "localnet") {
+    return `${ansis.gray(`[${ansis.bold("LOCALNET")}]`)} ${ansis.gray(
+      message
+    )}`;
+  }
   const chain = chains[chainId as string];
   const color = chain?.color || ansis.black;
   const chainName = chain?.name || `Unknown Chain (${chainId})`;
