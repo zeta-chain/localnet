@@ -4,7 +4,7 @@ import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway";
 import { ethers, NonceManager } from "ethers";
 
-import { log, logErr } from "../../log";
+import logger, { log, logErr } from "../../logger";
 import { zetachainDeposit } from "../../zetachainDeposit";
 import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
@@ -42,14 +42,14 @@ export interface Env {
 export async function setup(opts: SetupOptions) {
   // noop
   if (opts.skip) {
-    console.log("TON setup skipped");
+    logger.info("TON setup skipped", { chainId: opts.chainID });
     return;
   }
 
   try {
     return await setupThrowable(opts);
   } catch (error) {
-    console.error("Unable to setup TON", error);
+    logger.error("Unable to setup TON", { chainId: opts.chainID, error });
     throw error;
   }
 }
@@ -69,11 +69,11 @@ async function setupThrowable(opts: SetupOptions) {
   const tssAddress = await opts.tss.getAddress();
   const gateway = await provisionGateway(deployer, tssAddress);
 
-  console.log(
-    "TON Gateway (%s) deployed by %s. TSS address: %s",
-    gateway.address.toRawString(),
-    deployer.address().toRawString(),
-    tssAddress
+  logger.info(
+    `TON Gateway (${gateway.address.toRawString()}) deployed by ${deployer
+      .address()
+      .toRawString()}. TSS address: ${tssAddress}`,
+    { chainId: opts.chainID }
   );
 
   // Observe inbound transactions (async loop)

@@ -2,8 +2,10 @@ import * as ton from "@ton/ton";
 import Docker, { Container } from "dockerode";
 
 import * as dockerTools from "../../docker";
+import logger from "../../logger";
 import * as utils from "../../utils";
 import * as cfg from "./config";
+import { NetworkID } from "../../constants";
 
 export async function startNode(): Promise<void> {
   // Skip container creation if ENV_SKIP_CONTAINER is set to true
@@ -12,14 +14,17 @@ export async function startNode(): Promise<void> {
 
   // noop
   if (skipContainerStep) {
-    console.log("Skipping TON container creation");
+    logger.info("Skipping TON container creation", { chainId: "ton" });
     return;
   }
 
   try {
     await startContainer(cfg.IMAGE);
   } catch (error) {
-    console.error("Unable to initialize TON container", error);
+    logger.error("Unable to initialize TON container", {
+      chainId: "ton",
+      error,
+    });
     throw error;
   }
 }
@@ -47,8 +52,9 @@ async function startContainer(dockerImage: string): Promise<Container> {
 
   await container.start();
 
-  console.log(
-    `TON container started on ports [${cfg.PORT_LITE_SERVER}, ${cfg.PORT_SIDECAR}, ${cfg.PORT_RPC}]`
+  logger.info(
+    `TON container started on ports [${cfg.PORT_LITE_SERVER}, ${cfg.PORT_SIDECAR}, ${cfg.PORT_RPC}]`,
+    { chainId: "ton" }
   );
 
   return container;
@@ -77,17 +83,23 @@ export async function waitForNodeWithRPC(
     attempt: number,
     isLastAttempt: boolean
   ) => {
-    console.error(
-      `TON lite-server is not ready. Attempt ${attempt + 1}/${retries}`
+    logger.info(
+      `TON lite-server is not ready. Attempt ${attempt + 1}/${retries}`,
+      { chainId: NetworkID.TON }
     );
     if (isLastAttempt) {
-      console.error("TON lite-server is not ready. Giving up.", error);
+      logger.error("TON lite-server is not ready. Giving up.", {
+        chainId: NetworkID.TON,
+        error,
+      });
     }
   };
 
   await utils.retry(healthCheck, retries, onHealthCheckFailure);
 
-  console.log(`TON lite-server is ready in ${since(start)}s`);
+  logger.info(`TON lite-server is ready in ${since(start)}s`, {
+    chainId: NetworkID.TON,
+  });
   const startRPC = Date.now();
 
   // 2. Ensure TON HTTP RPC is ready
@@ -100,15 +112,20 @@ export async function waitForNodeWithRPC(
     attempt: number,
     isLastAttempt: boolean
   ) => {
-    console.error(
-      `TON RPC is not ready yet. Attempt ${attempt + 1}/${retries}`
-    );
+    logger.info(`TON RPC is not ready yet. Attempt ${attempt + 1}/${retries}`, {
+      chainId: NetworkID.TON,
+    });
     if (isLastAttempt) {
-      console.error("TON RPC is not ready. Giving up.", error);
+      logger.error("TON RPC is not ready. Giving up.", {
+        chainId: NetworkID.TON,
+        error,
+      });
     }
   };
 
   await utils.retry(rpcCheck, retries, onRPCFailure);
 
-  console.log(`TON RPC is ready in ${since(startRPC)}s`);
+  logger.info(`TON RPC is ready in ${since(startRPC)}s`, {
+    chainId: NetworkID.TON,
+  });
 }
