@@ -1,6 +1,6 @@
 import fs from "fs-extra";
 import simpleGit from "simple-git";
-import { log } from "./logger";
+import logger from "./logger";
 
 export const cloneRepository = async (
   repoUrl: string,
@@ -23,17 +23,25 @@ export const cloneRepository = async (
 
   if (!options.cache || (await shouldClone())) {
     if (fs.existsSync(tempDir)) {
-      if (isVerbose) log("localnet", "Removing cached repository...");
+      if (isVerbose)
+        logger.info("Removing cached repository...", { chainId: "localnet" });
       await fs.remove(tempDir);
     }
 
     if (isVerbose)
-      log("localnet", `Cloning repository (branch: ${branchName})...`);
+      logger.info(`Cloning repository (branch: ${branchName})...`, {
+        chainId: "localnet",
+      });
     const git = simpleGit();
     await git.clone(repoUrl, tempDir, ["--branch", branchName, "--depth=1"]);
     if (isVerbose)
-      log("localnet", `Repository cloned successfully: ${tempDir}`);
+      logger.info(`Repository cloned successfully: ${tempDir}`, {
+        chainId: "localnet",
+      });
   } else {
-    if (isVerbose) log("localnet", "Using cached repository. Skipping clone.");
+    if (isVerbose)
+      logger.info("Using cached repository. Skipping clone.", {
+        chainId: "localnet",
+      });
   }
 };

@@ -16,7 +16,7 @@ import { getSocketPath } from "../../localnet/src/docker";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import { log, logErr } from "../../localnet/src/logger";
+import logger from "../../localnet/src/logger";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
@@ -44,20 +44,19 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
     const output = execSync(`lsof -ti tcp:${port}`).toString().trim();
     if (output) {
       const pids = output.split("\n");
-      log(
-        "localnet",
+      logger.info(
         ansis.yellow(
           `Port ${port} is already in use by process(es): ${pids.join(", ")}.`
-        )
+        ),
+        { chainId: "localnet" }
       );
 
       if (forceKill) {
         for (const pid of pids) {
           execSync(`kill -9 ${pid}`);
-          log(
-            "localnet",
-            `Successfully killed process ${pid} on port ${port}.`
-          );
+          logger.info(`Successfully killed process ${pid} on port ${port}.`, {
+            chainId: "localnet",
+          });
         }
       } else {
         const answer = await confirm({
@@ -68,13 +67,14 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
         if (answer) {
           for (const pid of pids) {
             execSync(`kill -9 ${pid}`);
-            log(
-              "localnet",
-              `Successfully killed process ${pid} on port ${port}.`
-            );
+            logger.info(`Successfully killed process ${pid} on port ${port}.`, {
+              chainId: "localnet",
+            });
           }
         } else {
-          logErr("localnet", "Processes not killed. Exiting...");
+          logger.error("Processes not killed. Exiting...", {
+            chainId: "localnet",
+          });
           process.exit(1);
         }
       }
@@ -122,9 +122,9 @@ const startLocalnet = async (options: {
   try {
     execSync("which anvil");
   } catch (error) {
-    logErr(
-      "localnet",
-      "Error: 'anvil' not found. Please install Foundry: https://getfoundry.sh"
+    logger.error(
+      "Error: 'anvil' not found. Please install Foundry: https://getfoundry.sh",
+      { chainId: "localnet" }
     );
     process.exit(1);
   }
@@ -132,9 +132,9 @@ const startLocalnet = async (options: {
   await killProcessOnPort(options.port, options.forceKill);
 
   if (options.anvil !== "")
-    log(
-      "localnet",
-      `Starting anvil on port ${options.port} with args: ${options.anvil}`
+    logger.info(
+      `Starting anvil on port ${options.port} with args: ${options.anvil}`,
+      { chainId: "localnet" }
     );
 
   const anvilArgs = [
@@ -163,7 +163,7 @@ const startLocalnet = async (options: {
     await ton.startNode();
     // Note: Docker processes are managed differently, not adding to processes array
   } else {
-    log("localnet", "Skipping Ton...");
+    logger.info("Skipping Ton...", { chainId: "localnet" });
   }
 
   let solanaTestValidator: ChildProcess;
@@ -182,7 +182,7 @@ const startLocalnet = async (options: {
 
   let suiProcess: ChildProcess;
   if (!skip.includes("sui") && isSuiAvailable()) {
-    log("localnet", "Starting Sui...");
+    logger.info("Starting Sui...", { chainId: "localnet" });
     suiProcess = spawn("sui", ["start", "--with-faucet", "--force-regenesis"], {
       env: { ...process.env, RUST_LOG: "off,sui_node=info" },
     });
@@ -233,13 +233,17 @@ const startLocalnet = async (options: {
       "utf-8"
     );
   } catch (error: unknown) {
-    logErr("localnet", `Error initializing localnet: ${error}`);
+    logger.error(`Error initializing localnet: ${error}`, {
+      chainId: "localnet",
+    });
     cleanup();
     process.exit(1);
   }
 
   if (options.stopAfterInit) {
-    log("localnet", "Localnet successfully initialized. Stopping...");
+    logger.info("Localnet successfully initialized. Stopping...", {
+      chainId: "localnet",
+    });
     await cleanup();
     process.exit(0);
   }
@@ -257,28 +261,33 @@ const waitForTonContainerToStop = async () => {
     const container = docker.getContainer("ton");
 
     try {
-      log(
-        "localnet",
-        "Waiting for TON container to stop. Please, don't close this terminal."
+      logger.info(
+        "Waiting for TON container to stop. Please, don't close this terminal.",
+        { chainId: "localnet" }
       );
       await container.stop();
       await container.wait();
-      log("localnet", ansis.green("TON container stopped successfully."));
+      logger.info(ansis.green("TON container stopped successfully."), {
+        chainId: "localnet",
+      });
     } catch (stopError) {
-      logErr("localnet", `Error stopping container: ${stopError}`);
+      logger.error(`Error stopping container: ${stopError}`, {
+        chainId: "localnet",
+      });
     }
   } catch (error) {
-    logErr("localnet", `Error accessing Docker: ${error}`);
+    logger.error(`Error accessing Docker: ${error}`, { chainId: "localnet" });
     // Container might not exist or already be stopped
-    log(
-      "localnet",
-      ansis.yellow("TON container not found or already stopped.")
-    );
+    logger.info(ansis.yellow("TON container not found or already stopped."), {
+      chainId: "localnet",
+    });
   }
 };
 
 const cleanup = async () => {
-  log("localnet", "Shutting down processes and cleaning up...");
+  logger.info("Shutting down processes and cleaning up...", {
+    chainId: "localnet",
+  });
 
   // Stop all background processes
   for (const intervalId of backgroundProcessIds) {
@@ -293,23 +302,25 @@ const cleanup = async () => {
         for (const proc of processData.processes) {
           try {
             process.kill(proc.pid, "SIGKILL");
-            log(
-              "localnet",
-              `Successfully killed process ${proc.pid} (${proc.command}).`
+            logger.info(
+              `Successfully killed process ${proc.pid} (${proc.command}).`,
+              { chainId: "localnet" }
             );
           } catch (error) {
-            log(
-              "localnet",
+            logger.info(
               ansis.yellow(
                 `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
-              )
+              ),
+              { chainId: "localnet" }
             );
           }
         }
       }
       fs.unlinkSync(PROCESS_FILE);
     } catch (error) {
-      logErr("localnet", `Error cleaning up processes: ${error}`);
+      logger.error(`Error cleaning up processes: ${error}`, {
+        chainId: "localnet",
+      });
     }
   }
 
@@ -326,7 +337,9 @@ const cleanup = async () => {
     try {
       fs.unlinkSync(anvilConfigPath);
     } catch (error) {
-      log("localnet", ansis.yellow(`Failed to remove anvil.json: ${error}`));
+      logger.info(ansis.yellow(`Failed to remove anvil.json: ${error}`), {
+        chainId: "localnet",
+      });
     }
   }
 };
@@ -367,7 +380,7 @@ export const startCommand = new Command("start")
         stopAfterInit: options.stopAfterInit,
       });
     } catch (error) {
-      logErr("localnet", `Error: ${error}`);
+      logger.error("localnet", `Error: ${error}`);
       process.exit(1);
     }
   });

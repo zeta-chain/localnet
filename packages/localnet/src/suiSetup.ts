@@ -12,7 +12,7 @@ import { backgroundProcessIds } from "../../commands/src/start";
 import { cloneRepository } from "./cloneRepository";
 import { MNEMONIC, NetworkID } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
-import { log, logErr } from "./logger";
+import logger from "./logger";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
 
@@ -68,7 +68,9 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    log(NetworkID.Sui, "Genesis already exists, skipping...");
+    logger.info("Genesis already exists, skipping...", {
+      chainId: NetworkID.Sui,
+    });
   }
 
   try {
@@ -77,7 +79,9 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    log(NetworkID.Sui, "Environment already exists, skipping...");
+    logger.info("Environment already exists, skipping...", {
+      chainId: NetworkID.Sui,
+    });
   }
 
   try {
@@ -89,7 +93,7 @@ export const suiSetup = async ({
     throw new Error(`Failed to switch to localnet environment: ${error}`);
   }
 
-  log(NetworkID.Sui, "Building Move contracts...");
+  logger.info("Building Move contracts...", { chainId: NetworkID.Sui });
   try {
     execSync("sui move build", {
       cwd: PROTOCOL_CONTRACTS_REPO,
@@ -104,11 +108,17 @@ export const suiSetup = async ({
 
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.getPublicKey().toSuiAddress();
-  log(NetworkID.Sui, "Publisher address:", publisherAddress);
+  logger.info("Publisher address:", {
+    chainId: NetworkID.Sui,
+    address: publisherAddress,
+  });
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const privateKeyBech32 = keypair.getSecretKey();
-  log(NetworkID.Sui, "Private Key (Bech32):", privateKeyBech32);
+  logger.info("Private Key (Bech32):", {
+    chainId: NetworkID.Sui,
+    privateKeyBech32,
+  });
   try {
     execSync(`sui keytool import ${user.keypair.getSecretKey()} ed25519`, {
       stdio: "ignore",
@@ -130,7 +140,7 @@ export const suiSetup = async ({
 
   let publishResult;
 
-  log(NetworkID.Sui, "Deploying Move package via CLI...");
+  logger.info("Deploying Move package via CLI...", { chainId: NetworkID.Sui });
   try {
     const result = execSync(
       `sui client publish --gas-budget ${GAS_BUDGET} --json`,
@@ -138,14 +148,13 @@ export const suiSetup = async ({
     );
     publishResult = JSON.parse(result);
     // Only log essential information from the publish result
-    log(NetworkID.Sui, "Package published successfully");
-    log(
-      NetworkID.Sui,
-      "Package ID:",
-      publishResult.objectChanges?.find(
+    logger.info("Package published successfully", { chainId: NetworkID.Sui });
+    logger.info("Package ID:", {
+      chainId: NetworkID.Sui,
+      packageId: publishResult.objectChanges?.find(
         (change: any) => change.type === "published"
-      )?.packageId
-    );
+      )?.packageId,
+    });
   } catch (error) {
     throw new Error("Move contract deployment failed: " + error);
   }
@@ -242,7 +251,7 @@ const waitForConfirmation = async (
     if (status.effects?.status?.status === "success") {
       return status;
     }
-    log(NetworkID.Sui, "Waiting for confirmation...");
+    logger.info("Waiting for confirmation...", { chainId: NetworkID.Sui });
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
@@ -291,8 +300,8 @@ const pollEvents = async (context: any) => {
         );
       }
     } catch (err) {
-      logErr(NetworkID.Sui, "Error polling deposit events:", String(err));
-      log(NetworkID.Sui, `Retrying in ${POLLING_INTERVAL_MS}ms...`);
+      logger.error("Error polling deposit events:", String(err));
+      logger.info(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
   }, POLLING_INTERVAL_MS);
@@ -301,18 +310,11 @@ const pollEvents = async (context: any) => {
 };
 
 const runSudoCommand = (command: any, args: any) => {
-  log(
-    NetworkID.Sui,
-    `Requesting sudo access to run: ${command} ${args.join(" ")}`
-  );
+  logger.info(`Requesting sudo access to run: ${command} ${args.join(" ")}`);
   const result = spawnSync("sudo", [command, ...args], { stdio: "inherit" });
 
   if (result.error) {
-    logErr(
-      NetworkID.Sui,
-      `Failed to execute: ${command}`,
-      String(result.error)
-    );
+    logger.error(`Failed to execute: ${command}`, String(result.error));
     process.exit(1);
   }
 };
@@ -320,37 +322,40 @@ const runSudoCommand = (command: any, args: any) => {
 const ensureDirectoryExists = () => {
   try {
     if (!fs.existsSync(LOCALNET_DIR)) {
-      log(NetworkID.Sui, `Creating directory: ${LOCALNET_DIR}`);
+      logger.info(`Creating directory: ${LOCALNET_DIR}`, {
+        chainId: NetworkID.Sui,
+      });
       const command = "mkdir";
       const args = ["-p", LOCALNET_DIR];
-      log(
-        NetworkID.Sui,
-        `Requesting sudo access to run: ${command} ${args.join(" ")}`
+      logger.info(
+        `Requesting sudo access to run: ${command} ${args.join(" ")}`,
+        { chainId: NetworkID.Sui }
       );
       const result = spawnSync("sudo", [command, ...args], {
         stdio: "inherit",
       });
 
       if (result.error) {
-        logErr(
-          NetworkID.Sui,
-          `Failed to execute: ${command}`,
-          String(result.error)
-        );
+        logger.error(`Failed to execute: ${command}`, {
+          chainId: NetworkID.Sui,
+          error: String(result.error),
+        });
         process.exit(1);
       }
     }
 
     fs.accessSync(LOCALNET_DIR, fs.constants.W_OK);
-    log(NetworkID.Sui, `Directory is writable: ${LOCALNET_DIR}`);
+    logger.info(`Directory is writable: ${LOCALNET_DIR}`, {
+      chainId: NetworkID.Sui,
+    });
   } catch (err) {
-    log(
-      NetworkID.Sui,
+    logger.info(
       `Directory is not writable. Changing ownership to ${
         os.userInfo().username
-      }...`
+      }...`,
+      { chainId: NetworkID.Sui }
     );
     runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
-    log(NetworkID.Sui, "Ownership updated.");
+    logger.info("Ownership updated.", { chainId: NetworkID.Sui });
   }
 };

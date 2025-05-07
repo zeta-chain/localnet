@@ -4,7 +4,7 @@ import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway";
 import { ethers, NonceManager } from "ethers";
 
-import logger, { log, logErr } from "../../logger";
+import logger from "../../logger";
 import { zetachainDeposit } from "../../zetachainDeposit";
 import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
@@ -144,16 +144,20 @@ function onInbound(
   return async (inbound: Inbound) => {
     try {
       if (inbound.opCode === GatewayOp.Deposit) {
-        log(opts.chainID, `Gateway deposit: ${JSON.stringify(inbound)}`);
+        logger.info(`Gateway deposit: ${JSON.stringify(inbound)}`, {
+          chainId: opts.chainID,
+        });
         return await onDeposit(inbound);
       }
 
-      log(opts.chainID, `Gateway deposit and call: ${JSON.stringify(inbound)}`);
+      logger.info(`Gateway deposit and call: ${JSON.stringify(inbound)}`, {
+        chainId: opts.chainID,
+      });
       return await onDepositAndCall(inbound);
     } catch (e) {
-      logErr(
-        opts.chainID,
-        `Something went wrong for inbound: ${JSON.stringify(inbound)}`
+      logger.error(
+        `Something went wrong for inbound: ${JSON.stringify(inbound)}`,
+        { chainId: opts.chainID, error: e }
       );
       console.error(e);
 
@@ -166,14 +170,13 @@ function onInbound(
 
       const revertAmount = inbound.amount - revertGasFee;
       if (revertAmount <= 0n) {
-        logErr(
-          opts.chainID,
-          "Revert amount is not enough to make a revert back"
-        );
+        logger.error("Revert amount is not enough to make a revert back", {
+          chainId: opts.chainID,
+        });
         return;
       }
 
-      log(opts.chainID, "Reverting inbound");
+      logger.info("Reverting inbound", { chainId: opts.chainID });
       await withdrawTON(
         client,
         gateway,

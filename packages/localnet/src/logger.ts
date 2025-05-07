@@ -3,8 +3,6 @@ import ansis from "ansis";
 import { NetworkID } from "./constants";
 import { chains } from "./log";
 
-type ChainId = (typeof NetworkID)[keyof typeof NetworkID] | "localnet";
-
 // Create a custom format for chain-based logging
 const chainFormat = winston.format.printf(({ level, message, chainId }) => {
   if (chainId === "localnet") {
@@ -27,16 +25,5 @@ const logger = winston.createLogger({
   ),
   transports: [new winston.transports.Console()],
 });
-
-// Export logging functions that match the existing interface
-export const log = (chainId: ChainId, ...messages: string[]) => {
-  const message = messages.join(" ");
-  logger.info(message, { chainId });
-};
-
-export const logErr = (chainId: ChainId, ...messages: string[]) => {
-  const message = messages.join(" ");
-  logger.error(message, { chainId });
-};
 
 export default logger;
