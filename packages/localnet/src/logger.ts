@@ -1,8 +1,14 @@
 import ansis from "ansis";
 import winston from "winston";
 
-import { NetworkID } from "./constants";
-import { chains } from "./log";
+export const chains: Record<string, { color: any; name: string }> = {
+  "103": { color: ansis.blue, name: "Sui" },
+  "2015141": { color: ansis.blueBright, name: "TON" },
+  "5": { color: ansis.cyan, name: "Ethereum" },
+  "7001": { color: ansis.green, name: "ZetaChain" },
+  "901": { color: ansis.magenta, name: "Solana" },
+  "97": { color: ansis.yellow, name: "BNB" },
+};
 
 // Create a custom format for chain-based logging
 const chainFormat = winston.format.printf(({ level, message, chain }) => {
