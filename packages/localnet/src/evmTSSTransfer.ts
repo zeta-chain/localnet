@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { deployOpts } from "./deployOpts";
-import { log } from "./log";
+import logger from "./logger";
 
 export const evmTSSTransfer = async ({
   tss,
@@ -23,10 +23,10 @@ export const evmTSSTransfer = async ({
     ...deployOpts,
   });
   await tx.wait();
-  log(
-    chainID,
+  logger.info(
     `Transferred ${ethers.formatEther(
       amount
-    )} native gas tokens from TSS to ${receiver}`
+    )} native gas tokens from TSS to ${receiver}`,
+    { chain: chainID }
   );
 };

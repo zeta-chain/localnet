@@ -1,7 +1,7 @@
 import { BigNumberish, ethers, GasCostPlugin } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log } from "./log";
+import logger from "./logger";
 
 export const evmExecute = async ({
   sender,
@@ -29,7 +29,9 @@ export const evmExecute = async ({
   const messageContext = {
     sender: isArbitraryCall ? ethers.ZeroAddress : sender,
   };
-  log(chainID, `Calling ${receiver} with message ${message}`);
+  logger.info(`Calling ${receiver} with message ${message}`, {
+    chain: chainID,
+  });
 
   if (isArbitraryCall) {
     const selector = message.slice(0, 10);
@@ -57,7 +59,9 @@ export const evmExecute = async ({
   });
 
   logs.forEach((data: any) => {
-    log(chainID, `Event from contract: ${JSON.stringify(data)}`);
+    logger.info(`Event from contract: ${JSON.stringify(data)}`, {
+      chain: chainID,
+    });
   });
   await executeTx.wait();
 };

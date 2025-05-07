@@ -7,7 +7,7 @@ import { keccak256 } from "ethereumjs-util";
 import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import logger from "./logger";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 
@@ -127,14 +127,16 @@ export const solanaExecute = async ({
 
       // log messages showing onCall called
       const logMessages = transaction?.meta?.logMessages || [];
-      log(
-        NetworkID.Solana,
+      logger.info(
         `Executing Gateway execute (SOL): Sending ${ethers.formatUnits(
           amount,
           9
-        )} SOL to ${recipient}`
+        )} SOL to ${recipient}`,
+        { chain: NetworkID.Solana }
       );
-      log(NetworkID.Solana, "log messages", ...logMessages);
+      logger.info(`Transaction logs: ${JSON.stringify(logMessages)}`, {
+        chain: NetworkID.Solana,
+      });
     } else {
       const mintPubkey = new anchor.web3.PublicKey(mint);
 
@@ -203,16 +205,20 @@ export const solanaExecute = async ({
 
       // log messages showing onCall called
       const logMessages = transaction?.meta?.logMessages || [];
-      log(
-        NetworkID.Solana,
+      logger.info(
         `Executing Gateway execute (SPL): Sending ${ethers.formatUnits(
           amount,
           decimals
-        )} SPL to ${recipient}`
+        )} SPL to ${recipient}`,
+        { chain: NetworkID.Solana }
       );
-      log(NetworkID.Solana, "log messages", ...logMessages);
+      logger.info(`Transaction logs: ${JSON.stringify(logMessages)}`, {
+        chain: NetworkID.Solana,
+      });
     }
   } catch (err) {
-    logErr(NetworkID.Solana, `Error executing Gateway execute: ${err}`);
+    logger.error(`Error executing Gateway execute: ${err}`, {
+      chain: NetworkID.Solana,
+    });
   }
 };

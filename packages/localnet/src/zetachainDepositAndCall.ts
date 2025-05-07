@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import logger from "./logger";
 
 const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];
 
@@ -41,7 +41,9 @@ export const zetachainDepositAndCall = async ({
   }
 
   if (!foreignCoin) {
-    logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
+    logger.error(`Foreign coin not found for asset: ${asset}`, {
+      chain: NetworkID.ZetaChain,
+    });
     return;
   }
 
@@ -53,11 +55,11 @@ export const zetachainDepositAndCall = async ({
     senderEVM: nonEVM.includes(chainID) ? sender : ethers.ZeroAddress,
   };
 
-  log(
-    NetworkID.ZetaChain,
+  logger.info(
     `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
       context
-    )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`
+    )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`,
+    { chain: NetworkID.ZetaChain }
   );
 
   const tx = await zetachainContracts.gatewayZEVM
@@ -71,6 +73,8 @@ export const zetachainDepositAndCall = async ({
     fromBlock: "latest",
   });
   logs.forEach((data: any) => {
-    log(NetworkID.ZetaChain, `Event from onCall: ${JSON.stringify(data)}`);
+    logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
+      chain: NetworkID.ZetaChain,
+    });
   });
 };

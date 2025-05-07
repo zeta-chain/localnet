@@ -1,5 +1,5 @@
 import { deployOpts } from "./deployOpts";
-import { log } from "./log";
+import logger from "./logger";
 
 export const evmCustodyWithdraw = async ({
   evmContracts,
@@ -29,9 +29,11 @@ export const evmCustodyWithdraw = async ({
       .connect(tss)
       .withdraw(receiver, asset, amount, deployOpts);
     await tx.wait();
-    log(
-      foreign_chain_id,
-      `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`
+    logger.info(
+      `Transferred ${amount} ERC-20 tokens from Custody to ${receiver}`,
+      {
+        chain: foreign_chain_id,
+      }
     );
   } catch (error: any) {
     throw new Error(`Error withdrawing from ERC-20 custody: ${error}`);

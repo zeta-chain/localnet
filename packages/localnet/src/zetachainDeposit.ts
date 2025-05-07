@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
-import { log, logErr } from "./log";
+import logger from "./logger";
 
 export const zetachainDeposit = async ({
   zetachainContracts,
@@ -39,7 +39,9 @@ export const zetachainDeposit = async ({
   }
 
   if (!foreignCoin) {
-    logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
+    logger.error(`Foreign coin not found for asset: ${asset}`, {
+      chain: NetworkID.ZetaChain,
+    });
     return;
   }
 
@@ -48,8 +50,7 @@ export const zetachainDeposit = async ({
     .connect(zetachainContracts.fungibleModuleSigner)
     .deposit(zrc20, amount, receiver, deployOpts);
   await tx.wait();
-  log(
-    NetworkID.ZetaChain,
-    `Deposited ${amount} of ${zrc20} tokens to ${receiver}`
-  );
+  logger.info(`Deposited ${amount} of ${zrc20} tokens to ${receiver}`, {
+    chain: NetworkID.ZetaChain,
+  });
 };

@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import logger from "./logger";
 import { zetachainExecute } from "./zetachainExecute";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
@@ -14,7 +14,7 @@ export const evmCall = async ({
   foreignCoins,
   exitOnError = false,
 }: any) => {
-  log(chainID, "Gateway: 'Called' event emitted");
+  logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   const sender = args[0];
   try {
     zetachainExecute({
@@ -30,7 +30,9 @@ export const evmCall = async ({
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr(NetworkID.ZetaChain, `Error executing onCall: ${err}`);
+    logger.error(`Error executing onCall: ${err}`, {
+      chain: NetworkID.ZetaChain,
+    });
     // No asset calls don't support reverts, so aborting
     const revertOptions = args[5];
     const abortAddress = revertOptions[2];
