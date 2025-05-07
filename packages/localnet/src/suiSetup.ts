@@ -10,8 +10,9 @@ import path from "path";
 
 import { backgroundProcessIds } from "../../commands/src/start";
 import { cloneRepository } from "./cloneRepository";
-import { MNEMONIC } from "./constants";
+import { MNEMONIC, NetworkID } from "./constants";
 import { isSuiAvailable } from "./isSuiAvailable";
+import { log, logErr } from "./logger";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
 
@@ -67,7 +68,7 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    console.log("Genesis already exists, skipping...");
+    log(NetworkID.Sui, "Genesis already exists, skipping...");
   }
 
   try {
@@ -76,7 +77,7 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    console.log("Environment already exists, skipping...");
+    log(NetworkID.Sui, "Environment already exists, skipping...");
   }
 
   try {
@@ -88,7 +89,7 @@ export const suiSetup = async ({
     throw new Error(`Failed to switch to localnet environment: ${error}`);
   }
 
-  console.log("Building Move contracts...");
+  log(NetworkID.Sui, "Building Move contracts...");
   try {
     execSync("sui move build", {
       cwd: PROTOCOL_CONTRACTS_REPO,
@@ -103,11 +104,11 @@ export const suiSetup = async ({
 
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.getPublicKey().toSuiAddress();
-  console.log("Publisher address:", publisherAddress);
+  log(NetworkID.Sui, "Publisher address:", publisherAddress);
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const privateKeyBech32 = keypair.getSecretKey();
-  console.log("Private Key (Bech32):", privateKeyBech32);
+  log(NetworkID.Sui, "Private Key (Bech32):", privateKeyBech32);
   try {
     execSync(`sui keytool import ${user.keypair.getSecretKey()} ed25519`, {
       stdio: "inherit",
@@ -129,7 +130,7 @@ export const suiSetup = async ({
 
   let publishResult;
 
-  console.log("Deploying Move package via CLI...");
+  log(NetworkID.Sui, "Deploying Move package via CLI...");
   try {
     const result = execSync(
       `sui client publish --gas-budget ${GAS_BUDGET} --json`,
@@ -232,7 +233,7 @@ const waitForConfirmation = async (
     if (status.effects?.status?.status === "success") {
       return status;
     }
-    console.log("Waiting for confirmation...");
+    log(NetworkID.Sui, "Waiting for confirmation...");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
@@ -281,8 +282,8 @@ const pollEvents = async (context: any) => {
         );
       }
     } catch (err) {
-      console.error("Error polling deposit events:", err);
-      console.log(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
+      logErr(NetworkID.Sui, "Error polling deposit events:", String(err));
+      log(NetworkID.Sui, `Retrying in ${POLLING_INTERVAL_MS}ms...`);
       await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
     }
   }, POLLING_INTERVAL_MS);
@@ -291,11 +292,18 @@ const pollEvents = async (context: any) => {
 };
 
 const runSudoCommand = (command: any, args: any) => {
-  console.log(`Requesting sudo access to run: ${command} ${args.join(" ")}`);
+  log(
+    NetworkID.Sui,
+    `Requesting sudo access to run: ${command} ${args.join(" ")}`
+  );
   const result = spawnSync("sudo", [command, ...args], { stdio: "inherit" });
 
   if (result.error) {
-    console.error(`❌ Failed to execute: ${command}`, result.error);
+    logErr(
+      NetworkID.Sui,
+      `Failed to execute: ${command}`,
+      String(result.error)
+    );
     process.exit(1);
   }
 };
@@ -303,10 +311,11 @@ const runSudoCommand = (command: any, args: any) => {
 const ensureDirectoryExists = () => {
   try {
     if (!fs.existsSync(LOCALNET_DIR)) {
-      console.log(`📁 Creating directory: ${LOCALNET_DIR}`);
+      log(NetworkID.Sui, `Creating directory: ${LOCALNET_DIR}`);
       const command = "mkdir";
       const args = ["-p", LOCALNET_DIR];
-      console.log(
+      log(
+        NetworkID.Sui,
         `Requesting sudo access to run: ${command} ${args.join(" ")}`
       );
       const result = spawnSync("sudo", [command, ...args], {
@@ -314,20 +323,25 @@ const ensureDirectoryExists = () => {
       });
 
       if (result.error) {
-        console.error(`❌ Failed to execute: ${command}`, result.error);
+        logErr(
+          NetworkID.Sui,
+          `Failed to execute: ${command}`,
+          String(result.error)
+        );
         process.exit(1);
       }
     }
 
     fs.accessSync(LOCALNET_DIR, fs.constants.W_OK);
-    console.log(`✅ Directory is writable: ${LOCALNET_DIR}`);
+    log(NetworkID.Sui, `Directory is writable: ${LOCALNET_DIR}`);
   } catch (err) {
-    console.log(
-      `🔒 Directory is not writable. Changing ownership to 
-      ${os.userInfo().username}...`
+    log(
+      NetworkID.Sui,
+      `Directory is not writable. Changing ownership to ${
+        os.userInfo().username
+      }...`
     );
     runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
-
-    console.log(`✅ Ownership updated.`);
+    log(NetworkID.Sui, "Ownership updated.");
   }
 };
