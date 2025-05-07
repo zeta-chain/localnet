@@ -56,7 +56,7 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
           execSync(`kill -9 ${pid}`);
           log(
             "localnet",
-            ansis.green(`Successfully killed process ${pid} on port ${port}.`)
+            `Successfully killed process ${pid} on port ${port}.`
           );
         }
       } else {
@@ -70,7 +70,7 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
             execSync(`kill -9 ${pid}`);
             log(
               "localnet",
-              ansis.green(`Successfully killed process ${pid} on port ${port}.`)
+              `Successfully killed process ${pid} on port ${port}.`
             );
           }
         } else {
@@ -239,10 +239,7 @@ const startLocalnet = async (options: {
   }
 
   if (options.stopAfterInit) {
-    log(
-      "localnet",
-      ansis.green("Localnet successfully initialized. Stopping...")
-    );
+    log("localnet", "Localnet successfully initialized. Stopping...");
     await cleanup();
     process.exit(0);
   }
@@ -281,7 +278,7 @@ const waitForTonContainerToStop = async () => {
 };
 
 const cleanup = async () => {
-  log("localnet", "\nShutting down processes and cleaning up...");
+  log("localnet", "Shutting down processes and cleaning up...");
 
   // Stop all background processes
   for (const intervalId of backgroundProcessIds) {
@@ -298,9 +295,7 @@ const cleanup = async () => {
             process.kill(proc.pid, "SIGKILL");
             log(
               "localnet",
-              ansis.green(
-                `Successfully killed process ${proc.pid} (${proc.command}).`
-              )
+              `Successfully killed process ${proc.pid} (${proc.command}).`
             );
           } catch (error) {
             log(
