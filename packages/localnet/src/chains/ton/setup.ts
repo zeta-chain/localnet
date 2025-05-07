@@ -42,14 +42,14 @@ export interface Env {
 export async function setup(opts: SetupOptions) {
   // noop
   if (opts.skip) {
-    logger.info("TON setup skipped", { chainId: opts.chainID });
+    logger.info("TON setup skipped", { chain: opts.chainID });
     return;
   }
 
   try {
     return await setupThrowable(opts);
   } catch (error) {
-    logger.error("Unable to setup TON", { chainId: opts.chainID, error });
+    logger.error("Unable to setup TON", { chain: opts.chainID, error });
     throw error;
   }
 }
@@ -73,7 +73,7 @@ async function setupThrowable(opts: SetupOptions) {
     `TON Gateway (${gateway.address.toRawString()}) deployed by ${deployer
       .address()
       .toRawString()}. TSS address: ${tssAddress}`,
-    { chainId: opts.chainID }
+    { chain: opts.chainID }
   );
 
   // Observe inbound transactions (async loop)
@@ -145,19 +145,19 @@ function onInbound(
     try {
       if (inbound.opCode === GatewayOp.Deposit) {
         logger.info(`Gateway deposit: ${JSON.stringify(inbound)}`, {
-          chainId: opts.chainID,
+          chain: opts.chainID,
         });
         return await onDeposit(inbound);
       }
 
       logger.info(`Gateway deposit and call: ${JSON.stringify(inbound)}`, {
-        chainId: opts.chainID,
+        chain: opts.chainID,
       });
       return await onDepositAndCall(inbound);
     } catch (e) {
       logger.error(
         `Something went wrong for inbound: ${JSON.stringify(inbound)}`,
-        { chainId: opts.chainID, error: e }
+        { chain: opts.chainID, error: e }
       );
       console.error(e);
 
@@ -171,12 +171,12 @@ function onInbound(
       const revertAmount = inbound.amount - revertGasFee;
       if (revertAmount <= 0n) {
         logger.error("Revert amount is not enough to make a revert back", {
-          chainId: opts.chainID,
+          chain: opts.chainID,
         });
         return;
       }
 
-      logger.info("Reverting inbound", { chainId: opts.chainID });
+      logger.info("Reverting inbound", { chain: opts.chainID });
       await withdrawTON(
         client,
         gateway,

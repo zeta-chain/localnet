@@ -14,7 +14,7 @@ export async function startNode(): Promise<void> {
 
   // noop
   if (skipContainerStep) {
-    logger.info("Skipping TON container creation", { chainId: "ton" });
+    logger.info("Skipping TON container creation", { chain: "ton" });
     return;
   }
 
@@ -22,7 +22,7 @@ export async function startNode(): Promise<void> {
     await startContainer(cfg.IMAGE);
   } catch (error) {
     logger.error("Unable to initialize TON container", {
-      chainId: "ton",
+      chain: "ton",
       error,
     });
     throw error;
@@ -54,7 +54,7 @@ async function startContainer(dockerImage: string): Promise<Container> {
 
   logger.info(
     `TON container started on ports [${cfg.PORT_LITE_SERVER}, ${cfg.PORT_SIDECAR}, ${cfg.PORT_RPC}]`,
-    { chainId: "ton" }
+    { chain: "ton" }
   );
 
   return container;
@@ -85,11 +85,11 @@ export async function waitForNodeWithRPC(
   ) => {
     logger.info(
       `TON lite-server is not ready. Attempt ${attempt + 1}/${retries}`,
-      { chainId: NetworkID.TON }
+      { chain: NetworkID.TON }
     );
     if (isLastAttempt) {
       logger.error("TON lite-server is not ready. Giving up.", {
-        chainId: NetworkID.TON,
+        chain: NetworkID.TON,
         error,
       });
     }
@@ -98,7 +98,7 @@ export async function waitForNodeWithRPC(
   await utils.retry(healthCheck, retries, onHealthCheckFailure);
 
   logger.info(`TON lite-server is ready in ${since(start)}s`, {
-    chainId: NetworkID.TON,
+    chain: NetworkID.TON,
   });
   const startRPC = Date.now();
 
@@ -113,11 +113,11 @@ export async function waitForNodeWithRPC(
     isLastAttempt: boolean
   ) => {
     logger.info(`TON RPC is not ready yet. Attempt ${attempt + 1}/${retries}`, {
-      chainId: NetworkID.TON,
+      chain: NetworkID.TON,
     });
     if (isLastAttempt) {
       logger.error("TON RPC is not ready. Giving up.", {
-        chainId: NetworkID.TON,
+        chain: NetworkID.TON,
         error,
       });
     }
@@ -126,6 +126,6 @@ export async function waitForNodeWithRPC(
   await utils.retry(rpcCheck, retries, onRPCFailure);
 
   logger.info(`TON RPC is ready in ${since(startRPC)}s`, {
-    chainId: NetworkID.TON,
+    chain: NetworkID.TON,
   });
 }

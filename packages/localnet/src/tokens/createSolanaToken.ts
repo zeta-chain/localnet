@@ -114,13 +114,13 @@ const whitelistSPLToken = async (
 
   const pdaAccountData = await gatewayProgram.account.pda.fetch(gatewayPDA);
   logger.info(`Gateway PDA Authority: ${pdaAccountData.authority.toBase58()}`, {
-    chainId: NetworkID.Solana,
+    chain: NetworkID.Solana,
   });
 
   if (!pdaAccountData.authority.equals(authorityKeypair.publicKey)) {
     logger.error(
       "Error: The provided signer is NOT the authority of the Gateway PDA.",
-      { chainId: NetworkID.Solana }
+      { chain: NetworkID.Solana }
     );
     process.exit(1);
   }
@@ -132,7 +132,7 @@ const whitelistSPLToken = async (
 
   logger.info(
     `Whitelisting SPL Token. Whitelist Entry PDA: ${whitelistEntryPDA.toBase58()}`,
-    { chainId: NetworkID.Solana }
+    { chain: NetworkID.Solana }
   );
 
   await gatewayProgram.methods
@@ -148,6 +148,6 @@ const whitelistSPLToken = async (
     .rpc();
 
   logger.info(`Whitelisted SPL Token: ${mintPublicKey.toBase58()}`, {
-    chainId: NetworkID.Solana,
+    chain: NetworkID.Solana,
   });
 };

@@ -28,7 +28,7 @@ const loadSolanaKeypair = async (): Promise<Keypair> => {
     return Keypair.fromSecretKey(Uint8Array.from(secretKey));
   } catch (error) {
     logger.info("id.json not found, generating new keypair...", {
-      chainId: NetworkID.Solana,
+      chain: NetworkID.Solana,
     });
 
     // Generate new keypair
@@ -113,9 +113,9 @@ export const solanaSetup = async ({
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
   logger.info(
     `Default Solana user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`,
-    { chainId: NetworkID.Solana }
+    { chain: NetworkID.Solana }
   );
-  logger.info("Setting up Solana...", { chainId: NetworkID.Solana });
+  logger.info("Setting up Solana...", { chain: NetworkID.Solana });
   const gatewaySoPath = require.resolve(
     "@zetachain/localnet/solana/deploy/gateway.so"
   );
@@ -125,10 +125,12 @@ export const solanaSetup = async ({
 
   const defaultSolanaUserKeypair = await loadSolanaKeypair();
 
-  logger.info("Public Key from id.json:", {
-    chainId: NetworkID.Solana,
-    publicKey: defaultSolanaUserKeypair.publicKey.toBase58(),
-  });
+  logger.info(
+    `Public Key from id.json: ${defaultSolanaUserKeypair.publicKey.toBase58()}`,
+    {
+      chain: NetworkID.Solana,
+    }
+  );
 
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
@@ -170,13 +172,13 @@ export const solanaSetup = async ({
 
     const { stdout } = await execAsync(deployCommand);
     logger.info(`Deployment output: ${stdout.replace(/\n/g, " ")}`, {
-      chainId: NetworkID.Solana,
+      chain: NetworkID.Solana,
     });
 
     await new Promise((r) => setTimeout(r, 1000));
 
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
-    logger.info("Initialized gateway program", { chainId: NetworkID.Solana });
+    logger.info("Initialized gateway program", { chain: NetworkID.Solana });
 
     const [pdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("meta", "utf-8")],
@@ -184,7 +186,7 @@ export const solanaSetup = async ({
     );
 
     logger.info(`Gateway PDA account: ${pdaAccount.toBase58()}`, {
-      chainId: NetworkID.Solana,
+      chain: NetworkID.Solana,
     });
 
     const fundTx = new anchor.web3.Transaction().add(
@@ -206,10 +208,10 @@ export const solanaSetup = async ({
     });
   } catch (error: any) {
     logger.error(`Error setting up Solana: ${error.message}`, {
-      chainId: NetworkID.Solana,
+      chain: NetworkID.Solana,
     });
     if (error.logs) {
-      logger.error("Logs:", { chainId: NetworkID.Solana, logs: error.logs });
+      logger.error("Logs:", { chain: NetworkID.Solana, logs: error.logs });
     }
     throw error;
   }
@@ -373,10 +375,10 @@ export const solanaMonitorTransactions = async ({
         } catch (transactionError) {
           logger.error(
             `Error processing transaction ${signatureInfo.signature}:`,
-            { chainId: NetworkID.Solana, error: transactionError }
+            { chain: NetworkID.Solana, error: transactionError }
           );
           logger.error("Transaction error details:", {
-            chainId: NetworkID.Solana,
+            chain: NetworkID.Solana,
             error: JSON.stringify(transactionError),
           });
           // Continue to the next transaction even if an error occurs
@@ -385,7 +387,7 @@ export const solanaMonitorTransactions = async ({
       }
     } catch (error) {
       logger.error("Error monitoring new transactions:", {
-        chainId: NetworkID.Solana,
+        chain: NetworkID.Solana,
         error: String(error),
       });
     } finally {

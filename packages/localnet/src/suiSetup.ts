@@ -69,7 +69,7 @@ export const suiSetup = async ({
     });
   } catch (error) {
     logger.info("Genesis already exists, skipping...", {
-      chainId: NetworkID.Sui,
+      chain: NetworkID.Sui,
     });
   }
 
@@ -80,7 +80,7 @@ export const suiSetup = async ({
     });
   } catch (error) {
     logger.info("Environment already exists, skipping...", {
-      chainId: NetworkID.Sui,
+      chain: NetworkID.Sui,
     });
   }
 
@@ -93,7 +93,7 @@ export const suiSetup = async ({
     throw new Error(`Failed to switch to localnet environment: ${error}`);
   }
 
-  logger.info("Building Move contracts...", { chainId: NetworkID.Sui });
+  logger.info("Building Move contracts...", { chain: NetworkID.Sui });
   try {
     execSync("sui move build", {
       cwd: PROTOCOL_CONTRACTS_REPO,
@@ -108,16 +108,14 @@ export const suiSetup = async ({
 
   const keypair = new Ed25519Keypair();
   const publisherAddress = keypair.getPublicKey().toSuiAddress();
-  logger.info("Publisher address:", {
-    chainId: NetworkID.Sui,
-    address: publisherAddress,
+  logger.info(`Publisher address: ${publisherAddress}`, {
+    chain: NetworkID.Sui,
   });
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   const privateKeyBech32 = keypair.getSecretKey();
-  logger.info("Private Key (Bech32):", {
-    chainId: NetworkID.Sui,
-    privateKeyBech32,
+  logger.info(`Private Key (Bech32): ${privateKeyBech32}`, {
+    chain: NetworkID.Sui,
   });
   try {
     execSync(`sui keytool import ${user.keypair.getSecretKey()} ed25519`, {
@@ -140,7 +138,7 @@ export const suiSetup = async ({
 
   let publishResult;
 
-  logger.info("Deploying Move package via CLI...", { chainId: NetworkID.Sui });
+  logger.info("Deploying Move package via CLI...", { chain: NetworkID.Sui });
   try {
     const result = execSync(
       `sui client publish --gas-budget ${GAS_BUDGET} --json`,
@@ -148,13 +146,17 @@ export const suiSetup = async ({
     );
     publishResult = JSON.parse(result);
     // Only log essential information from the publish result
-    logger.info("Package published successfully", { chainId: NetworkID.Sui });
-    logger.info("Package ID:", {
-      chainId: NetworkID.Sui,
-      packageId: publishResult.objectChanges?.find(
-        (change: any) => change.type === "published"
-      )?.packageId,
-    });
+    logger.info("Package published successfully", { chain: NetworkID.Sui });
+    logger.info(
+      `Package ID: ${
+        publishResult.objectChanges?.find(
+          (change: any) => change.type === "published"
+        )?.packageId
+      }`,
+      {
+        chain: NetworkID.Sui,
+      }
+    );
   } catch (error) {
     throw new Error("Move contract deployment failed: " + error);
   }
@@ -251,7 +253,7 @@ const waitForConfirmation = async (
     if (status.effects?.status?.status === "success") {
       return status;
     }
-    logger.info("Waiting for confirmation...", { chainId: NetworkID.Sui });
+    logger.info("Waiting for confirmation...", { chain: NetworkID.Sui });
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
@@ -323,13 +325,13 @@ const ensureDirectoryExists = () => {
   try {
     if (!fs.existsSync(LOCALNET_DIR)) {
       logger.info(`Creating directory: ${LOCALNET_DIR}`, {
-        chainId: NetworkID.Sui,
+        chain: NetworkID.Sui,
       });
       const command = "mkdir";
       const args = ["-p", LOCALNET_DIR];
       logger.info(
         `Requesting sudo access to run: ${command} ${args.join(" ")}`,
-        { chainId: NetworkID.Sui }
+        { chain: NetworkID.Sui }
       );
       const result = spawnSync("sudo", [command, ...args], {
         stdio: "inherit",
@@ -337,7 +339,7 @@ const ensureDirectoryExists = () => {
 
       if (result.error) {
         logger.error(`Failed to execute: ${command}`, {
-          chainId: NetworkID.Sui,
+          chain: NetworkID.Sui,
           error: String(result.error),
         });
         process.exit(1);
@@ -346,16 +348,16 @@ const ensureDirectoryExists = () => {
 
     fs.accessSync(LOCALNET_DIR, fs.constants.W_OK);
     logger.info(`Directory is writable: ${LOCALNET_DIR}`, {
-      chainId: NetworkID.Sui,
+      chain: NetworkID.Sui,
     });
   } catch (err) {
     logger.info(
       `Directory is not writable. Changing ownership to ${
         os.userInfo().username
       }...`,
-      { chainId: NetworkID.Sui }
+      { chain: NetworkID.Sui }
     );
     runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
-    logger.info("Ownership updated.", { chainId: NetworkID.Sui });
+    logger.info("Ownership updated.", { chain: NetworkID.Sui });
   }
 };

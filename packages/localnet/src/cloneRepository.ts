@@ -24,24 +24,24 @@ export const cloneRepository = async (
   if (!options.cache || (await shouldClone())) {
     if (fs.existsSync(tempDir)) {
       if (isVerbose)
-        logger.info("Removing cached repository...", { chainId: "localnet" });
+        logger.info("Removing cached repository...", { chain: "localnet" });
       await fs.remove(tempDir);
     }
 
     if (isVerbose)
       logger.info(`Cloning repository (branch: ${branchName})...`, {
-        chainId: "localnet",
+        chain: "localnet",
       });
     const git = simpleGit();
     await git.clone(repoUrl, tempDir, ["--branch", branchName, "--depth=1"]);
     if (isVerbose)
       logger.info(`Repository cloned successfully: ${tempDir}`, {
-        chainId: "localnet",
+        chain: "localnet",
       });
   } else {
     if (isVerbose)
       logger.info("Using cached repository. Skipping clone.", {
-        chainId: "localnet",
+        chain: "localnet",
       });
   }
 };
