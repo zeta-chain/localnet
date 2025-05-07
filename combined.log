@@ -49,3 +49,37 @@
 [35m[[1mSolana[22m][39m [35mGateway PDA Authority: E7HiitoXSfk1h1CW3xsvSuSmxaA1D1MZvdC3PKa6AsXA[39m
 [35m[[1mSolana[22m][39m [35mWhitelisting SPL Token. Whitelist Entry PDA: 7L4mh3rRz8LwEwSm7nNKZQhh12AuF1nSNZNmZzGd4wjD[39m
 [35m[[1mSolana[22m][39m [35mWhitelisted SPL Token: Bys57Ei1R4ax3VgZ7YUGGxgCTrUAGc2Lg94ZCFXoZeaJ[39m
+[34m[[1mSui[22m][39m [34mDirectory is writable: /usr/local/share/localnet[39m
+[35m[[1mSolana[22m][39m [35mDefault Solana user address: DrexsvCMH9WWjgnjVbx1iFf3YZcKadupFmxnZLfSyotd[39m
+[35m[[1mSolana[22m][39m [35mSetting up Solana...[39m
+[35m[[1mSolana[22m][39m [35mPublic Key from id.json: E7HiitoXSfk1h1CW3xsvSuSmxaA1D1MZvdC3PKa6AsXA[39m
+[34m[[1mSui[22m][39m [34mGenesis already exists, skipping...[39m
+[34m[[1mSui[22m][39m [34mEnvironment already exists, skipping...[39m
+[34m[[1mSui[22m][39m [34mBuilding Move contracts...[39m
+[34m[[1mSui[22m][39m [34mPublisher address: 0xb3cfb37115828dbf4967bab5a2489c58e1d900bd43b22cda0cdfa4f1303f1176[39m
+[34m[[1mSui[22m][39m [34mPrivate Key (Bech32): suiprivkey1qztmtc3f0272nhuy8k3fen9gzcd9fh8r8szaw4u3zqmf0l0hz8ndwzar7t8[39m
+[34m[[1mSui[22m][39m [34mDeploying Move package via CLI...[39m
+[35m[[1mSolana[22m][39m [35mDeployment output: Program Id: 94U5AHQMKkV5txNJ17QPXWoh474PheGou6cNP2FEuL1d  Signature: 5SexLXWzQbeoLsYShMtfWXK8minzJkgRcmEMgxLRwM65qaWuQNgBZhayTzUK83e91bSnFtFsKxwnfjR5Nq4U8aQ5  [39m
+[35m[[1mSolana[22m][39m [35mInitialized gateway program[39m
+[35m[[1mSolana[22m][39m [35mGateway PDA account: 9dcAyYG4bawApZocwZSyJBi9Mynf5EuKAJfifXdfkqik[39m
+[35m[[1mSolana[22m][39m [35mGateway PDA Authority: E7HiitoXSfk1h1CW3xsvSuSmxaA1D1MZvdC3PKa6AsXA[39m
+[35m[[1mSolana[22m][39m [35mWhitelisting SPL Token. Whitelist Entry PDA: knbyC5ayirwAGT8j3Tgth5Ddpwi1pm6yfPdmY6qN2MB[39m
+[35m[[1mSolana[22m][39m [35mWhitelisted SPL Token: G3ZcKGhA2cwqAHyFzvbSFPtzZmkmDNrcFJhJBUqWMasV[39m
+[34m[[1mSui[22m][39m [34mDirectory is writable: /usr/local/share/localnet[39m
+[35m[[1mSolana[22m][39m [35mDefault Solana user address: DrexsvCMH9WWjgnjVbx1iFf3YZcKadupFmxnZLfSyotd[39m
+[35m[[1mSolana[22m][39m [35mSetting up Solana...[39m
+[35m[[1mSolana[22m][39m [35mPublic Key from id.json: E7HiitoXSfk1h1CW3xsvSuSmxaA1D1MZvdC3PKa6AsXA[39m
+[34m[[1mSui[22m][39m [34mGenesis already exists, skipping...[39m
+[34m[[1mSui[22m][39m [34mEnvironment already exists, skipping...[39m
+[34m[[1mSui[22m][39m [34mBuilding Move contracts...[39m
+[34m[[1mSui[22m][39m [34mPublisher address: 0xc454cda80fdd2587b214bfa707f2babef3add6c1dce0278b8f3b7d8a5687e49e[39m
+[34m[[1mSui[22m][39m [34mPrivate Key (Bech32): suiprivkey1qr0dmvs55y5ytagsgvawt0j7ucjy8t0gyw6lnc7g625yfu93mf3jjl560sl[39m
+[34m[[1mSui[22m][39m [34mDeploying Move package via CLI...[39m
+[34m[[1mSui[22m][39m [34mPackage published successfully[39m
+[34m[[1mSui[22m][39m [34mPackage ID: 0x92c92ad76380e51840c06959fef67b338d3a38711d85d1964f65d0ac09efdff8[39m
+[35m[[1mSolana[22m][39m [35mDeployment output: Program Id: 94U5AHQMKkV5txNJ17QPXWoh474PheGou6cNP2FEuL1d  Signature: 4DRYmJhQUHDdTPsJTBXiMB3Rn2JmiCtXXuP96Ux2YrM9MzRuWtzqi1YNCG1NAYJiXhAuMzTRvfuzVA6ao3Vfp6om  [39m
+[35m[[1mSolana[22m][39m [35mInitialized gateway program[39m
+[35m[[1mSolana[22m][39m [35mGateway PDA account: 9dcAyYG4bawApZocwZSyJBi9Mynf5EuKAJfifXdfkqik[39m
+[35m[[1mSolana[22m][39m [35mGateway PDA Authority: E7HiitoXSfk1h1CW3xsvSuSmxaA1D1MZvdC3PKa6AsXA[39m
+[35m[[1mSolana[22m][39m [35mWhitelisting SPL Token. Whitelist Entry PDA: 2h7E5rnLVv6R4rbsj3gwMiMfPDAQi5cnwaRFWBv2XakU[39m
+[35m[[1mSolana[22m][39m [35mWhitelisted SPL Token: 4M1R2hujwhZp2v8K4CXYfjV4uLnwLaUF3ZZwGTmarYJx[39m

@@ -83,7 +83,7 @@ export const suiSetup = async ({
   try {
     execSync("sui client switch --env localnet", {
       cwd: PROTOCOL_CONTRACTS_REPO,
-      stdio: "inherit",
+      stdio: "ignore",
     });
   } catch (error) {
     throw new Error(`Failed to switch to localnet environment: ${error}`);
@@ -93,7 +93,7 @@ export const suiSetup = async ({
   try {
     execSync("sui move build", {
       cwd: PROTOCOL_CONTRACTS_REPO,
-      stdio: "inherit",
+      stdio: "ignore",
     });
   } catch (error) {
     throw new Error(`Move contract build failed: ${error}`);
@@ -111,13 +111,13 @@ export const suiSetup = async ({
   log(NetworkID.Sui, "Private Key (Bech32):", privateKeyBech32);
   try {
     execSync(`sui keytool import ${user.keypair.getSecretKey()} ed25519`, {
-      stdio: "inherit",
+      stdio: "ignore",
     });
     execSync(`sui keytool import ${privateKeyBech32} ed25519`, {
-      stdio: "inherit",
+      stdio: "ignore",
     });
     execSync(`sui client switch --address ${publisherAddress}`, {
-      stdio: "inherit",
+      stdio: "ignore",
     });
   } catch (error) {
     throw new Error("Failed to import ephemeral key: " + error);
@@ -134,9 +134,18 @@ export const suiSetup = async ({
   try {
     const result = execSync(
       `sui client publish --gas-budget ${GAS_BUDGET} --json`,
-      { cwd: PROTOCOL_CONTRACTS_REPO, encoding: "utf-8" }
+      { cwd: PROTOCOL_CONTRACTS_REPO, encoding: "utf-8", stdio: "pipe" }
     );
     publishResult = JSON.parse(result);
+    // Only log essential information from the publish result
+    log(NetworkID.Sui, "Package published successfully");
+    log(
+      NetworkID.Sui,
+      "Package ID:",
+      publishResult.objectChanges?.find(
+        (change: any) => change.type === "published"
+      )?.packageId
+    );
   } catch (error) {
     throw new Error("Move contract deployment failed: " + error);
   }
