@@ -1,5 +1,6 @@
 import fs from "fs-extra";
 import simpleGit from "simple-git";
+
 import logger from "./logger";
 
 export const cloneRepository = async (

@@ -1,5 +1,6 @@
-import winston from "winston";
 import ansis from "ansis";
+import winston from "winston";
+
 import { NetworkID } from "./constants";
 import { chains } from "./log";
 
@@ -18,11 +19,11 @@ const chainFormat = winston.format.printf(({ level, message, chain }) => {
 
 // Initialize the logger
 const logger = winston.createLogger({
-  level: "info",
   format: winston.format.combine(
     winston.format.errors({ stack: true }),
     chainFormat
   ),
+  level: "info",
   transports: [new winston.transports.Console()],
 });
 

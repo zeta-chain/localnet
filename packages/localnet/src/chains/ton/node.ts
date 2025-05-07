@@ -1,11 +1,11 @@
 import * as ton from "@ton/ton";
 import Docker, { Container } from "dockerode";
 
+import { NetworkID } from "../../constants";
 import * as dockerTools from "../../docker";
 import logger from "../../logger";
 import * as utils from "../../utils";
 import * as cfg from "./config";
-import { NetworkID } from "../../constants";
 
 export async function startNode(): Promise<void> {
   // Skip container creation if ENV_SKIP_CONTAINER is set to true

@@ -3,10 +3,10 @@ import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Po
 import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json";
 import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
 import { ethers, Log, LogDescription, Signer } from "ethers";
-import logger from "../logger";
-import { NetworkID } from "../constants";
 
+import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
+import logger from "../logger";
 
 /**
  * Prepares and deploys Uniswap V3 contracts.
