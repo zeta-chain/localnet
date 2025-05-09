@@ -1,13 +1,14 @@
 import ansis from "ansis";
 import winston from "winston";
+import { NetworkID } from "./constants";
 
 export const chains: Record<string, { color: any; name: string }> = {
-  "103": { color: ansis.blue, name: "Sui" },
-  "2015141": { color: ansis.blueBright, name: "TON" },
-  "5": { color: ansis.cyan, name: "Ethereum" },
-  "7001": { color: ansis.green, name: "ZetaChain" },
-  "901": { color: ansis.magenta, name: "Solana" },
-  "97": { color: ansis.yellow, name: "BNB" },
+  [NetworkID.Sui]: { color: ansis.blue, name: "Sui" },
+  [NetworkID.TON]: { color: ansis.blueBright, name: "TON" },
+  [NetworkID.Ethereum]: { color: ansis.cyan, name: "Ethereum" },
+  [NetworkID.ZetaChain]: { color: ansis.green, name: "ZetaChain" },
+  [NetworkID.Solana]: { color: ansis.magenta, name: "Solana" },
+  [NetworkID.BNB]: { color: ansis.yellow, name: "BNB" },
 };
 
 // Create a custom format for chain-based logging
