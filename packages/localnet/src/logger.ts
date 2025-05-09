@@ -1,5 +1,6 @@
 import ansis from "ansis";
 import winston from "winston";
+
 import { NetworkID } from "./constants";
 
 export const chains: Record<string, { color: any; name: string }> = {
