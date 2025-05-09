@@ -14,7 +14,7 @@ export async function startNode(): Promise<void> {
 
   // noop
   if (skipContainerStep) {
-    logger.info("Skipping TON container creation", { chain: "ton" });
+    logger.info("Skipping TON container creation", { chain: NetworkID.TON });
     return;
   }
 
@@ -22,7 +22,7 @@ export async function startNode(): Promise<void> {
     await startContainer(cfg.IMAGE);
   } catch (error) {
     logger.error("Unable to initialize TON container", {
-      chain: "ton",
+      chain: NetworkID.TON,
       error,
     });
     throw error;
@@ -54,7 +54,7 @@ async function startContainer(dockerImage: string): Promise<Container> {
 
   logger.info(
     `TON container started on ports [${cfg.PORT_LITE_SERVER}, ${cfg.PORT_SIDECAR}, ${cfg.PORT_RPC}]`,
-    { chain: "ton" }
+    { chain: NetworkID.TON }
   );
 
   return container;
