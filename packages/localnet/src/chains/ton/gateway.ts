@@ -8,7 +8,7 @@ import * as ethers from "ethers";
 import { HDNodeWallet, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
-import logger from "../../logger";
+import { logger } from "../../logger";
 import * as utils from "../../utils";
 import { Deployer } from "./deployer";
 

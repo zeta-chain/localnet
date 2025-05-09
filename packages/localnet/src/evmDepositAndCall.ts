@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { evmOnRevert } from "./evmOnRevert";
-import logger from "./logger";
+import { logger } from "./logger";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";

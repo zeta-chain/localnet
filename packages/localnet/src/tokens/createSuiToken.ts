@@ -3,7 +3,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import * as fs from "fs";
 
 import { NetworkID } from "../constants";
-import logger from "../logger";
+import { logger } from "../logger";
 
 const GAS_BUDGET = 5_000_000_000;
 

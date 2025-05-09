@@ -1,7 +1,21 @@
 import ansis from "ansis";
 import winston from "winston";
 
+import { loggerLevel } from "../../commands/src/start";
 import { NetworkID } from "./constants";
+
+export const loggerLevels = [
+  "emerg",
+  "alert",
+  "crit",
+  "error",
+  "warning",
+  "notice",
+  "info",
+  "debug",
+] as const;
+
+export type LoggerLevel = (typeof loggerLevels)[number];
 
 export const chains: Record<string, { color: any; name: string }> = {
   [NetworkID.Sui]: { color: ansis.blue, name: "Sui" },
@@ -25,14 +39,15 @@ const chainFormat = winston.format.printf(({ level, message, chain }) => {
   return `${color(`[${ansis.bold(chainName)}]`)} ${color(message)}`;
 });
 
-// Initialize the logger
-const logger = winston.createLogger({
-  format: winston.format.combine(
-    winston.format.errors({ stack: true }),
-    chainFormat
-  ),
-  level: "info",
-  transports: [new winston.transports.Console()],
-});
+export let logger: winston.Logger;
 
-export default logger;
+export const initLogger = (level: LoggerLevel = loggerLevel) => {
+  logger = winston.createLogger({
+    format: winston.format.combine(
+      winston.format.errors({ stack: true }),
+      chainFormat
+    ),
+    level,
+    transports: [new winston.transports.Console()],
+  });
+};

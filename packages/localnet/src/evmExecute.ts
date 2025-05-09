@@ -1,7 +1,7 @@
 import { BigNumberish, ethers, GasCostPlugin } from "ethers";
 
 import { NetworkID } from "./constants";
-import logger from "./logger";
+import { logger } from "./logger";
 
 export const evmExecute = async ({
   sender,

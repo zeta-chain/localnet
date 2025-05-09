@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
-import logger from "./logger";
+import { logger } from "./logger";
 
 export const zetachainDeposit = async ({
   zetachainContracts,

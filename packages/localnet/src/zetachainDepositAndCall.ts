@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import logger from "./logger";
+import { logger } from "./logger";
 
 const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];
 

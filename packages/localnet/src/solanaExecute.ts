@@ -7,7 +7,7 @@ import { keccak256 } from "ethereumjs-util";
 import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import logger from "./logger";
+import { logger } from "./logger";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 

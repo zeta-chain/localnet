@@ -16,7 +16,12 @@ import { getSocketPath } from "../../localnet/src/docker";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
 import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
-import logger from "../../localnet/src/logger";
+import {
+  initLogger,
+  logger,
+  LoggerLevel,
+  loggerLevels,
+} from "../../localnet/src/logger";
 import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
@@ -38,6 +43,8 @@ interface ProcessInfo {
 export let backgroundProcessIds: NodeJS.Timeout[] = [];
 
 const chains = ["ton", "solana", "sui"];
+
+export let loggerLevel: LoggerLevel;
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -91,7 +98,9 @@ const startLocalnet = async (options: {
   port: number;
   skip: string[];
   stopAfterInit: boolean;
+  verbosity: LoggerLevel;
 }) => {
+  initLogger(options.verbosity);
   if (!fs.existsSync(LOCALNET_DIR)) {
     fs.mkdirSync(LOCALNET_DIR, { recursive: true });
   }
@@ -364,6 +373,11 @@ export const startCommand = new Command("start")
     false
   )
   .addOption(
+    new Option("-v, --verbosity <level>", "Logger verbosity level")
+      .choices(loggerLevels)
+      .default("info")
+  )
+  .addOption(
     new Option(
       "--skip [chains...]",
       "Chains to skip when initializing localnet"
@@ -378,9 +392,10 @@ export const startCommand = new Command("start")
         port: parseInt(options.port),
         skip: options.skip,
         stopAfterInit: options.stopAfterInit,
+        verbosity: options.verbosity,
       });
     } catch (error) {
-      logger.error("localnet", `Error: ${error}`);
+      console.error(`Error: ${error}`);
       process.exit(1);
     }
   });

@@ -3,7 +3,7 @@ import Docker, { Container } from "dockerode";
 
 import { NetworkID } from "../../constants";
 import * as dockerTools from "../../docker";
-import logger from "../../logger";
+import { logger } from "../../logger";
 import * as utils from "../../utils";
 import * as cfg from "./config";
 

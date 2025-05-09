@@ -6,7 +6,7 @@ import { ethers, Log, LogDescription, Signer } from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
-import logger from "../logger";
+import { logger } from "../logger";
 
 /**
  * Prepares and deploys Uniswap V3 contracts.

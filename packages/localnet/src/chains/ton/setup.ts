@@ -4,7 +4,7 @@ import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway";
 import { ethers, NonceManager } from "ethers";
 
-import logger from "../../logger";
+import { logger } from "../../logger";
 import { zetachainDeposit } from "../../zetachainDeposit";
 import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
