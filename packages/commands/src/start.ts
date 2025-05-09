@@ -27,6 +27,7 @@ import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
 const LOCALNET_JSON_FILE = "./localnet.json";
 const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
+const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
 
 let skip: string[];
 
@@ -149,7 +150,7 @@ const startLocalnet = async (options: {
   const anvilArgs = [
     "--auto-impersonate",
     "--config-out",
-    path.join(LOCALNET_DIR, "anvil.json"),
+    ANVIL_CONFIG,
     "--port",
     options.port.toString(),
     ...options.anvil.split(" ").filter(Boolean), // simple split on spaces
@@ -341,10 +342,9 @@ const cleanup = async () => {
     fs.unlinkSync(LOCALNET_JSON_FILE);
   }
 
-  const anvilConfigPath = path.join(LOCALNET_DIR, "anvil.json");
-  if (fs.existsSync(anvilConfigPath)) {
+  if (fs.existsSync(ANVIL_CONFIG)) {
     try {
-      fs.unlinkSync(anvilConfigPath);
+      fs.unlinkSync(ANVIL_CONFIG);
     } catch (error) {
       logger.info(ansis.yellow(`Failed to remove anvil.json: ${error}`), {
         chain: "localnet",
