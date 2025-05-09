@@ -1,7 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 
 export const evmOnRevert = async ({
   revertOptions,
@@ -21,11 +21,11 @@ export const evmOnRevert = async ({
   const revertContext = { amount, asset, revertMessage, sender };
   if (callOnRevert) {
     try {
-      log(
-        chainID,
+      logger.info(
         `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
           revertContext
-        )}`
+        )}`,
+        { chain: chainID }
       );
       (tss as NonceManager).reset();
       let tx;
@@ -55,20 +55,22 @@ export const evmOnRevert = async ({
       });
 
       logs.forEach((data: any) => {
-        log(chainID, `Event from onRevert: ${JSON.stringify(data)}`);
+        logger.info(`Event from onRevert: ${JSON.stringify(data)}`, {
+          chain: chainID,
+        });
       });
     } catch (err: any) {
-      logErr(chainID, `onRevert failed:`, err);
+      logger.error(`onRevert failed: ${err}`, { chain: chainID });
     }
   } else {
     const isGas = asset === ethers.ZeroAddress;
     const gasOrAsset = isGas ? "gas" : asset;
-    log(chainID, `callOnRevert is false`);
+    logger.info(`callOnRevert is false`, { chain: chainID });
     let revertReceiver = revertAddress;
     if (revertAddress === ethers.ZeroAddress) {
-      logErr(
-        chainID,
-        `revertAddress is zero, transferring ${amount} of ${gasOrAsset} tokens to sender ${sender}`
+      logger.error(
+        `revertAddress is zero, transferring ${amount} of ${gasOrAsset} tokens to sender ${sender}`,
+        { chain: chainID }
       );
       revertReceiver = sender;
     }

@@ -4,7 +4,7 @@ import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway";
 import { ethers, NonceManager } from "ethers";
 
-import { log, logErr } from "../../log";
+import { logger } from "../../logger";
 import { zetachainDeposit } from "../../zetachainDeposit";
 import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
@@ -42,14 +42,14 @@ export interface Env {
 export async function setup(opts: SetupOptions) {
   // noop
   if (opts.skip) {
-    console.log("TON setup skipped");
+    logger.info("TON setup skipped", { chain: opts.chainID });
     return;
   }
 
   try {
     return await setupThrowable(opts);
   } catch (error) {
-    console.error("Unable to setup TON", error);
+    logger.error("Unable to setup TON", { chain: opts.chainID, error });
     throw error;
   }
 }
@@ -69,11 +69,11 @@ async function setupThrowable(opts: SetupOptions) {
   const tssAddress = await opts.tss.getAddress();
   const gateway = await provisionGateway(deployer, tssAddress);
 
-  console.log(
-    "TON Gateway (%s) deployed by %s. TSS address: %s",
-    gateway.address.toRawString(),
-    deployer.address().toRawString(),
-    tssAddress
+  logger.info(
+    `TON Gateway (${gateway.address.toRawString()}) deployed by ${deployer
+      .address()
+      .toRawString()}. TSS address: ${tssAddress}`,
+    { chain: opts.chainID }
   );
 
   // Observe inbound transactions (async loop)
@@ -144,16 +144,20 @@ function onInbound(
   return async (inbound: Inbound) => {
     try {
       if (inbound.opCode === GatewayOp.Deposit) {
-        log(opts.chainID, `Gateway deposit: ${JSON.stringify(inbound)}`);
+        logger.info(`Gateway deposit: ${JSON.stringify(inbound)}`, {
+          chain: opts.chainID,
+        });
         return await onDeposit(inbound);
       }
 
-      log(opts.chainID, `Gateway deposit and call: ${JSON.stringify(inbound)}`);
+      logger.info(`Gateway deposit and call: ${JSON.stringify(inbound)}`, {
+        chain: opts.chainID,
+      });
       return await onDepositAndCall(inbound);
     } catch (e) {
-      logErr(
-        opts.chainID,
-        `Something went wrong for inbound: ${JSON.stringify(inbound)}`
+      logger.error(
+        `Something went wrong for inbound: ${JSON.stringify(inbound)}`,
+        { chain: opts.chainID, error: e }
       );
       console.error(e);
 
@@ -166,14 +170,13 @@ function onInbound(
 
       const revertAmount = inbound.amount - revertGasFee;
       if (revertAmount <= 0n) {
-        logErr(
-          opts.chainID,
-          "Revert amount is not enough to make a revert back"
-        );
+        logger.error("Revert amount is not enough to make a revert back", {
+          chain: opts.chainID,
+        });
         return;
       }
 
-      log(opts.chainID, "Reverting inbound");
+      logger.info("Reverting inbound", { chain: opts.chainID });
       await withdrawTON(
         client,
         gateway,

@@ -2,7 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log } from "./log";
+import { logger } from "./logger";
 
 export const suiWithdraw = async ({
   amount,
@@ -54,15 +54,15 @@ export const suiWithdraw = async ({
         Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
     }
 
-    log(
-      NetworkID.Sui,
+    logger.info(
       `Withdrawing ${ethers.formatUnits(
         amount,
         9
-      )} SUI tokens from the Gateway to ${sender}`
+      )} SUI tokens from the Gateway to ${sender}`,
+      { chain: NetworkID.Sui }
     );
   } catch (e) {
-    log(NetworkID.Sui, `failed to withdraw: ${e}`);
+    logger.error(`Failed to withdraw: ${e}`, { chain: NetworkID.Sui });
     throw e;
   }
 };
@@ -74,13 +74,15 @@ const fetchGatewayNonce = async (client: any, gatewayId: string) => {
   });
 
   if (resp.data?.content?.dataType !== "moveObject") {
-    console.log(`failed to fetch gateway nonce: ${resp}`);
+    logger.error(`Failed to fetch gateway nonce: ${resp}`, {
+      chain: NetworkID.Sui,
+    });
     throw new Error("Not a valid Move object");
   }
 
   const fields = (resp.data.content as any).fields;
   const nonceValue = fields.nonce;
 
-  console.log("Gateway nonce:", nonceValue);
+  logger.info(`Gateway nonce: ${nonceValue}`, { chain: NetworkID.Sui });
   return nonceValue;
 };

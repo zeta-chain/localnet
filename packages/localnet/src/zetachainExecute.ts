@@ -1,7 +1,7 @@
 import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainExecute = async ({
@@ -27,11 +27,11 @@ export const zetachainExecute = async ({
         coin.foreign_chain_id === chainID && coin.coin_type === "Gas"
     )?.zrc20_contract_address;
 
-    log(
-      NetworkID.ZetaChain,
+    logger.info(
       `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
         context
-      )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
+      )}), zrc20: ${zrc20}, amount: 0, message: ${message})`,
+      { chain: NetworkID.ZetaChain }
     );
     const executeTx = await zetachainContracts.gatewayZEVM
       .connect(zetachainContracts.fungibleModuleSigner)
@@ -45,13 +45,17 @@ export const zetachainExecute = async ({
     });
 
     logs.forEach((data: any) => {
-      log(NetworkID.ZetaChain, `Event from onCall: ${JSON.stringify(data)}`);
+      logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
+        chain: NetworkID.ZetaChain,
+      });
     });
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);
     }
-    logErr(NetworkID.ZetaChain, `Error executing onCall: ${err}`);
+    logger.error(`Error executing onCall: ${err}`, {
+      chain: NetworkID.ZetaChain,
+    });
     // No asset calls don't support reverts, so aborting
     return await zetachainOnAbort({
       abortAddress: abortAddress,

@@ -6,6 +6,8 @@ import {
 } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 
+import { NetworkID } from "../constants";
+import { logger } from "../logger";
 import { ed25519KeyPairTSS as tssKeypair } from "../solanaSetup";
 
 /**
@@ -111,11 +113,14 @@ const whitelistSPLToken = async (
   );
 
   const pdaAccountData = await gatewayProgram.account.pda.fetch(gatewayPDA);
-  console.log("🚀 Gateway PDA Authority:", pdaAccountData.authority.toBase58());
+  logger.info(`Gateway PDA Authority: ${pdaAccountData.authority.toBase58()}`, {
+    chain: NetworkID.Solana,
+  });
 
   if (!pdaAccountData.authority.equals(authorityKeypair.publicKey)) {
-    console.error(
-      "❌ Error: The provided signer is NOT the authority of the Gateway PDA."
+    logger.error(
+      "Error: The provided signer is NOT the authority of the Gateway PDA.",
+      { chain: NetworkID.Solana }
     );
     process.exit(1);
   }
@@ -125,9 +130,9 @@ const whitelistSPLToken = async (
     gatewayProgram.programId
   );
 
-  console.log(
-    "Whitelisting SPL Token. Whitelist Entry PDA:",
-    whitelistEntryPDA.toBase58()
+  logger.info(
+    `Whitelisting SPL Token. Whitelist Entry PDA: ${whitelistEntryPDA.toBase58()}`,
+    { chain: NetworkID.Solana }
   );
 
   await gatewayProgram.methods
@@ -142,5 +147,7 @@ const whitelistSPLToken = async (
     .signers([authorityKeypair])
     .rpc();
 
-  console.log(`✅ Whitelisted SPL Token: ${mintPublicKey.toBase58()}`);
+  logger.info(`Whitelisted SPL Token: ${mintPublicKey.toBase58()}`, {
+    chain: NetworkID.Solana,
+  });
 };

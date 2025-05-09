@@ -2,7 +2,7 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 
 export const zetachainOnAbort = async ({
   fungibleModuleSigner,
@@ -24,11 +24,11 @@ export const zetachainOnAbort = async ({
 
   try {
     if (abortAddress === ethers.ZeroAddress) {
-      logErr(NetworkID.ZetaChain, `abortAddress is zero`);
+      logger.error(`abortAddress is zero`, { chain: NetworkID.ZetaChain });
       if (asset !== ethers.ZeroAddress && amount > 0) {
-        logErr(
-          NetworkID.ZetaChain,
-          `Transferring ${amount} of ${asset} tokens to sender ${sender}`
+        logger.error(
+          `Transferring ${amount} of ${asset} tokens to sender ${sender}`,
+          { chain: NetworkID.ZetaChain }
         );
 
         const transferTx = await assetContract.transfer(sender, amount);
@@ -37,10 +37,9 @@ export const zetachainOnAbort = async ({
         throw new Error(`Can't transfer ${amount} of ${asset} tokens`);
       }
     } else {
-      log(
-        NetworkID.ZetaChain,
-        `Transferring tokens to abortAddress ${abortAddress}`
-      );
+      logger.info(`Transferring tokens to abortAddress ${abortAddress}`, {
+        chain: NetworkID.ZetaChain,
+      });
       if (asset !== ethers.ZeroAddress && amount > 0) {
         const transferTx = await assetContract.transfer(abortAddress, amount);
         await transferTx.wait();
@@ -54,11 +53,11 @@ export const zetachainOnAbort = async ({
           chainID,
           revertMessage,
         ];
-        log(
-          NetworkID.ZetaChain,
+        logger.info(
           `Contract ${abortAddress} executing onAbort, context: ${JSON.stringify(
             context
-          )}`
+          )}`,
+          { chain: NetworkID.ZetaChain }
         );
         const abortTx = await gatewayZEVM
           .connect(fungibleModuleSigner)
@@ -69,17 +68,18 @@ export const zetachainOnAbort = async ({
           fromBlock: "latest",
         });
         logs.forEach((data: any) => {
-          log(
-            NetworkID.ZetaChain,
-            `Event from onAbort: ${JSON.stringify(data)}`
-          );
+          logger.info(`Event from onAbort: ${JSON.stringify(data)}`, {
+            chain: NetworkID.ZetaChain,
+          });
         });
       } catch (err) {
         const error = `onAbort failed: ${err}`;
-        logErr(NetworkID.ZetaChain, error);
+        logger.error(error, { chain: NetworkID.ZetaChain });
       }
     }
   } catch (err) {
-    logErr(NetworkID.ZetaChain, `Abort processing failed: ${err}`);
+    logger.error(`Abort processing failed: ${err}`, {
+      chain: NetworkID.ZetaChain,
+    });
   }
 };

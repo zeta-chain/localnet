@@ -3,7 +3,7 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { logErr } from "./log";
+import { logger } from "./logger";
 
 export const zetachainSwapToCoverGas = async ({
   foreignCoins,
@@ -26,7 +26,9 @@ export const zetachainSwapToCoverGas = async ({
   }
 
   if (!foreignCoin) {
-    logErr(NetworkID.ZetaChain, `Foreign coin not found for asset: ${asset}`);
+    logger.error(`Foreign coin not found for asset: ${asset}`, {
+      chain: NetworkID.ZetaChain,
+    });
     return { isGas: false, revertGasFee: 0, token: null };
   }
 
@@ -134,10 +136,9 @@ export const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logErr(
-      NetworkID.ZetaChain,
-      `Error performing swap on Uniswap: ${swapError}`
-    );
+    logger.error(`Error performing swap on Uniswap: ${swapError}`, {
+      chain: NetworkID.ZetaChain,
+    });
   }
 
   const amountInZeta = await getAmounts(

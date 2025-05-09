@@ -2,7 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log } from "./log";
+import { logger } from "./logger";
 
 export const suiWithdrawAndCall = async ({
   amount,
@@ -90,15 +90,15 @@ export const suiWithdrawAndCall = async ({
       );
     }
 
-    log(
-      NetworkID.Sui,
+    logger.info(
       `Withdrawing ${ethers.formatUnits(
         amount,
         9
-      )} SUI tokens and calling contract from the Gateway to ${gatewayObjectId}`
+      )} SUI tokens and calling contract from the Gateway to ${gatewayObjectId}`,
+      { chain: NetworkID.Sui }
     );
   } catch (e) {
-    log(NetworkID.Sui, `failed to withdraw and call: ${e}`);
+    logger.error(`Failed to withdraw and call: ${e}`, { chain: NetworkID.Sui });
     throw e;
   }
 };
@@ -116,6 +116,6 @@ const fetchGatewayNonce = async (client: any, gatewayId: string) => {
   const fields = (resp.data.content as any).fields;
   const nonceValue = fields.nonce;
 
-  console.log("Gateway nonce:", nonceValue);
+  logger.info(`Gateway nonce: ${nonceValue}`, { chain: NetworkID.Sui });
   return nonceValue;
 };

@@ -4,7 +4,9 @@ import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/con
 import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
 import { ethers, Log, LogDescription, Signer } from "ethers";
 
+import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
 
 /**
  * Prepares and deploys Uniswap V3 contracts.
@@ -68,7 +70,6 @@ export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
  * @param wzetaAmount - The amount of WZETA tokens to add
  * @param uniswapV3Factory - The Uniswap V3 factory contract
  * @param uniswapV3PositionManager - The Uniswap V3 position manager contract
- * @param verbose - Whether to log detailed information about the process
  *
  * @remarks
  * This function:
@@ -84,8 +85,7 @@ export const uniswapV3AddLiquidity = async (
   zrc20Amount: any,
   wzetaAmount: any,
   uniswapV3Factory: any,
-  uniswapV3PositionManager: any,
-  verbose: boolean = false
+  uniswapV3PositionManager: any
 ) => {
   Promise.all([
     (zrc20 as any)
@@ -122,22 +122,19 @@ export const uniswapV3AddLiquidity = async (
 
   try {
     const pool = await createUniswapV3Pool(uniswapV3Factory, token0, token1);
-    if (verbose) {
-      console.log("Created Uniswap V3 pool:", await pool.getAddress());
-    }
+    logger.debug(`Created Uniswap V3 pool: ${await pool.getAddress()}`, {
+      chain: NetworkID.ZetaChain,
+    });
 
     // Wait for pool initialization
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    if (verbose) {
-      console.log("Adding liquidity to V3 pool with params:", {
-        amount0: amount0.toString(),
-        amount1: amount1.toString(),
-        recipient: await deployer.getAddress(),
-        token0,
-        token1,
-      });
-    }
+    logger.debug(
+      `Adding liquidity to V3 pool: amount0=${amount0.toString()}, amount1=${amount1.toString()}, recipient=${await deployer.getAddress()}, token0=${token0}, token1=${token1}`,
+      {
+        chain: NetworkID.ZetaChain,
+      }
+    );
 
     const { tx, tokenId } = await addLiquidityV3(
       uniswapV3PositionManager,
@@ -150,9 +147,9 @@ export const uniswapV3AddLiquidity = async (
     );
     const receipt = await tx.wait();
 
-    if (verbose) {
-      console.log("Liquidity addition transaction:", receipt.hash);
-    }
+    logger.debug(`Liquidity addition transaction: ${receipt.hash}`, {
+      chain: NetworkID.ZetaChain,
+    });
 
     // Wait for position to be minted
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -163,21 +160,27 @@ export const uniswapV3AddLiquidity = async (
       token1,
       uniswapV3PositionManager,
       await deployer.getAddress(),
-      tokenId,
-      verbose
+      tokenId
     );
 
-    if (verbose) {
-      console.log("Uniswap V3 Pool Liquidity Info:", {
-        poolAddress: await pool.getAddress(),
-        ...liquidityInfo,
-      });
-    }
+    logger.debug(
+      `Uniswap V3 Pool Liquidity Info: poolAddress=${await pool.getAddress()}, ${JSON.stringify(
+        liquidityInfo
+      )}`,
+      {
+        chain: NetworkID.ZetaChain,
+      }
+    );
   } catch (error: any) {
-    console.error("Error adding liquidity to Uniswap V3:", error);
+    logger.error(`Error adding liquidity to Uniswap V3: ${error.message}`, {
+      chain: NetworkID.ZetaChain,
+    });
     if (error.message?.includes("LOK")) {
-      console.error(
-        "Pool initialization error - pool may already be initialized"
+      logger.error(
+        "Pool initialization error - pool may already be initialized",
+        {
+          chain: NetworkID.ZetaChain,
+        }
       );
     }
     throw error;
@@ -303,7 +306,6 @@ export const addLiquidityV3 = async (
  * @param positionManager - The Uniswap V3 position manager contract
  * @param owner - The address of the position owner
  * @param tokenId - The ID of the position NFT
- * @param verbose - Whether to log detailed information
  * @returns An object containing detailed information about the position
  *
  * @throws Error if the position verification fails
@@ -314,8 +316,7 @@ export const verifyV3Liquidity = async (
   token1: string,
   positionManager: any,
   owner: string,
-  tokenId: bigint,
-  verbose?: boolean
+  tokenId: bigint
 ) => {
   try {
     const [liquidity, slot0, poolToken0, poolToken1] = await Promise.all([
@@ -331,8 +332,8 @@ export const verifyV3Liquidity = async (
 
     const position = await positionManager.positions(tokenId);
 
-    if (verbose) {
-      console.log("Position data:", {
+    logger.debug(
+      `Position data: ${JSON.stringify({
         position: {
           fee: position[4]?.toString(),
           feeGrowthInside0LastX128: position[8]?.toString(),
@@ -348,8 +349,11 @@ export const verifyV3Liquidity = async (
           tokensOwed1: position[11]?.toString(),
         },
         tokenId: tokenId.toString(),
-      });
-    }
+      })}`,
+      {
+        chain: NetworkID.ZetaChain,
+      }
+    );
 
     if (!position || position.length < 12) {
       throw new Error(`Invalid position data for token ID ${tokenId}`);
@@ -402,8 +406,15 @@ export const verifyV3Liquidity = async (
       tickUpper: position[6].toString(),
       tokenId: tokenId.toString(),
     };
-  } catch (error) {
-    console.error("Verification error details:", error);
+  } catch (error: any) {
+    logger.error(
+      `Verification error details: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      {
+        chain: NetworkID.ZetaChain,
+      }
+    );
     throw error;
   }
 };

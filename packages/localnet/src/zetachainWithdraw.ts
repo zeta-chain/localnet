@@ -7,7 +7,7 @@ import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
@@ -25,7 +25,9 @@ export const zetachainWithdraw = async ({
     provider,
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
-  log(NetworkID.ZetaChain, "Gateway: 'Withdrawn' event emitted");
+  logger.info("Gateway: 'Withdrawn' event emitted", {
+    chain: NetworkID.ZetaChain,
+  });
   const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
@@ -105,7 +107,9 @@ export const zetachainWithdraw = async ({
       throw new Error(err);
     }
 
-    logErr(NetworkID.ZetaChain, "Error withdrawing. Reverting.", err);
+    logger.error(`Error withdrawing. Reverting: ${err}`, {
+      chain: NetworkID.ZetaChain,
+    });
 
     return await zetachainOnRevert({
       amount,

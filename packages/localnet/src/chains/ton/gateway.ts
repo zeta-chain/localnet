@@ -8,7 +8,7 @@ import * as ethers from "ethers";
 import { HDNodeWallet, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
-import { log as chainLog } from "../../log";
+import { logger } from "../../logger";
 import * as utils from "../../utils";
 import { Deployer } from "./deployer";
 
@@ -252,11 +252,9 @@ export async function withdrawTON(
   recipient: ton.Address,
   amount: bigint
 ) {
-  chainLog(
-    NetworkID.TON,
-    "Executing withdrawal",
-    recipient.toRawString(),
-    amount.toString()
+  logger.info(
+    `Executing withdrawal to ${recipient.toRawString()}, amount: ${amount.toString()}`,
+    { chain: NetworkID.TON }
   );
 
   const seqno = await gateway.getSeqno();

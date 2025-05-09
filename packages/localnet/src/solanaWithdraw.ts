@@ -6,7 +6,7 @@ import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 
@@ -69,14 +69,16 @@ export const solanaWithdraw = async ({
       })
       .rpc();
 
-    log(
-      NetworkID.Solana,
+    logger.info(
       `Executing Gateway withdraw (SOL): Sending ${ethers.formatUnits(
         amount,
         9
-      )} SOL to ${recipient}`
+      )} SOL to ${recipient}`,
+      { chain: NetworkID.Solana }
     );
   } catch (err) {
-    logErr(NetworkID.Solana, `Error executing Gateway withdraw: ${err}`);
+    logger.error(`Error executing Gateway withdraw: ${err}`, {
+      chain: NetworkID.Solana,
+    });
   }
 };

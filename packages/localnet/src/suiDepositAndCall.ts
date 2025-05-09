@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log } from "./log";
+import { logger } from "./logger";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
@@ -36,10 +36,9 @@ export const suiDepositAndCall = async ({
       : matchingCoin?.asset || ethers.ZeroAddress;
 
   try {
-    log(
-      NetworkID.Sui,
-      `Gateway deposit and call event, ${JSON.stringify(event)}`
-    );
+    logger.info(`Gateway deposit and call event: ${JSON.stringify(event)}`, {
+      chain: chainID,
+    });
     const message = ethers.hexlify(new Uint8Array(event.payload));
     await zetachainDepositAndCall({
       args: [event.sender, event.receiver, event.amount, asset, message],
@@ -73,8 +72,9 @@ export const suiDepositAndCall = async ({
         withdrawCapObjectId: withdrawCapObjectId,
       });
     } else {
-      console.error(
-        "Transaction aborted, amount is not enough to make a revert back to Sui"
+      logger.error(
+        "Transaction aborted, amount is not enough to make a revert back to Sui",
+        { chain: chainID }
       );
     }
   }

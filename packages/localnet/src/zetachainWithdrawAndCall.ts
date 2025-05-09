@@ -5,7 +5,7 @@ import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 import { solanaExecute } from "./solanaExecute";
 import { suiWithdrawAndCall } from "./suiWithdrawAndCall";
 import { zetachainOnRevert } from "./zetachainOnRevert";
@@ -23,7 +23,9 @@ export const zetachainWithdrawAndCall = async ({
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
 
-  log(NetworkID.ZetaChain, "Gateway: 'WithdrawnAndCalled' event emitted");
+  logger.info("Gateway: 'WithdrawnAndCalled' event emitted", {
+    chain: NetworkID.ZetaChain,
+  });
   const [
     sender,
     ,
@@ -111,7 +113,7 @@ export const zetachainWithdrawAndCall = async ({
       }
     }
   } catch (err: any) {
-    logErr(chainID, `Error executing ${receiver}: ${err}`);
+    logger.error(`Error executing ${receiver}: ${err}`, { chain: chainID });
     if (exitOnError) {
       throw new Error(err);
     }

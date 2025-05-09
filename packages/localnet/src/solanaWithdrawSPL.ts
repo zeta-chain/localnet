@@ -1,12 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log, logErr } from "./log";
+import { logger } from "./logger";
 import Gateway_IDL from "./solana/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 
@@ -102,15 +101,16 @@ export const solanaWithdrawSPL = async ({
       })
       .rpc();
 
-    log(
-      NetworkID.Solana,
+    logger.info(
       `Executing Gateway withdrawSplToken: sent ${ethers.formatUnits(
         amount,
         decimals
-      )} \
-SPL tokens (mint = ${mint}) to ${recipient}`
+      )} SPL tokens (mint = ${mint}) to ${recipient}`,
+      { chain: NetworkID.Solana }
     );
   } catch (err) {
-    logErr(NetworkID.Solana, `Error executing Gateway withdraw: ${err}`);
+    logger.error(`Error executing Gateway withdraw: ${err}`, {
+      chain: NetworkID.Solana,
+    });
   }
 };

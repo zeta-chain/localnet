@@ -2,8 +2,7 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "./constants";
-import { log } from "./log";
-import { logErr } from "./log";
+import { logger } from "./logger";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainOnRevert = async ({
@@ -32,16 +31,16 @@ export const zetachainOnRevert = async ({
   );
 
   if (callOnRevert) {
-    log(NetworkID.ZetaChain, `callOnRevert is true`);
+    logger.info(`callOnRevert is true`, { chain: NetworkID.ZetaChain });
     try {
       if (revertAddress === ethers.ZeroAddress) {
         throw new Error("revertAddress is zero");
       } else {
-        logErr(
-          NetworkID.ZetaChain,
+        logger.error(
           `Executing onRevert on revertAddress ${revertAddress}, context: ${JSON.stringify(
             revertContext
-          )}`
+          )}`,
+          { chain: NetworkID.ZetaChain }
         );
         let tx;
         if (asset === ethers.ZeroAddress) {
@@ -63,15 +62,14 @@ export const zetachainOnRevert = async ({
           fromBlock: "latest",
         });
         logs.forEach((data: any) => {
-          log(
-            NetworkID.ZetaChain,
-            `Event from onRevert: ${JSON.stringify(data)}`
-          );
+          logger.info(`Event from onRevert: ${JSON.stringify(data)}`, {
+            chain: NetworkID.ZetaChain,
+          });
         });
       }
     } catch (err) {
       const error = `onRevert failed: ${err}`;
-      logErr(NetworkID.ZetaChain, error);
+      logger.error(error, { chain: NetworkID.ZetaChain });
       await zetachainOnAbort({
         abortAddress,
         amount,
@@ -84,22 +82,21 @@ export const zetachainOnRevert = async ({
       });
     }
   } else {
-    log(NetworkID.ZetaChain, `callOnRevert is false`);
+    logger.info(`callOnRevert is false`, { chain: NetworkID.ZetaChain });
     try {
       if (revertAddress === ethers.ZeroAddress) {
         throw new Error("revertAddress is zero");
       } else {
-        log(
-          NetworkID.ZetaChain,
-          `Transferring tokens to revertAddress ${revertAddress}`
-        );
+        logger.info(`Transferring tokens to revertAddress ${revertAddress}`, {
+          chain: NetworkID.ZetaChain,
+        });
         const transferTx = await assetContract.transfer(revertAddress, amount);
         await transferTx.wait();
       }
     } catch (err) {
-      logErr(
-        NetworkID.ZetaChain,
-        `Token transfer to revertAddress ${revertAddress} failed: ${err}`
+      logger.error(
+        `Token transfer to revertAddress ${revertAddress} failed: ${err}`,
+        { chain: NetworkID.ZetaChain }
       );
       await zetachainOnAbort({
         abortAddress,
