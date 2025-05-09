@@ -54,13 +54,9 @@ export const suiSetup = async ({
 
   ensureDirectoryExists();
 
-  await cloneRepository(
-    REPO_URL,
-    PROTOCOL_CONTRACTS_REPO,
-    BRANCH_NAME,
-    { cache: true },
-    true
-  );
+  await cloneRepository(REPO_URL, PROTOCOL_CONTRACTS_REPO, BRANCH_NAME, {
+    cache: true,
+  });
 
   try {
     execSync("sui genesis", {
