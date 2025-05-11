@@ -14,10 +14,10 @@ import util from "util";
 import { backgroundProcessIds } from "../../../../commands/src/start";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import Gateway_IDL from "./idl/gateway.json";
-import { isSolanaAvailable } from "./isSolanaAvailable";
 import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
+import Gateway_IDL from "./idl/gateway.json";
+import { isSolanaAvailable } from "./isSolanaAvailable";
 
 const execAsync = util.promisify(exec);
 
