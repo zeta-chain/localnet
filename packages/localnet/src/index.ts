@@ -24,9 +24,9 @@ export const initLocalnet = async ({
   exitOnError,
   chains,
 }: {
+  chains: string[];
   exitOnError: boolean;
   port: number;
-  chains: string[];
 }): Promise<(InitLocalnetAddress | undefined)[]> => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;

@@ -137,9 +137,9 @@ const localnet = async (args: any) => {
 
   try {
     const addresses = await initLocalnet({
+      chains: args.skip ? args.skip.split(",") : [],
       exitOnError: args.exitOnError,
       port: args.port,
-      chains: args.skip ? args.skip.split(",") : [],
     });
 
     // Get unique chains

@@ -91,10 +91,10 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
 
 const startLocalnet = async (options: {
   anvil: string;
+  chains: string[];
   exitOnError: boolean;
   forceKill: boolean;
   port: number;
-  chains: string[];
   stopAfterInit: boolean;
   verbosity: LoggerLevel;
 }) => {
@@ -211,9 +211,9 @@ const startLocalnet = async (options: {
 
   try {
     const rawInitialAddresses = await initLocalnet({
+      chains: options.chains,
       exitOnError: options.exitOnError,
       port: options.port,
-      chains: options.chains,
     });
 
     const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
@@ -386,10 +386,10 @@ export const startCommand = new Command("start")
     try {
       await startLocalnet({
         anvil: options.anvil,
+        chains: options.chains,
         exitOnError: options.exitOnError,
         forceKill: options.forceKill,
         port: parseInt(options.port),
-        chains: options.chains,
         stopAfterInit: options.stopAfterInit,
         verbosity: options.verbosity,
       });
