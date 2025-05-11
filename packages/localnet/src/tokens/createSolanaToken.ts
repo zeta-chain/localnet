@@ -8,7 +8,7 @@ import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 
 import { NetworkID } from "../constants";
 import { logger } from "../logger";
-import { ed25519KeyPairTSS as tssKeypair } from "../solanaSetup";
+import { ed25519KeyPairTSS as tssKeypair } from "../chains/solana/solanaSetup";
 
 /**
  * Creates and deploys an SPL token on Solana.

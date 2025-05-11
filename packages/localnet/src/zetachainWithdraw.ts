@@ -8,8 +8,8 @@ import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdraw } from "./evmCustodyWithdraw";
 import { evmTSSTransfer } from "./evmTSSTransfer";
 import { logger } from "./logger";
-import { solanaWithdraw } from "./solanaWithdraw";
-import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
+import { solanaWithdraw } from "./chains/solana/solanaWithdraw";
+import { solanaWithdrawSPL } from "./chains/solana/solanaWithdrawSPL";
 import { suiWithdraw } from "./suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 

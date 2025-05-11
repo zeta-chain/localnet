@@ -1,25 +1,23 @@
 import { ethers } from "ethers";
 
-import { NetworkID } from "./constants";
-import { logger } from "./logger";
+import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
-import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
-import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
+import { zetachainDeposit } from "../../zetachainDeposit";
+import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
 
-export const solanaDepositAndCall = async ({
-  provider,
+export const solanaDeposit = async ({
   zetachainContracts,
-  args,
+  provider,
   foreignCoins,
+  args,
   deployer,
 }: any) => {
   const chainID = NetworkID.Solana;
   const [sender, , amount, asset] = args;
   try {
-    logger.info("Gateway Deposit and call executed", {
-      chain: NetworkID.Solana,
-    });
+    logger.info("Gateway Deposit executed", { chain: NetworkID.Solana });
     let foreignCoin;
     if (asset === ethers.ZeroAddress) {
       foreignCoin = foreignCoins.find(
@@ -36,14 +34,15 @@ export const solanaDepositAndCall = async ({
       });
       return;
     }
-    await zetachainDepositAndCall({
+
+    await zetachainDeposit({
       args,
       chainID,
       foreignCoins,
-      provider,
       zetachainContracts,
     });
-  } catch (e) {
+  } catch (err) {
+    logger.error(`Error depositing: ${err}`, { chain: NetworkID.ZetaChain });
     const { revertGasFee } = await zetachainSwapToCoverGas({
       amount,
       asset,

@@ -1,20 +1,23 @@
 import * as anchor from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 
-import { NetworkID } from "./constants";
-import { logger } from "./logger";
-import Gateway_IDL from "./solana/idl/gateway.json";
+import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
+import Gateway_IDL from "./idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
 
-export const solanaWithdraw = async ({
+export const solanaWithdrawSPL = async ({
   recipient,
   amount,
+  mint,
+  decimals,
 }: {
   amount: bigint;
+  decimals: number;
+  mint: string;
   recipient: string;
 }) => {
   try {
@@ -38,14 +41,24 @@ export const solanaWithdraw = async ({
     const nonce = pdaAccountData.nonce;
     const val = new anchor.BN(amount.toString());
 
-    const instructionId = 0x01;
+    const instructionId = 0x02;
+
+    const mintPubkey = new PublicKey(mint);
+    const recipientPubkey = new PublicKey(recipient);
+    const recipientATA = await getAssociatedTokenAddress(
+      mintPubkey,
+      recipientPubkey,
+      false
+    );
+
     const buffer = Buffer.concat([
       Buffer.from("ZETACHAIN", "utf-8"),
       Buffer.from([instructionId]),
       chainIdBn.toArrayLike(Buffer, "be", 8),
       new anchor.BN(nonce).toArrayLike(Buffer, "be", 8),
       val.toArrayLike(Buffer, "be", 8),
-      Buffer.from(bs58.decode(recipient)),
+      mintPubkey.toBytes(),
+      recipientATA.toBytes(),
     ]);
 
     const messageHash = keccak256(buffer);
@@ -56,24 +69,43 @@ export const solanaWithdraw = async ({
       s.toArrayLike(Buffer, "be", 32),
     ]);
 
+    const pdaATA = await getAssociatedTokenAddress(
+      mintPubkey,
+      pdaAccount,
+      true
+    );
+
+    const systemProgram = anchor.web3.SystemProgram.programId;
+    const tokenProgram = anchor.utils.token.TOKEN_PROGRAM_ID;
+    const associatedTokenProgram = anchor.utils.token.ASSOCIATED_PROGRAM_ID;
+
     await gatewayProgram.methods
-      .withdraw(
-        val,
+      .withdrawSplToken(
+        decimals,
+        val, // amount
         Array.from(signatureBuffer),
         Number(recoveryParam),
         Array.from(messageHash),
         nonce
       )
       .accounts({
-        recipient: new PublicKey(recipient),
+        associatedTokenProgram,
+        mintAccount: mintPubkey,
+        pda: pdaAccount,
+        pdaAta: pdaATA,
+        recipient: recipientPubkey,
+        recipientAta: recipientATA,
+        signer: payer.publicKey,
+        systemProgram,
+        tokenProgram,
       })
       .rpc();
 
     logger.info(
-      `Executing Gateway withdraw (SOL): Sending ${ethers.formatUnits(
+      `Executing Gateway withdrawSplToken: sent ${ethers.formatUnits(
         amount,
-        9
-      )} SOL to ${recipient}`,
+        decimals
+      )} SPL tokens (mint = ${mint}) to ${recipient}`,
       { chain: NetworkID.Solana }
     );
   } catch (err) {

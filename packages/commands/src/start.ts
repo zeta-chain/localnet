@@ -14,7 +14,7 @@ import { initLocalnet } from "../../localnet/src";
 import * as ton from "../../localnet/src/chains/ton";
 import { getSocketPath } from "../../localnet/src/docker";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
-import { isSolanaAvailable } from "../../localnet/src/isSolanaAvailable";
+import { isSolanaAvailable } from "../../localnet/src/chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../../localnet/src/isSuiAvailable";
 import {
   initLogger,

@@ -6,7 +6,7 @@ import { deployOpts } from "./deployOpts";
 import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
 import { evmExecute } from "./evmExecute";
 import { logger } from "./logger";
-import { solanaExecute } from "./solanaExecute";
+import { solanaExecute } from "./chains/solana/solanaExecute";
 import { suiWithdrawAndCall } from "./suiWithdrawAndCall";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
