@@ -1,11 +1,11 @@
 import { ethers } from "ethers";
 
-import { NetworkID } from "./constants";
+import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
 import { evmOnRevert } from "./evmOnRevert";
-import { logger } from "./logger";
-import { zetachainDepositAndCall } from "./zetachainDepositAndCall";
-import { zetachainOnAbort } from "./zetachainOnAbort";
-import { zetachainSwapToCoverGas } from "./zetachainSwapToCoverGas";
+import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
+import { zetachainOnAbort } from "../../zetachainOnAbort";
+import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
 
 export const evmDepositAndCall = async ({
   args,

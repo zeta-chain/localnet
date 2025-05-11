@@ -1,5 +1,5 @@
-import { deployOpts } from "./deployOpts";
-import { logger } from "./logger";
+import { deployOpts } from "../../deployOpts";
+import { logger } from "../../logger";
 
 export const evmCustodyWithdraw = async ({
   evmContracts,

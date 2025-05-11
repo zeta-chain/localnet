@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
-import { deployOpts } from "./deployOpts";
-import { logger } from "./logger";
+import { deployOpts } from "../../deployOpts";
+import { logger } from "../../logger";
 
 export const evmTSSTransfer = async ({
   tss,

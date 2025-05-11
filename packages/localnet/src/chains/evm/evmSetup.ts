@@ -5,7 +5,7 @@ import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/Test
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers } from "ethers";
 
-import { deployOpts } from "./deployOpts";
+import { deployOpts } from "../../deployOpts";
 import { evmCall } from "./evmCall";
 import { evmDeposit } from "./evmDeposit";
 import { evmDepositAndCall } from "./evmDepositAndCall";

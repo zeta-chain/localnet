@@ -1,7 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
-import { logger } from "./logger";
+import { logger } from "../../logger";
 
 export const evmOnRevert = async ({
   revertOptions,

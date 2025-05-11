@@ -3,8 +3,8 @@ import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "./constants";
 import { deployOpts } from "./deployOpts";
-import { evmCustodyWithdrawAndCall } from "./evmCustodyWithdrawAndCall";
-import { evmExecute } from "./evmExecute";
+import { evmCustodyWithdrawAndCall } from "./chains/evm/evmCustodyWithdrawAndCall";
+import { evmExecute } from "./chains/evm/evmExecute";
 import { logger } from "./logger";
 import { solanaExecute } from "./chains/solana/solanaExecute";
 import { suiWithdrawAndCall } from "./suiWithdrawAndCall";

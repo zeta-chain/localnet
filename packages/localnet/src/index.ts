@@ -3,7 +3,7 @@ import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 import { InitLocalnetAddress } from "../../types/zodSchemas";
 import * as ton from "./chains/ton";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
-import { evmSetup } from "./evmSetup";
+import { evmSetup } from "./chains/evm/evmSetup";
 import { solanaSetup } from "./chains/solana/solanaSetup";
 import { suiSetup } from "./suiSetup";
 import { createToken } from "./tokens/createToken";
