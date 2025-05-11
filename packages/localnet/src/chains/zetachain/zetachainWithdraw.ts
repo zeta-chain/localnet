@@ -2,15 +2,15 @@ import * as tonTypes from "@ton/ton";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
-import * as ton from "../ton";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
+import { logger } from "../../logger";
 import { evmCustodyWithdraw } from "../evm/evmCustodyWithdraw";
 import { evmTSSTransfer } from "../evm/evmTSSTransfer";
-import { logger } from "../../logger";
 import { solanaWithdraw } from "../solana/solanaWithdraw";
 import { solanaWithdrawSPL } from "../solana/solanaWithdrawSPL";
 import { suiWithdraw } from "../sui/suiWithdraw";
+import * as ton from "../ton";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdraw = async ({

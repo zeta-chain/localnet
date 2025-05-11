@@ -11,11 +11,11 @@ import readline from "readline/promises";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../../localnet/src";
+import { isSolanaAvailable } from "../../localnet/src/chains/solana/isSolanaAvailable";
+import { isSuiAvailable } from "../../localnet/src/chains/sui/isSuiAvailable";
 import * as ton from "../../localnet/src/chains/ton";
 import { getSocketPath } from "../../localnet/src/docker";
 import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
-import { isSolanaAvailable } from "../../localnet/src/chains/solana/isSolanaAvailable";
-import { isSuiAvailable } from "../../localnet/src/chains/sui/isSuiAvailable";
 import {
   initLogger,
   logger,

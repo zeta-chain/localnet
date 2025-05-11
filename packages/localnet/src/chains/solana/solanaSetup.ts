@@ -13,9 +13,9 @@ import util from "util";
 
 import { backgroundProcessIds } from "../../../../commands/src/start";
 import { MNEMONIC, NetworkID } from "../../constants";
-import { isSolanaAvailable } from "./isSolanaAvailable";
 import { logger } from "../../logger";
 import Gateway_IDL from "./idl/gateway.json";
+import { isSolanaAvailable } from "./isSolanaAvailable";
 import { solanaDeposit } from "./solanaDeposit";
 import { solanaDepositAndCall } from "./solanaDepositAndCall";
 

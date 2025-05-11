@@ -2,9 +2,9 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { suiWithdraw } from "./suiWithdraw";
 import { zetachainDepositAndCall } from "../zetachain/zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/zetachainSwapToCoverGas";
+import { suiWithdraw } from "./suiWithdraw";
 
 export const suiDepositAndCall = async ({
   event,

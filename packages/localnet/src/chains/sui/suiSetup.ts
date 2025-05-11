@@ -11,8 +11,8 @@ import path from "path";
 import { backgroundProcessIds } from "../../../../commands/src/start";
 import { cloneRepository } from "../../cloneRepository";
 import { MNEMONIC, NetworkID } from "../../constants";
-import { isSuiAvailable } from "./isSuiAvailable";
 import { logger } from "../../logger";
+import { isSuiAvailable } from "./isSuiAvailable";
 import { suiDeposit } from "./suiDeposit";
 import { suiDepositAndCall } from "./suiDepositAndCall";
 

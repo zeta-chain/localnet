@@ -4,9 +4,9 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { evmOnRevert } from "./evmOnRevert";
 import { zetachainDeposit } from "../zetachain/zetachainDeposit";
 import { zetachainOnAbort } from "../zetachain/zetachainOnAbort";
+import { evmOnRevert } from "./evmOnRevert";
 
 export const evmDeposit = async ({
   args,

@@ -3,9 +3,9 @@ import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
+import { logger } from "../../logger";
 import { evmCustodyWithdrawAndCall } from "../evm/evmCustodyWithdrawAndCall";
 import { evmExecute } from "../evm/evmExecute";
-import { logger } from "../../logger";
 import { solanaExecute } from "../solana/solanaExecute";
 import { suiWithdrawAndCall } from "../sui/suiWithdrawAndCall";
 import { zetachainOnRevert } from "./zetachainOnRevert";

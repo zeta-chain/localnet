@@ -2,10 +2,10 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { solanaWithdraw } from "./solanaWithdraw";
-import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 import { zetachainDepositAndCall } from "../zetachain/zetachainDepositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/zetachainSwapToCoverGas";
+import { solanaWithdraw } from "./solanaWithdraw";
+import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
 
 export const solanaDepositAndCall = async ({
   provider,

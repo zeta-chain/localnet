@@ -1,16 +1,16 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { InitLocalnetAddress } from "../../types/zodSchemas";
-import * as ton from "./chains/ton";
-import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { evmSetup } from "./chains/evm/evmSetup";
 import { solanaSetup } from "./chains/solana/solanaSetup";
 import { suiSetup } from "./chains/sui/suiSetup";
-import { createToken } from "./tokens/createToken";
+import * as ton from "./chains/ton";
 import { zetachainCall } from "./chains/zetachain/zetachainCall";
 import { zetachainSetup } from "./chains/zetachain/zetachainSetup";
 import { zetachainWithdraw } from "./chains/zetachain/zetachainWithdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/zetachainWithdrawAndCall";
+import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
+import { createToken } from "./tokens/createToken";
 
 const foreignCoins: any[] = [];
 
