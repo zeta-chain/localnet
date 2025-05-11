@@ -22,11 +22,11 @@ const foreignCoins: any[] = [];
 export const initLocalnet = async ({
   port,
   exitOnError,
-  skip,
+  chains,
 }: {
+  chains: string[];
   exitOnError: boolean;
   port: number;
-  skip: string[];
 }): Promise<(InitLocalnetAddress | undefined)[]> => {
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
@@ -58,14 +58,14 @@ export const initLocalnet = async ({
       deployer,
       foreignCoins,
       provider,
-      skip: skip.includes("solana"),
+      skip: !chains.includes("solana"),
       zetachainContracts,
     }),
     suiSetup({
       deployer,
       foreignCoins,
       provider,
-      skip: skip.includes("sui"),
+      skip: !chains.includes("sui"),
       zetachainContracts,
     }),
     evmSetup({
@@ -91,7 +91,7 @@ export const initLocalnet = async ({
       deployer,
       foreignCoins,
       provider,
-      skip: skip.includes("ton"),
+      skip: !chains.includes("ton"),
       tss,
       zetachainContracts,
     }),
