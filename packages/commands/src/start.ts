@@ -213,7 +213,7 @@ const startLocalnet = async (options: {
     const rawInitialAddresses = await initLocalnet({
       exitOnError: options.exitOnError,
       port: options.port,
-      skip: AVAILABLE_CHAINS.filter((chain) => !enabledChains.includes(chain)),
+      chains: options.chains,
     });
 
     const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
@@ -377,7 +377,7 @@ export const startCommand = new Command("start")
   .addOption(
     new Option(
       "--chains [chains...]",
-      "Chains to enable when initializing localnet"
+      "Chains to launch when starting localnet"
     )
       .choices(AVAILABLE_CHAINS)
       .default([])
