@@ -1,8 +1,8 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { ethers } from "ethers";
 
-import { NetworkID } from "./constants";
-import { logger } from "./logger";
+import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
 
 export const suiWithdraw = async ({
   amount,

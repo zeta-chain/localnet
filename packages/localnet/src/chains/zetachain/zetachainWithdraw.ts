@@ -10,7 +10,7 @@ import { evmTSSTransfer } from "../evm/evmTSSTransfer";
 import { logger } from "../../logger";
 import { solanaWithdraw } from "../solana/solanaWithdraw";
 import { solanaWithdrawSPL } from "../solana/solanaWithdrawSPL";
-import { suiWithdraw } from "../../suiWithdraw";
+import { suiWithdraw } from "../sui/suiWithdraw";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdraw = async ({
