@@ -28,8 +28,9 @@ const LOCALNET_JSON_FILE = "./localnet.json";
 const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
+const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
 
-let skip: string[];
+export let loggerLevel: LoggerLevel;
 
 interface ProcessInfo {
   command: string;
@@ -42,10 +43,6 @@ interface ProcessInfo {
  * transaction monitors).
  */
 export let backgroundProcessIds: NodeJS.Timeout[] = [];
-
-const chains = ["ton", "solana", "sui"];
-
-export let loggerLevel: LoggerLevel;
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -97,7 +94,7 @@ const startLocalnet = async (options: {
   exitOnError: boolean;
   forceKill: boolean;
   port: number;
-  skip: string[];
+  chains: string[];
   stopAfterInit: boolean;
   verbosity: LoggerLevel;
 }) => {
@@ -124,7 +121,7 @@ const startLocalnet = async (options: {
     process.on("SIGTERM", cleanup);
   }
 
-  skip = options.skip || [];
+  const enabledChains = options.chains || [];
 
   // Initialize the processes array
   const processes: ProcessInfo[] = [];
@@ -169,7 +166,7 @@ const startLocalnet = async (options: {
     timeout: 30_000,
   });
 
-  if (!skip.includes("ton") && isDockerAvailable()) {
+  if (enabledChains.includes("ton") && isDockerAvailable()) {
     await ton.startNode();
     // Note: Docker processes are managed differently, not adding to processes array
   } else {
@@ -178,7 +175,7 @@ const startLocalnet = async (options: {
 
   let solanaTestValidator: ChildProcess;
 
-  if (!skip.includes("solana") && isSolanaAvailable()) {
+  if (enabledChains.includes("solana") && isSolanaAvailable()) {
     solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
 
     if (solanaTestValidator.pid) {
@@ -191,7 +188,7 @@ const startLocalnet = async (options: {
   }
 
   let suiProcess: ChildProcess;
-  if (!skip.includes("sui") && isSuiAvailable()) {
+  if (enabledChains.includes("sui") && isSuiAvailable()) {
     logger.info("Starting Sui...", { chain: "localnet" });
     suiProcess = spawn("sui", ["start", "--with-faucet", "--force-regenesis"], {
       env: { ...process.env, RUST_LOG: "off,sui_node=info" },
@@ -216,7 +213,7 @@ const startLocalnet = async (options: {
     const rawInitialAddresses = await initLocalnet({
       exitOnError: options.exitOnError,
       port: options.port,
-      skip,
+      skip: AVAILABLE_CHAINS.filter((chain) => !enabledChains.includes(chain)),
     });
 
     const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
@@ -256,6 +253,10 @@ const startLocalnet = async (options: {
     });
     await cleanup();
     process.exit(0);
+  }
+
+  if (!enabledChains.includes("ton")) {
+    await waitForTonContainerToStop();
   }
 };
 
@@ -334,10 +335,6 @@ const cleanup = async () => {
     }
   }
 
-  if (!skip.includes("ton")) {
-    await waitForTonContainerToStop();
-  }
-
   if (fs.existsSync(LOCALNET_JSON_FILE)) {
     fs.unlinkSync(LOCALNET_JSON_FILE);
   }
@@ -379,9 +376,11 @@ export const startCommand = new Command("start")
   )
   .addOption(
     new Option(
-      "--skip [chains...]",
-      "Chains to skip when initializing localnet"
-    ).choices(chains)
+      "--chains [chains...]",
+      "Chains to enable when initializing localnet"
+    )
+      .choices(AVAILABLE_CHAINS)
+      .default([])
   )
   .action(async (options) => {
     try {
@@ -390,7 +389,7 @@ export const startCommand = new Command("start")
         exitOnError: options.exitOnError,
         forceKill: options.forceKill,
         port: parseInt(options.port),
-        skip: options.skip,
+        chains: options.chains,
         stopAfterInit: options.stopAfterInit,
         verbosity: options.verbosity,
       });
