@@ -4,8 +4,8 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { solanaWithdraw } from "./solanaWithdraw";
 import { solanaWithdrawSPL } from "./solanaWithdrawSPL";
-import { zetachainDeposit } from "../../zetachainDeposit";
-import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
+import { zetachainDeposit } from "../zetachain/zetachainDeposit";
+import { zetachainSwapToCoverGas } from "../zetachain/zetachainSwapToCoverGas";
 
 export const solanaDeposit = async ({
   zetachainContracts,

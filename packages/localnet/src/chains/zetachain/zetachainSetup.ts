@@ -4,10 +4,10 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS } from "./constants";
-import { deployOpts } from "./deployOpts";
-import { prepareUniswapV2 } from "./tokens/uniswapV2";
-import { prepareUniswapV3 } from "./tokens/uniswapV3";
+import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
+import { deployOpts } from "../../deployOpts";
+import { prepareUniswapV2 } from "../../tokens/uniswapV2";
+import { prepareUniswapV3 } from "../../tokens/uniswapV3";
 
 export const zetachainSetup = async (
   deployer: Signer,

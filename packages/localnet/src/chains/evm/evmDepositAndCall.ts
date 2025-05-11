@@ -3,9 +3,9 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { evmOnRevert } from "./evmOnRevert";
-import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
-import { zetachainOnAbort } from "../../zetachainOnAbort";
-import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
+import { zetachainDepositAndCall } from "../zetachain/zetachainDepositAndCall";
+import { zetachainOnAbort } from "../zetachain/zetachainOnAbort";
+import { zetachainSwapToCoverGas } from "../zetachain/zetachainSwapToCoverGas";
 
 export const evmDepositAndCall = async ({
   args,

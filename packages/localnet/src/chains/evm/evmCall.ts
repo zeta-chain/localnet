@@ -2,8 +2,8 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { zetachainExecute } from "../../zetachainExecute";
-import { zetachainOnAbort } from "../../zetachainOnAbort";
+import { zetachainExecute } from "../zetachain/zetachainExecute";
+import { zetachainOnAbort } from "../zetachain/zetachainOnAbort";
 
 export const evmCall = async ({
   args,

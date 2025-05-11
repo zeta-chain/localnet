@@ -1,8 +1,8 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
-import { NetworkID } from "./constants";
-import { logger } from "./logger";
+import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
 import { zetachainOnAbort } from "./zetachainOnAbort";
 
 export const zetachainOnRevert = async ({

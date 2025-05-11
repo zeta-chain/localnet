@@ -5,9 +5,9 @@ import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway
 import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
-import { zetachainDeposit } from "../../zetachainDeposit";
-import { zetachainDepositAndCall } from "../../zetachainDepositAndCall";
-import { zetachainSwapToCoverGas } from "../../zetachainSwapToCoverGas";
+import { zetachainDeposit } from "../zetachain/zetachainDeposit";
+import { zetachainDepositAndCall } from "../zetachain/zetachainDepositAndCall";
+import { zetachainSwapToCoverGas } from "../zetachain/zetachainSwapToCoverGas";
 import * as cfg from "./config";
 import { Deployer, deployerFromFaucetURL } from "./deployer";
 import {

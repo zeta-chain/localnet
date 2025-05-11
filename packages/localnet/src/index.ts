@@ -7,10 +7,10 @@ import { evmSetup } from "./chains/evm/evmSetup";
 import { solanaSetup } from "./chains/solana/solanaSetup";
 import { suiSetup } from "./suiSetup";
 import { createToken } from "./tokens/createToken";
-import { zetachainCall } from "./zetachainCall";
-import { zetachainSetup } from "./zetachainSetup";
-import { zetachainWithdraw } from "./zetachainWithdraw";
-import { zetachainWithdrawAndCall } from "./zetachainWithdrawAndCall";
+import { zetachainCall } from "./chains/zetachain/zetachainCall";
+import { zetachainSetup } from "./chains/zetachain/zetachainSetup";
+import { zetachainWithdraw } from "./chains/zetachain/zetachainWithdraw";
+import { zetachainWithdrawAndCall } from "./chains/zetachain/zetachainWithdrawAndCall";
 
 const foreignCoins: any[] = [];
 

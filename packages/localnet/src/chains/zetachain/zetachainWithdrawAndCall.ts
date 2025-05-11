@@ -1,13 +1,13 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
 
-import { NetworkID } from "./constants";
-import { deployOpts } from "./deployOpts";
-import { evmCustodyWithdrawAndCall } from "./chains/evm/evmCustodyWithdrawAndCall";
-import { evmExecute } from "./chains/evm/evmExecute";
-import { logger } from "./logger";
-import { solanaExecute } from "./chains/solana/solanaExecute";
-import { suiWithdrawAndCall } from "./suiWithdrawAndCall";
+import { NetworkID } from "../../constants";
+import { deployOpts } from "../../deployOpts";
+import { evmCustodyWithdrawAndCall } from "../evm/evmCustodyWithdrawAndCall";
+import { evmExecute } from "../evm/evmExecute";
+import { logger } from "../../logger";
+import { solanaExecute } from "../solana/solanaExecute";
+import { suiWithdrawAndCall } from "../../suiWithdrawAndCall";
 import { zetachainOnRevert } from "./zetachainOnRevert";
 
 export const zetachainWithdrawAndCall = async ({
