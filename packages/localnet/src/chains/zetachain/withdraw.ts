@@ -5,13 +5,13 @@ import { ethers, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
-import { evmCustodyWithdraw } from "../evm/evmCustodyWithdraw";
-import { evmTSSTransfer } from "../evm/evmTSSTransfer";
-import { solanaWithdraw } from "../solana/solanaWithdraw";
-import { solanaWithdrawSPL } from "../solana/solanaWithdrawSPL";
-import { suiWithdraw } from "../sui/suiWithdraw";
+import { evmCustodyWithdraw } from "../evm/custodyWithdraw";
+import { evmTSSTransfer } from "../evm/tssTransfer";
+import { solanaWithdraw } from "../solana/withdraw";
+import { solanaWithdrawSPL } from "../solana/withdrawSPL";
+import { suiWithdraw } from "../sui/withdraw";
 import * as ton from "../ton";
-import { zetachainOnRevert } from "./zetachainOnRevert";
+import { zetachainOnRevert } from "./onRevert";
 
 export const zetachainWithdraw = async ({
   contracts,

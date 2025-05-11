@@ -3,8 +3,8 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
-import { evmExecute } from "../evm/evmExecute";
-import { zetachainOnRevert } from "./zetachainOnRevert";
+import { evmExecute } from "../evm/execute";
+import { zetachainOnRevert } from "./onRevert";
 
 export const zetachainCall = async ({
   args,

@@ -16,8 +16,8 @@ import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import Gateway_IDL from "./idl/gateway.json";
 import { isSolanaAvailable } from "./isSolanaAvailable";
-import { solanaDeposit } from "./solanaDeposit";
-import { solanaDepositAndCall } from "./solanaDepositAndCall";
+import { solanaDeposit } from "./deposit";
+import { solanaDepositAndCall } from "./depositAndCall";
 
 const execAsync = util.promisify(exec);
 

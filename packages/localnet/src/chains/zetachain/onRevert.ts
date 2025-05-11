@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { zetachainOnAbort } from "./zetachainOnAbort";
+import { zetachainOnAbort } from "./onAbort";
 
 export const zetachainOnRevert = async ({
   revertOptions,

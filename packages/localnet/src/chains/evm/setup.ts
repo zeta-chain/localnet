@@ -6,9 +6,9 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import { ethers } from "ethers";
 
 import { deployOpts } from "../../deployOpts";
-import { evmCall } from "./evmCall";
-import { evmDeposit } from "./evmDeposit";
-import { evmDepositAndCall } from "./evmDepositAndCall";
+import { evmCall } from "./call";
+import { evmDeposit } from "./deposit";
+import { evmDepositAndCall } from "./depositAndCall";
 
 export const evmSetup = async ({
   deployer,

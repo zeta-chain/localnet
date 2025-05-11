@@ -2,7 +2,7 @@ import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { zetachainOnAbort } from "./zetachainOnAbort";
+import { zetachainOnAbort } from "./onAbort";
 
 export const zetachainExecute = async ({
   args,

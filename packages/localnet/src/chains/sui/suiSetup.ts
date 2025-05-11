@@ -13,8 +13,8 @@ import { cloneRepository } from "../../cloneRepository";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { isSuiAvailable } from "./isSuiAvailable";
-import { suiDeposit } from "./suiDeposit";
-import { suiDepositAndCall } from "./suiDepositAndCall";
+import { suiDeposit } from "./deposit";
+import { suiDepositAndCall } from "./depositAndCall";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";

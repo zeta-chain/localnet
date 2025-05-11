@@ -5,7 +5,7 @@ import * as fs from "fs";
 import { task } from "hardhat/config";
 import * as path from "path";
 
-import { keypairFromMnemonic } from "../../localnet/src/chains/solana/solanaSetup";
+import { keypairFromMnemonic } from "../../localnet/src/chains/solana/setup";
 
 export const getDefaultKeypair = (): Keypair | null => {
   const keyPath = path.join(

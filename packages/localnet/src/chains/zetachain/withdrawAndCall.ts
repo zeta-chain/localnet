@@ -4,11 +4,11 @@ import { ethers, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
-import { evmCustodyWithdrawAndCall } from "../evm/evmCustodyWithdrawAndCall";
-import { evmExecute } from "../evm/evmExecute";
-import { solanaExecute } from "../solana/solanaExecute";
-import { suiWithdrawAndCall } from "../sui/suiWithdrawAndCall";
-import { zetachainOnRevert } from "./zetachainOnRevert";
+import { evmCustodyWithdrawAndCall } from "../evm/custodyWithdrawAndCall";
+import { evmExecute } from "../evm/execute";
+import { solanaExecute } from "../solana/execute";
+import { suiWithdrawAndCall } from "../sui/withdrawAndCall";
+import { zetachainOnRevert } from "./onRevert";
 
 export const zetachainWithdrawAndCall = async ({
   args,

@@ -2,16 +2,15 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { zetachainDepositAndCall } from "../zetachain/zetachainDepositAndCall";
-import { zetachainSwapToCoverGas } from "../zetachain/zetachainSwapToCoverGas";
-import { suiWithdraw } from "./suiWithdraw";
+import { zetachainDeposit } from "../zetachain/deposit";
+import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
+import { suiWithdraw } from "./withdraw";
 
-export const suiDepositAndCall = async ({
+export const suiDeposit = async ({
   event,
   client,
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
   gatewayObjectId,
   keypair,
   packageId,
@@ -36,16 +35,20 @@ export const suiDepositAndCall = async ({
       : matchingCoin?.asset || ethers.ZeroAddress;
 
   try {
-    logger.info(`Gateway deposit and call event: ${JSON.stringify(event)}`, {
+    logger.info(`Gateway deposit event: ${JSON.stringify(event)}`, {
       chain: chainID,
     });
-    const message = ethers.hexlify(new Uint8Array(event.payload));
-    await zetachainDepositAndCall({
-      args: [event.sender, event.receiver, event.amount, asset, message],
+    await zetachainDeposit({
+      args: [
+        null,
+        event.receiver,
+        event.amount,
+        event.coin_type === "0x2::sui::SUI"
+          ? ethers.ZeroAddress
+          : event.coin_type,
+      ],
       chainID,
       foreignCoins,
-      fungibleModuleSigner,
-      provider,
       zetachainContracts,
     });
   } catch (e) {
@@ -55,7 +58,6 @@ export const suiDepositAndCall = async ({
       chainID,
       deployer,
       foreignCoins,
-      fungibleModuleSigner,
       gasLimit: 200000,
       provider,
       zetachainContracts,
@@ -65,6 +67,7 @@ export const suiDepositAndCall = async ({
       await suiWithdraw({
         amount: revertAmount,
         client: client,
+        coinType: event.coin_type,
         gatewayObjectId: gatewayObjectId,
         keypair: keypair,
         packageId,

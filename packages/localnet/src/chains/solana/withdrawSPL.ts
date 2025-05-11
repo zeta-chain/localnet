@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import Gateway_IDL from "./idl/gateway.json";
-import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./solanaSetup";
+import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./setup";
 
 export const solanaWithdrawSPL = async ({
   recipient,
