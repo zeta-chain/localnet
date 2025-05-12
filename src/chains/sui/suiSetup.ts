@@ -8,8 +8,8 @@ import * as fs from "fs";
 import os from "os";
 import path from "path";
 
-import { backgroundProcessIds } from "../../commands/start";
 import { cloneRepository } from "../../cloneRepository";
+import { backgroundProcessIds } from "../../commands/start";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { suiDeposit } from "./deposit";
