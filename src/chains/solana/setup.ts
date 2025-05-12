@@ -11,7 +11,7 @@ import * as os from "os";
 import path from "path";
 import util from "util";
 
-import { backgroundProcessIds } from "../../../../commands/src/start";
+import { backgroundProcessIds } from "../../commands/start";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { solanaDeposit } from "./deposit";
@@ -253,7 +253,7 @@ export const solanaMonitorTransactions = async ({
 
       if (signatures.length === 0) return;
 
-      const newSignatures = [];
+      const newSignatures: any[] = [];
 
       for (const signatureInfo of signatures) {
         if (signatureInfo.signature === lastSignature) {

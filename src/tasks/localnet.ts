@@ -5,11 +5,11 @@ import fs from "fs";
 import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
 
-import { initLocalnet } from "../../localnet/src";
-import { isSolanaAvailable } from "../../localnet/src/chains/solana/isSolanaAvailable";
-import { isSuiAvailable } from "../../localnet/src/chains/sui/isSuiAvailable";
-import * as ton from "../../localnet/src/chains/ton";
-import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
+import { initLocalnet } from "../";
+import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
+import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
+import * as ton from "../chains/ton";
+import { isDockerAvailable } from "../isDockerAvailable";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 

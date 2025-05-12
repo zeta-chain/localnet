@@ -1,7 +1,7 @@
 import ansis from "ansis";
 import winston from "winston";
 
-import { loggerLevel } from "../../commands/src/start";
+import { loggerLevel } from "./commands/start";
 import { NetworkID } from "./constants";
 
 export const loggerLevels = [

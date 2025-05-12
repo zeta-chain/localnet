@@ -4,34 +4,34 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cpx 'packages/localnet/src/chains/solana/**/*' dist/localnet/src/chains/solana/ && cpx 'packages/localnet/src/chains/sui/token/token.json' dist/localnet/src/chains/sui/token",
+    "build": "del-cli dist && tsc && cpx 'src/chains/solana/deploy/**/*' dist/chains/solana/deploy/ && cpx 'src/chains/solana/idl/**/*' dist/chains/solana/idl/ && cpx 'src/chains/sui/token/token.json' dist/chains/sui/token",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts .",
-    "localnet": "yarn build && node dist/commands/src/program.js"
+    "localnet": "yarn build && node dist/commands/program.js"
   },
   "files": [
     "dist"
   ],
   "exports": {
     "./commands": {
-      "import": "./dist/commands/src/index.js",
-      "require": "./dist/commands/src/index.js",
-      "types": "./dist/commands/src/index.d.ts"
+      "import": "./dist/commands/index.js",
+      "require": "./dist/commands/index.js",
+      "types": "./dist/commands/index.d.ts"
     },
     "./tasks": {
-      "import": "./dist/tasks/src/index.js",
-      "require": "./dist/tasks/src/index.js",
-      "types": "./dist/tasks/src/index.d.ts"
+      "import": "./dist/tasks/index.js",
+      "require": "./dist/tasks/index.js",
+      "types": "./dist/tasks/index.d.ts"
     },
     "./localnet": {
-      "import": "./dist/localnet/src/index.js",
-      "require": "./dist/localnet/src/index.js",
-      "types": "./dist/localnet/src/index.d.ts"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
-    "./solana/idl/gateway.json": "./dist/localnet/src/chains/solana/idl/gateway.json",
-    "./solana/deploy/gateway.so": "./dist/localnet/src/chains/solana/deploy/gateway.so",
-    "./solana/deploy/gateway-keypair.json": "./dist/localnet/src/chains/solana/deploy/gateway-keypair.json",
-    "./sui/token/token.json": "./dist/localnet/src/chains/sui/token/token.json"
+    "./solana/idl/gateway.json": "./dist/chains/solana/idl/gateway.json",
+    "./solana/deploy/gateway.so": "./dist/chains/solana/deploy/gateway.so",
+    "./solana/deploy/gateway-keypair.json": "./dist/chains/solana/deploy/gateway-keypair.json",
+    "./sui/token/token.json": "./dist/chains/sui/token/token.json"
   },
   "keywords": [],
   "author": "ZetaChain",

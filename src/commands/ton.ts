@@ -5,12 +5,8 @@ import { Command } from "commander";
 import { ethers } from "ethers";
 import pc from "picocolors";
 
-import {
-  client,
-  deployerFromFaucetURL,
-  ENDPOINT_FAUCET,
-} from "../../localnet/src/chains/ton";
-import { retry, tonFormatCoin } from "../../localnet/src/utils";
+import { client, deployerFromFaucetURL, ENDPOINT_FAUCET } from "../chains/ton";
+import { retry, tonFormatCoin } from "../utils";
 
 const balanceCommand = new Command("balance")
   .description("Show balance by address")

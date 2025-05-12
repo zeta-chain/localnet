@@ -9,14 +9,27 @@
     "noImplicitAny": true,
     "outDir": "./dist",
     "paths": {
-      "@typechain-types": ["typechain-types"]
+      "@typechain-types": [
+        "typechain-types"
+      ]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": false,
     "strict": true,
     "target": "es2020",
-    "typeRoots": ["@types", "./node_modules/@types"]
+    "typeRoots": [
+      "@types",
+      "./node_modules/@types"
+    ]
   },
-  "include": ["packages/localnet", "packages/tasks", "packages/commands", "packages/types"]
+  "include": [
+    "src/chains",
+    "src/types",
+    "src/tasks",
+    "src/commands",
+    "src/docker",
+    "src/types",
+    "src/utils",
+  ]
 }

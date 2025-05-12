@@ -1,6 +1,6 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
-import { InitLocalnetAddress } from "../../types/zodSchemas";
+import { InitLocalnetAddress } from "./types/zodSchemas";
 import { evmSetup } from "./chains/evm/setup";
 import { solanaSetup } from "./chains/solana/setup";
 import { suiSetup } from "./chains/sui/suiSetup";

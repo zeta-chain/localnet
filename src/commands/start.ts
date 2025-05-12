@@ -1,6 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
-import { ChildProcess, exec, execSync } from "child_process";
+import { ChildProcess, execSync } from "child_process";
 import { spawn } from "child_process";
 import { Command, Option } from "commander";
 import Docker from "dockerode";
@@ -10,19 +10,14 @@ import path from "path";
 import readline from "readline/promises";
 import waitOn from "wait-on";
 
-import { initLocalnet } from "../../localnet/src";
-import { isSolanaAvailable } from "../../localnet/src/chains/solana/isSolanaAvailable";
-import { isSuiAvailable } from "../../localnet/src/chains/sui/isSuiAvailable";
-import * as ton from "../../localnet/src/chains/ton";
-import { getSocketPath } from "../../localnet/src/docker";
-import { isDockerAvailable } from "../../localnet/src/isDockerAvailable";
-import {
-  initLogger,
-  logger,
-  LoggerLevel,
-  loggerLevels,
-} from "../../localnet/src/logger";
-import { initLocalnetAddressesSchema } from "../../types/zodSchemas";
+import { initLocalnet } from "../";
+import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
+import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
+import * as ton from "../chains/ton";
+import { getSocketPath } from "../docker";
+import { isDockerAvailable } from "../isDockerAvailable";
+import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
+import { initLocalnetAddressesSchema } from "../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
