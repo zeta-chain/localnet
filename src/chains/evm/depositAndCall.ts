@@ -22,7 +22,7 @@ export const evmDepositAndCall = async ({
 }: {
   event: DepositedAndCalledEvent.OutputTuple;
   exitOnError: boolean;
-  chainID: typeof NetworkID;
+  chainID: string;
   foreignCoins: any[];
   deployer: ethers.Signer;
   provider: ethers.JsonRpcProvider;

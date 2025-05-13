@@ -4,6 +4,7 @@ import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/Ga
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers } from "ethers";
+import { NetworkID } from "../../constants";
 
 import { deployOpts } from "../../deployOpts";
 import { evmCall } from "./call";
@@ -23,7 +24,15 @@ export const evmSetup = async ({
   exitOnError,
   foreignCoins,
   provider,
-}: any) => {
+}: {
+  deployer: ethers.Signer;
+  tss: ethers.Signer;
+  chainID: string;
+  zetachainContracts: any;
+  exitOnError: boolean;
+  foreignCoins: any[];
+  provider: ethers.JsonRpcProvider;
+}) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,

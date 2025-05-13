@@ -29,7 +29,7 @@ export const evmDeposit = async ({
   custody: ethers.Contract;
   tss: ethers.Signer;
   zetachainContracts: any;
-  chainID: typeof NetworkID;
+  chainID: string;
   exitOnError: boolean;
 }) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });

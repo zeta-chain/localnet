@@ -16,7 +16,7 @@ export const evmCall = async ({
   exitOnError = false,
 }: {
   event: CalledEvent.OutputTuple;
-  chainID: typeof NetworkID;
+  chainID: string;
   zetachainContracts: any;
   provider: ethers.JsonRpcProvider;
   deployer: ethers.Signer;
