@@ -136,7 +136,7 @@ export const initLocalnet = async ({
   zetachainContracts.gatewayZEVM.on(
     "Withdrawn",
     async (event: WithdrawnEvent.OutputTuple) =>
-      zetachainWithdraw({ args: event, contracts, exitOnError })
+      zetachainWithdraw({ event, contracts, exitOnError })
   );
 
   zetachainContracts.gatewayZEVM.on(

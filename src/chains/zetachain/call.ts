@@ -1,3 +1,4 @@
+import { CalledEvent } from "@zetachain/protocol-contracts/types/GatewayZEVM";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -11,7 +12,7 @@ export const zetachainCall = async ({
   contracts,
   exitOnError = false,
 }: {
-  args: any;
+  args: CalledEvent.OutputTuple;
   contracts: any;
   exitOnError: boolean;
 }) => {

@@ -9,12 +9,17 @@ import { evmExecute } from "../evm/execute";
 import { solanaExecute } from "../solana/execute";
 import { suiWithdrawAndCall } from "../sui/withdrawAndCall";
 import { zetachainOnRevert } from "./onRevert";
+import { WithdrawnAndCalledEvent } from "@zetachain/protocol-contracts/types/GatewayZEVM";
 
 export const zetachainWithdrawAndCall = async ({
   args,
   contracts,
   exitOnError = false,
-}: any) => {
+}: {
+  args: WithdrawnAndCalledEvent.OutputTuple;
+  contracts: any;
+  exitOnError: boolean;
+}) => {
   const {
     foreignCoins,
     deployer,
@@ -60,10 +65,10 @@ export const zetachainWithdrawAndCall = async ({
         await solanaExecute({
           amount,
           decimals: 9,
-          message,
+          message: Buffer.from(message),
           mint: asset,
           recipient: ethers.toUtf8String(receiver),
-          sender,
+          sender: Buffer.from(sender),
         });
         break;
       }
