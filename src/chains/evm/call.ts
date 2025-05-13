@@ -4,6 +4,7 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { zetachainExecute } from "../zetachain/execute";
 import { zetachainOnAbort } from "../zetachain/onAbort";
+import { CalledEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 
 export const evmCall = async ({
   args,
@@ -13,7 +14,15 @@ export const evmCall = async ({
   deployer,
   foreignCoins,
   exitOnError = false,
-}: any) => {
+}: {
+  args: CalledEvent.OutputTuple;
+  chainID: typeof NetworkID;
+  zetachainContracts: any;
+  provider: ethers.JsonRpcProvider;
+  deployer: ethers.Signer;
+  foreignCoins: any[];
+  exitOnError: boolean;
+}) => {
   logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   const sender = args[0];
   try {
@@ -34,11 +43,8 @@ export const evmCall = async ({
       chain: NetworkID.ZetaChain,
     });
     // No asset calls don't support reverts, so aborting
-    const revertOptions = args[5];
-    const abortAddress = revertOptions[2];
-    const revertMessage = revertOptions[3];
     return await zetachainOnAbort({
-      abortAddress: abortAddress,
+      abortAddress: null,
       amount: 0,
       asset: ethers.ZeroAddress,
       chainID,
@@ -46,7 +52,7 @@ export const evmCall = async ({
       gatewayZEVM: zetachainContracts.gatewayZEVM,
       outgoing: false,
       provider,
-      revertMessage: revertMessage,
+      revertMessage: null,
       sender,
     });
   }

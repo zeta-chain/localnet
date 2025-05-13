@@ -7,6 +7,7 @@ import { logger } from "../../logger";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { evmOnRevert } from "./onRevert";
+import { DepositedEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 
 export const evmDeposit = async ({
   args,
@@ -19,7 +20,18 @@ export const evmDeposit = async ({
   zetachainContracts,
   chainID,
   exitOnError = false,
-}: any) => {
+}: {
+  args: DepositedEvent.OutputTuple;
+  deployer: ethers.Signer;
+  foreignCoins: any[];
+  gatewayEVM: ethers.Contract;
+  provider: ethers.JsonRpcProvider;
+  custody: ethers.Contract;
+  tss: ethers.Signer;
+  zetachainContracts: any;
+  chainID: typeof NetworkID;
+  exitOnError: boolean;
+}) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;

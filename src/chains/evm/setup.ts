@@ -9,6 +9,11 @@ import { deployOpts } from "../../deployOpts";
 import { evmCall } from "./call";
 import { evmDeposit } from "./deposit";
 import { evmDepositAndCall } from "./depositAndCall";
+import {
+  CalledEvent,
+  DepositedAndCalledEvent,
+  DepositedEvent,
+} from "@zetachain/protocol-contracts/types/GatewayEVM";
 
 export const evmSetup = async ({
   deployer,
@@ -118,9 +123,9 @@ export const evmSetup = async ({
       .setConnector(zetaConnectorImpl.target, deployOpts),
   ]);
 
-  gatewayEVM.on("Called", async (...args: Array<any>) => {
+  gatewayEVM.on("Called", async (event: CalledEvent.OutputTuple) => {
     evmCall({
-      args,
+      args: event,
       chainID,
       deployer,
       exitOnError,
@@ -130,9 +135,9 @@ export const evmSetup = async ({
     });
   });
 
-  gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+  gatewayEVM.on("Deposited", async (event: DepositedEvent.OutputTuple) => {
     evmDeposit({
-      args,
+      args: event,
       chainID,
       custody,
       deployer,
@@ -145,20 +150,23 @@ export const evmSetup = async ({
     });
   });
 
-  gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
-    evmDepositAndCall({
-      args,
-      chainID,
-      custody,
-      deployer,
-      exitOnError: false,
-      foreignCoins,
-      gatewayEVM,
-      provider,
-      tss,
-      zetachainContracts,
-    });
-  });
+  gatewayEVM.on(
+    "DepositedAndCalled",
+    async (event: DepositedAndCalledEvent.OutputTuple) => {
+      evmDepositAndCall({
+        args: event,
+        chainID,
+        custody,
+        deployer,
+        exitOnError: false,
+        foreignCoins,
+        gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    }
+  );
 
   return {
     custody,
