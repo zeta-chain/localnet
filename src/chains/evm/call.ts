@@ -7,7 +7,7 @@ import { zetachainOnAbort } from "../zetachain/onAbort";
 import { CalledEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 
 export const evmCall = async ({
-  args,
+  event,
   chainID,
   zetachainContracts,
   provider,
@@ -15,7 +15,7 @@ export const evmCall = async ({
   foreignCoins,
   exitOnError = false,
 }: {
-  args: CalledEvent.OutputTuple;
+  event: CalledEvent.OutputTuple;
   chainID: typeof NetworkID;
   zetachainContracts: any;
   provider: ethers.JsonRpcProvider;
@@ -24,10 +24,10 @@ export const evmCall = async ({
   exitOnError: boolean;
 }) => {
   logger.info("Gateway: 'Called' event emitted", { chain: chainID });
-  const sender = args[0];
+  const sender = event[0];
   try {
     zetachainExecute({
-      args,
+      args: event,
       chainID,
       deployer,
       exitOnError,

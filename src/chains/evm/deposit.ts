@@ -10,7 +10,7 @@ import { evmOnRevert } from "./onRevert";
 import { DepositedEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 
 export const evmDeposit = async ({
-  args,
+  event,
   deployer,
   foreignCoins,
   gatewayEVM,
@@ -21,7 +21,7 @@ export const evmDeposit = async ({
   chainID,
   exitOnError = false,
 }: {
-  args: DepositedEvent.OutputTuple;
+  event: DepositedEvent.OutputTuple;
   deployer: ethers.Signer;
   foreignCoins: any[];
   gatewayEVM: ethers.Contract;
@@ -33,7 +33,7 @@ export const evmDeposit = async ({
   exitOnError: boolean;
 }) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
-  const [sender, , amount, asset, , revertOptions] = args;
+  const [sender, , amount, asset, , revertOptions] = event;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin: any) => coin.coin_type === "Gas");
@@ -51,7 +51,7 @@ export const evmDeposit = async ({
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
     await zetachainDeposit({
-      args,
+      args: event,
       chainID,
       foreignCoins,
       zetachainContracts,

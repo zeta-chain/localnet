@@ -125,7 +125,7 @@ export const evmSetup = async ({
 
   gatewayEVM.on("Called", async (event: CalledEvent.OutputTuple) => {
     evmCall({
-      args: event,
+      event,
       chainID,
       deployer,
       exitOnError,
@@ -137,7 +137,7 @@ export const evmSetup = async ({
 
   gatewayEVM.on("Deposited", async (event: DepositedEvent.OutputTuple) => {
     evmDeposit({
-      args: event,
+      event,
       chainID,
       custody,
       deployer,
@@ -154,7 +154,7 @@ export const evmSetup = async ({
     "DepositedAndCalled",
     async (event: DepositedAndCalledEvent.OutputTuple) => {
       evmDepositAndCall({
-        args: event,
+        event,
         chainID,
         custody,
         deployer,
