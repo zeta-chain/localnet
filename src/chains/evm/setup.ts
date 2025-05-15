@@ -10,7 +10,6 @@ import {
 } from "@zetachain/protocol-contracts/types/GatewayEVM";
 import { ethers } from "ethers";
 
-import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { evmCall } from "./call";
 import { evmDeposit } from "./deposit";
