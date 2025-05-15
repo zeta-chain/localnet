@@ -1,5 +1,6 @@
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { DepositedEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -9,7 +10,7 @@ import { zetachainOnAbort } from "../zetachain/onAbort";
 import { evmOnRevert } from "./onRevert";
 
 export const evmDeposit = async ({
-  args,
+  event,
   deployer,
   foreignCoins,
   gatewayEVM,
@@ -19,9 +20,20 @@ export const evmDeposit = async ({
   zetachainContracts,
   chainID,
   exitOnError = false,
-}: any) => {
+}: {
+  chainID: string;
+  custody: ethers.Contract;
+  deployer: ethers.Signer;
+  event: DepositedEvent.OutputTuple;
+  exitOnError: boolean;
+  foreignCoins: any[];
+  gatewayEVM: ethers.Contract;
+  provider: ethers.JsonRpcProvider;
+  tss: ethers.Signer;
+  zetachainContracts: any;
+}) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
-  const [sender, , amount, asset, , revertOptions] = args;
+  const [sender, , amount, asset, , revertOptions] = event;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin: any) => coin.coin_type === "Gas");
@@ -39,7 +51,7 @@ export const evmDeposit = async ({
   const zrc20 = foreignCoin.zrc20_contract_address;
   try {
     await zetachainDeposit({
-      args,
+      args: event,
       chainID,
       foreignCoins,
       zetachainContracts,

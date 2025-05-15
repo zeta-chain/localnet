@@ -3,6 +3,11 @@ import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.so
 import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
+import {
+  CalledEvent,
+  DepositedAndCalledEvent,
+  DepositedEvent,
+} from "@zetachain/protocol-contracts/types/GatewayEVM";
 import { ethers } from "ethers";
 
 import { deployOpts } from "../../deployOpts";
@@ -18,7 +23,15 @@ export const evmSetup = async ({
   exitOnError,
   foreignCoins,
   provider,
-}: any) => {
+}: {
+  chainID: string;
+  deployer: ethers.Signer;
+  exitOnError: boolean;
+  foreignCoins: any[];
+  provider: ethers.JsonRpcProvider;
+  tss: ethers.Signer;
+  zetachainContracts: any;
+}) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -118,11 +131,11 @@ export const evmSetup = async ({
       .setConnector(zetaConnectorImpl.target, deployOpts),
   ]);
 
-  gatewayEVM.on("Called", async (...args: Array<any>) => {
+  gatewayEVM.on("Called", async (event: CalledEvent.OutputTuple) => {
     evmCall({
-      args,
       chainID,
       deployer,
+      event,
       exitOnError,
       foreignCoins,
       provider,
@@ -130,12 +143,12 @@ export const evmSetup = async ({
     });
   });
 
-  gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+  gatewayEVM.on("Deposited", async (event: DepositedEvent.OutputTuple) => {
     evmDeposit({
-      args,
       chainID,
       custody,
       deployer,
+      event,
       exitOnError,
       foreignCoins,
       gatewayEVM,
@@ -145,20 +158,23 @@ export const evmSetup = async ({
     });
   });
 
-  gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
-    evmDepositAndCall({
-      args,
-      chainID,
-      custody,
-      deployer,
-      exitOnError: false,
-      foreignCoins,
-      gatewayEVM,
-      provider,
-      tss,
-      zetachainContracts,
-    });
-  });
+  gatewayEVM.on(
+    "DepositedAndCalled",
+    async (event: DepositedAndCalledEvent.OutputTuple) => {
+      evmDepositAndCall({
+        chainID,
+        custody,
+        deployer,
+        event,
+        exitOnError: false,
+        foreignCoins,
+        gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    }
+  );
 
   return {
     custody,

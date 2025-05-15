@@ -1,3 +1,8 @@
+import {
+  CalledEvent,
+  WithdrawnAndCalledEvent,
+  WithdrawnEvent,
+} from "@zetachain/protocol-contracts/types/GatewayZEVM";
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { evmSetup } from "./chains/evm/setup";
@@ -122,16 +127,22 @@ export const initLocalnet = async ({
     createToken(contracts, "TON", true, NetworkID.TON, 9),
   ]);
 
-  zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
-    zetachainCall({ args, contracts, exitOnError })
+  zetachainContracts.gatewayZEVM.on(
+    "Called",
+    async (event: CalledEvent.OutputTuple) =>
+      zetachainCall({ args: event, contracts, exitOnError })
   );
 
-  zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
-    zetachainWithdraw({ args, contracts, exitOnError })
+  zetachainContracts.gatewayZEVM.on(
+    "Withdrawn",
+    async (event: WithdrawnEvent.OutputTuple) =>
+      zetachainWithdraw({ contracts, event, exitOnError })
   );
 
-  zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
-    zetachainWithdrawAndCall({ args, contracts, exitOnError })
+  zetachainContracts.gatewayZEVM.on(
+    "WithdrawnAndCalled",
+    async (event: WithdrawnAndCalledEvent.OutputTuple) =>
+      zetachainWithdrawAndCall({ args: event, contracts, exitOnError })
   );
 
   let res = [

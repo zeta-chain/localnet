@@ -1,3 +1,4 @@
+import { DepositedAndCalledEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -8,7 +9,7 @@ import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import { evmOnRevert } from "./onRevert";
 
 export const evmDepositAndCall = async ({
-  args,
+  event,
   exitOnError = false,
   chainID,
   foreignCoins,
@@ -18,9 +19,20 @@ export const evmDepositAndCall = async ({
   gatewayEVM,
   tss,
   custody,
-}: any) => {
+}: {
+  chainID: string;
+  custody: ethers.Contract;
+  deployer: ethers.Signer;
+  event: DepositedAndCalledEvent.OutputTuple;
+  exitOnError: boolean;
+  foreignCoins: any[];
+  gatewayEVM: ethers.Contract;
+  provider: ethers.JsonRpcProvider;
+  tss: ethers.Signer;
+  zetachainContracts: any;
+}) => {
   logger.info("Gateway: DepositedAndCalled event emitted", { chain: chainID });
-  const [sender, , amount, asset, , revertOptions] = args;
+  const [sender, , amount, asset, , revertOptions] = event;
 
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
@@ -41,7 +53,7 @@ export const evmDepositAndCall = async ({
 
   try {
     await zetachainDepositAndCall({
-      args,
+      args: event,
       chainID,
       foreignCoins,
       provider,

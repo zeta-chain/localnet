@@ -1,4 +1,5 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { WithdrawnAndCalledEvent } from "@zetachain/protocol-contracts/types/GatewayZEVM";
 import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -14,7 +15,11 @@ export const zetachainWithdrawAndCall = async ({
   args,
   contracts,
   exitOnError = false,
-}: any) => {
+}: {
+  args: WithdrawnAndCalledEvent.OutputTuple;
+  contracts: any;
+  exitOnError: boolean;
+}) => {
   const {
     foreignCoins,
     deployer,
@@ -60,10 +65,10 @@ export const zetachainWithdrawAndCall = async ({
         await solanaExecute({
           amount,
           decimals: 9,
-          message,
+          message: Buffer.from(message),
           mint: asset,
           recipient: ethers.toUtf8String(receiver),
-          sender,
+          sender: Buffer.from(sender),
         });
         break;
       }

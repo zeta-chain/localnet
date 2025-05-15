@@ -1,5 +1,6 @@
 import * as tonTypes from "@ton/ton";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { WithdrawnEvent } from "@zetachain/protocol-contracts/types/GatewayZEVM";
 import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -15,9 +16,13 @@ import { zetachainOnRevert } from "./onRevert";
 
 export const zetachainWithdraw = async ({
   contracts,
-  args,
+  event,
   exitOnError = false,
-}: any) => {
+}: {
+  contracts: any;
+  event: WithdrawnEvent.OutputTuple;
+  exitOnError: boolean;
+}) => {
   const {
     foreignCoins,
     deployer,
@@ -28,7 +33,7 @@ export const zetachainWithdraw = async ({
   logger.info("Gateway: 'Withdrawn' event emitted", {
     chain: NetworkID.ZetaChain,
   });
-  const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
+  const [sender, , receiver, zrc20, amount, , , , , revertOptions] = event;
   const chainID = foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
@@ -84,7 +89,7 @@ export const zetachainWithdraw = async ({
 
     // EVM chain
     if (isGasToken) {
-      return await evmTSSTransfer({ args, foreignCoins, tss });
+      return await evmTSSTransfer({ args: event, foreignCoins, tss });
     }
 
     if (isERC20orZETA) {
@@ -94,7 +99,7 @@ export const zetachainWithdraw = async ({
           : contracts.bnbContracts;
 
       return await evmCustodyWithdraw({
-        args,
+        args: event,
         evmContracts,
         foreignCoins,
         tss,
