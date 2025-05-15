@@ -1,5 +1,6 @@
 import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router02.json";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { DepositedEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -7,7 +8,6 @@ import { logger } from "../../logger";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { evmOnRevert } from "./onRevert";
-import { DepositedEvent } from "@zetachain/protocol-contracts/types/GatewayEVM";
 
 export const evmDeposit = async ({
   event,
@@ -21,16 +21,16 @@ export const evmDeposit = async ({
   chainID,
   exitOnError = false,
 }: {
-  event: DepositedEvent.OutputTuple;
+  chainID: string;
+  custody: ethers.Contract;
   deployer: ethers.Signer;
+  event: DepositedEvent.OutputTuple;
+  exitOnError: boolean;
   foreignCoins: any[];
   gatewayEVM: ethers.Contract;
   provider: ethers.JsonRpcProvider;
-  custody: ethers.Contract;
   tss: ethers.Signer;
   zetachainContracts: any;
-  chainID: string;
-  exitOnError: boolean;
 }) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
   const [sender, , amount, asset, , revertOptions] = event;

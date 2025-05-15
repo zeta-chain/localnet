@@ -1,4 +1,5 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
+import { WithdrawnAndCalledEvent } from "@zetachain/protocol-contracts/types/GatewayZEVM";
 import { ethers, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -9,7 +10,6 @@ import { evmExecute } from "../evm/execute";
 import { solanaExecute } from "../solana/execute";
 import { suiWithdrawAndCall } from "../sui/withdrawAndCall";
 import { zetachainOnRevert } from "./onRevert";
-import { WithdrawnAndCalledEvent } from "@zetachain/protocol-contracts/types/GatewayZEVM";
 
 export const zetachainWithdrawAndCall = async ({
   args,

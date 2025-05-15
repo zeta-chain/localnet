@@ -1,3 +1,8 @@
+import {
+  CalledEvent,
+  WithdrawnAndCalledEvent,
+  WithdrawnEvent,
+} from "@zetachain/protocol-contracts/types/GatewayZEVM";
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { evmSetup } from "./chains/evm/setup";
@@ -11,11 +16,6 @@ import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
-import {
-  CalledEvent,
-  WithdrawnAndCalledEvent,
-  WithdrawnEvent,
-} from "@zetachain/protocol-contracts/types/GatewayZEVM";
 
 const foreignCoins: any[] = [];
 
@@ -136,7 +136,7 @@ export const initLocalnet = async ({
   zetachainContracts.gatewayZEVM.on(
     "Withdrawn",
     async (event: WithdrawnEvent.OutputTuple) =>
-      zetachainWithdraw({ event, contracts, exitOnError })
+      zetachainWithdraw({ contracts, event, exitOnError })
   );
 
   zetachainContracts.gatewayZEVM.on(
