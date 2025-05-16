@@ -81,7 +81,12 @@ export const evmSetup = async ({
   const registryInitFragment = registryInterface.getFunction("initialize");
   const registryInitData = registryInterface.encodeFunctionData(
     registryInitFragment as ethers.FunctionFragment,
-    [deployerAddress, gatewayEVM.target]
+    [
+      deployerAddress,
+      deployerAddress,
+      gatewayEVM.target,
+      zetachainContracts.coreRegistry.target,
+    ]
   );
 
   const proxyRegistry = (await proxyFactory.deploy(

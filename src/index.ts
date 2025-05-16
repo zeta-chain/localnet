@@ -5,6 +5,7 @@ import { solanaSetup } from "./chains/solana/setup";
 import { suiSetup } from "./chains/sui/suiSetup";
 import * as ton from "./chains/ton";
 import { zetachainCall } from "./chains/zetachain/call";
+import { initRegistry } from "./chains/zetachain/initRegistry";
 import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
@@ -200,6 +201,9 @@ export const initLocalnet = async ({
       };
     }),
   ];
+
+  // Init registry
+  await initRegistry({ contracts, res });
 
   if (suiContracts) {
     res = [...res, ...suiContracts.addresses];
