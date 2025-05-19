@@ -52,7 +52,7 @@ export const zetachainDepositAndCall = async ({
   const context = {
     chainID,
     sender: sender,
-    senderEVM: nonEVM.includes(chainID) ? sender : ethers.ZeroAddress,
+    senderEVM: nonEVM.includes(chainID) ? ethers.ZeroAddress : sender,
   };
 
   logger.info(

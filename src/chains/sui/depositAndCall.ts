@@ -49,6 +49,9 @@ export const suiDepositAndCall = async ({
       zetachainContracts,
     });
   } catch (e) {
+    logger.error(`depositAndCall failed: ${e}`, {
+      chain: NetworkID.ZetaChain,
+    });
     const { revertGasFee } = await zetachainSwapToCoverGas({
       amount: event.amount,
       asset,
