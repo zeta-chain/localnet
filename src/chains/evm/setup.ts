@@ -1,6 +1,7 @@
 import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
+import * as Registry from "@zetachain/protocol-contracts/abi/Registry.sol/Registry.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers } from "ethers";
@@ -25,42 +26,79 @@ export const evmSetup = async ({
     deployer
   );
 
+  const proxyFactory = new ethers.ContractFactory(
+    ERC1967Proxy.abi,
+    ERC1967Proxy.bytecode,
+    deployer
+  );
+
   const gatewayEVMFactory = new ethers.ContractFactory(
     GatewayEVM.abi,
     GatewayEVM.bytecode,
     deployer
   );
 
-  const [tssAddress, deployerAddress, testEVMZeta, gatewayEVMImpl] =
-    await Promise.all([
-      tss.getAddress(),
-      deployer.getAddress(),
-      testERC20Factory.deploy("zeta", "ZETA", deployOpts),
-      gatewayEVMFactory.deploy(deployOpts),
-    ]);
+  const registryFactory = new ethers.ContractFactory(
+    Registry.abi,
+    Registry.bytecode,
+    deployer
+  );
+
+  const [
+    tssAddress,
+    deployerAddress,
+    testEVMZeta,
+    gatewayEVMImpl,
+    registryImpl,
+  ] = await Promise.all([
+    tss.getAddress(),
+    deployer.getAddress(),
+    testERC20Factory.deploy("zeta", "ZETA", deployOpts),
+    gatewayEVMFactory.deploy(deployOpts),
+    registryFactory.deploy(deployOpts),
+  ]);
 
   const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
   const gatewayEVMInitFragment = gatewayEVMInterface.getFunction("initialize");
-  const gatewayEVMInitdata = gatewayEVMInterface.encodeFunctionData(
+  const gatewayEVMInitData = gatewayEVMInterface.encodeFunctionData(
     gatewayEVMInitFragment as ethers.FunctionFragment,
     [tssAddress, testEVMZeta.target, deployerAddress]
   );
 
-  const proxyEVMFactory = new ethers.ContractFactory(
-    ERC1967Proxy.abi,
-    ERC1967Proxy.bytecode,
-    deployer
-  );
-
-  const proxyEVM = (await proxyEVMFactory.deploy(
+  const proxyEVM = (await proxyFactory.deploy(
     gatewayEVMImpl.target,
-    gatewayEVMInitdata,
+    gatewayEVMInitData,
     deployOpts
   )) as any;
 
   const gatewayEVM = new ethers.Contract(
     proxyEVM.target,
     GatewayEVM.abi,
+    deployer
+  );
+
+  const registryInterface = new ethers.Interface(Registry.abi);
+  const registryInitFragment = registryInterface.getFunction("initialize");
+  const registryInitData = registryInterface.encodeFunctionData(
+    registryInitFragment as ethers.FunctionFragment,
+    [
+      deployerAddress,
+      deployerAddress,
+      deployerAddress,
+      gatewayEVM.target,
+      zetachainContracts.coreRegistry.target,
+    ]
+  );
+
+  const proxyRegistry = (await proxyFactory.deploy(
+    registryImpl.target,
+    registryInitData,
+    deployOpts
+  )) as any;
+
+  const registry = new ethers.Contract(
+    proxyRegistry.target,
+    Registry.abi,
     deployer
   );
 
@@ -163,6 +201,7 @@ export const evmSetup = async ({
   return {
     custody,
     gatewayEVM,
+    registry,
     testEVMZeta,
     zetaConnector: zetaConnectorProxy,
   };
