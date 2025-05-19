@@ -1,5 +1,6 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
+import { int } from "hardhat/internal/core/params/argumentTypes";
 
 import { NetworkID } from "../../constants";
 
@@ -14,8 +15,15 @@ export const initRegistry = async ({ contracts, res }: any) => {
     zetachain: toNumber(NetworkID.ZetaChain),
   };
 
-  const { zetachainContracts, foreignCoins, deployer } = contracts;
+  const {
+    zetachainContracts,
+    ethereumContracts,
+    bnbContracts,
+    foreignCoins,
+    deployer,
+  } = contracts;
   const coreRegistry = zetachainContracts.coreRegistry;
+
   const addresses = res.filter(
     (item: any) => typeof item === "object" && item.address
   );
@@ -42,6 +50,17 @@ export const initRegistry = async ({ contracts, res }: any) => {
   for (const chain of chains) {
     if (chain === "zetachain") continue;
     try {
+      const targetRegistry =
+        chain === "ethereum"
+          ? ethereumContracts.registry
+          : chain === "bnb"
+          ? bnbContracts.registry
+          : null;
+
+      if (targetRegistry) {
+        await bootstrapChainData(coreRegistry, targetRegistry);
+      }
+
       await registerChain(
         chain,
         addresses,
@@ -62,6 +81,26 @@ export const initRegistry = async ({ contracts, res }: any) => {
     }
   }
 };
+
+async function bootstrapChainData(coreRegistry: any, targetRegistry: any) {
+  try {
+    const allChainsResult = await coreRegistry.getAllChains();
+    const allChains = allChainsResult.map((chain: any) => ({
+      active: Boolean(chain.active),
+      chainId: BigInt(chain.chainId),
+      gasZRC20: chain.gasZRC20,
+      registry: chain.registry,
+    }));
+
+    const tx = await targetRegistry.bootstrapChains(allChains, [], {
+      gasLimit: 1000000,
+    });
+
+    await tx.wait();
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 async function registerChain(
   chainName: any,
