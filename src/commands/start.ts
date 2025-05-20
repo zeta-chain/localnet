@@ -250,7 +250,7 @@ const startLocalnet = async (options: {
     process.exit(0);
   }
 
-  if (!enabledChains.includes("ton")) {
+  if (enabledChains.includes("ton")) {
     await waitForTonContainerToStop();
   }
 };
