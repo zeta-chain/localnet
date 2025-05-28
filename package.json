@@ -28,8 +28,6 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./solana/idl/gateway.json": "./dist/chains/solana/idl/gateway.json",
-    "./solana/deploy/gateway.so": "./dist/chains/solana/deploy/gateway.so",
     "./solana/deploy/gateway-keypair.json": "./dist/chains/solana/deploy/gateway-keypair.json",
     "./sui/token/token.json": "./dist/chains/sui/token/token.json"
   },
@@ -76,6 +74,7 @@
     "@uniswap/v3-periphery": "^1.4.4",
     "@uniswap/v3-sdk": "^3.25.2",
     "@zetachain/protocol-contracts": "13.0.0",
+    "@zetachain/protocol-contracts-solana": "4.0.1",
     "@zetachain/protocol-contracts-ton": "1.0.0-rc3",
     "ansis": "^3.3.2",
     "bip39": "^3.1.0",
