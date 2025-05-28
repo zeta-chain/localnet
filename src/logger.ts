@@ -36,7 +36,8 @@ const chainFormat = winston.format.printf(({ level, message, chain }) => {
   const chainDetails = chains[chain as string];
   const color = chainDetails?.color || ansis.black;
   const chainName = chainDetails?.name || `Unknown Chain (${chain})`;
-  return `${color(`[${ansis.bold(chainName)}]`)} ${color(message)}`;
+  const messageColor = level === "error" ? ansis.red : color;
+  return `${color(`[${ansis.bold(chainName)}]`)} ${messageColor(message)}`;
 });
 
 export let logger: winston.Logger;
