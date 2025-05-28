@@ -7,7 +7,7 @@ import { getKeypair } from "./solanaDepositAndCall";
 
 const solanaDeposit = async (args: any) => {
   const gatewayPath = require.resolve(
-    "@zetachain/localnet/solana/idl/gateway.json"
+    "@zetachain/protocol-contracts-solana/dev/idl/gateway.json"
   );
   const Gateway_IDL = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
 
