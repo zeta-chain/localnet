@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import * as bip39 from "bip39";
 import { exec } from "child_process";
 import { ec as EC } from "elliptic";
@@ -16,7 +17,6 @@ import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
-import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 
 const execAsync = util.promisify(exec);

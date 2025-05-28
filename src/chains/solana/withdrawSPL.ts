@@ -1,12 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./setup";
 
 export const solanaWithdrawSPL = async ({
