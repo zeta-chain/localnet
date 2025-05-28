@@ -16,7 +16,7 @@ import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
-import Gateway_IDL from "./idl/gateway.json";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 
 const execAsync = util.promisify(exec);
@@ -117,7 +117,7 @@ export const solanaSetup = async ({
   );
   logger.info("Setting up Solana...", { chain: NetworkID.Solana });
   const gatewaySoPath = require.resolve(
-    "@zetachain/localnet/solana/deploy/gateway.so"
+    "@zetachain/protocol-contracts-solana/dev/lib/gateway.so"
   );
   const gatewayKeypairPath = require.resolve(
     "@zetachain/localnet/solana/deploy/gateway-keypair.json"
