@@ -16,8 +16,61 @@ import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
-import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
+import {
+  initLogger,
+  logger,
+  LoggerLevel,
+  loggerLevels,
+  logRaw,
+} from "../logger";
 import { initLocalnetAddressesSchema } from "../types/zodSchemas";
+
+// Helper function to format object data as a table string
+const formatAsTable = (data: Record<string, string>): string => {
+  const keys = Object.keys(data);
+  if (keys.length === 0) return "Empty table";
+
+  // Calculate column widths
+  const indexWidth = Math.max(...keys.map((k) => k.length), 10);
+  const valueWidth = Math.max(...Object.values(data).map((v) => v.length), 10);
+
+  // Format header with colors
+  const header =
+    ansis.cyan(
+      "┌" + "─".repeat(indexWidth + 2) + "┬" + "─".repeat(valueWidth + 2) + "┐"
+    ) +
+    "\n" +
+    ansis.cyan("│") +
+    ansis.yellow(" " + "(index)".padEnd(indexWidth) + " ") +
+    ansis.cyan("│") +
+    ansis.yellow(" " + "Values".padEnd(valueWidth) + " ") +
+    ansis.cyan("│") +
+    "\n" +
+    ansis.cyan(
+      "├" + "─".repeat(indexWidth + 2) + "┼" + "─".repeat(valueWidth + 2) + "┤"
+    );
+
+  // Format rows with colors
+  const rows = Object.entries(data)
+    .map(
+      ([key, value]) =>
+        ansis.cyan("│") +
+        ansis.green(" " + key.padEnd(indexWidth) + " ") +
+        ansis.cyan("│") +
+        ansis.white(" " + value.padEnd(valueWidth) + " ") +
+        ansis.cyan("│")
+    )
+    .join("\n");
+
+  // Format footer with colors
+  const footer =
+    "\n" +
+    ansis.cyan(
+      "└" + "─".repeat(indexWidth + 2) + "┴" + "─".repeat(valueWidth + 2) + "┘"
+    );
+
+  return header + "\n" + rows + footer;
+};
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
@@ -225,8 +278,11 @@ const startLocalnet = async (options: {
           return acc;
         }, {} as Record<string, string>);
 
-      console.log(`\n${chain.toUpperCase()}`);
-      console.table(chainContracts);
+      // Print chain name in bold and cyan color
+      logRaw(ansis.bold.cyan(`\n${chain.toUpperCase()}`));
+
+      // Print the formatted table
+      logRaw(formatAsTable(chainContracts));
     });
 
     fs.writeFileSync(
