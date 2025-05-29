@@ -187,8 +187,8 @@ export const createToken = async (
       .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
   ]);
 
-  Promise.all([
-    await uniswapV2AddLiquidity(
+  await Promise.all([
+    uniswapV2AddLiquidity(
       uniswapRouterInstance,
       uniswapFactoryInstance,
       zrc20,
@@ -198,7 +198,7 @@ export const createToken = async (
       wzetaAmount
     ),
 
-    await uniswapV3AddLiquidity(
+    uniswapV3AddLiquidity(
       zrc20,
       wzeta,
       deployer,
