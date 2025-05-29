@@ -7,7 +7,6 @@ import Docker from "dockerode";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import readline from "readline/promises";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../";
@@ -151,23 +150,8 @@ const startLocalnet = async (options: {
     fs.mkdirSync(LOCALNET_DIR, { recursive: true });
   }
 
-  // Set up readline interface for interactive terminal sessions to handle process termination
-  // Only create the interface if we're running in a TTY (interactive terminal)
-  // This ensures proper cleanup and return of shell control when the program runs in background
-  let rl: readline.Interface | undefined;
-  if (process.stdin.isTTY) {
-    rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    rl.on("close", async () => {
-      await cleanup();
-      process.exit(0);
-    });
-  } else {
-    process.on("SIGINT", cleanup);
-    process.on("SIGTERM", cleanup);
-  }
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 
   const enabledChains = options.chains || [];
 
