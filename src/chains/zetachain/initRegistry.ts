@@ -1,18 +1,26 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
-import { int } from "hardhat/internal/core/params/argumentTypes";
 
 import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
 
-function toNumber(chainId: number | string): number {
+const ZetaChainID = 31337;
+
+const toNumber = (chainId: number | string): number => {
   return typeof chainId === "string" ? parseInt(chainId, 10) : chainId;
-}
+};
 
-export const initRegistry = async ({ contracts, res }: any) => {
+export const initRegistry = async ({
+  contracts,
+  res,
+}: {
+  contracts: any;
+  res: any[];
+}) => {
   const chainIdMap: Record<string, number> = {
     bnb: toNumber(NetworkID.BNB),
     ethereum: toNumber(NetworkID.Ethereum),
-    zetachain: toNumber(NetworkID.ZetaChain),
+    zetachain: ZetaChainID,
   };
 
   const {
@@ -22,67 +30,94 @@ export const initRegistry = async ({ contracts, res }: any) => {
     foreignCoins,
     deployer,
   } = contracts;
-  const coreRegistry = zetachainContracts.coreRegistry;
+  const { coreRegistry } = zetachainContracts;
 
   const addresses = res.filter(
     (item: any) => typeof item === "object" && item.address
   );
   const chains = [...new Set(addresses.map((item: any) => item.chain))];
-  const zrc20Tokens = addresses.filter(
-    (item: any) => item.type && item.type.includes("ZRC-20")
-  );
   const contractsToRegister = addresses.filter(
     (item: any) =>
       !item.type.includes("ZRC-20") && item.chain && item.address && item.type
   );
 
   try {
-    await approveAllZRC20GasTokens(
+    await approveAllZRC20GasTokens({
+      chainIdMap,
       coreRegistry,
-      foreignCoins,
       deployer,
-      chainIdMap
-    );
-  } catch (error) {
-    console.error(error);
+      foreignCoins,
+    });
+  } catch (err: any) {
+    logger.error(`Error approving ZRC20 gas tokens: ${err}`, {
+      chain: NetworkID.ZetaChain,
+    });
   }
 
   for (const chain of chains) {
     if (chain === "zetachain") continue;
+
     try {
-      const targetRegistry =
-        chain === "ethereum"
-          ? ethereumContracts.registry
-          : chain === "bnb"
-          ? bnbContracts.registry
-          : null;
+      const targetRegistry = getTargetRegistry({
+        bnbContracts,
+        chain,
+        ethereumContracts,
+      });
 
       if (targetRegistry) {
-        await bootstrapChainData(coreRegistry, targetRegistry);
+        await bootstrapChainData({ coreRegistry, targetRegistry });
       }
 
-      await registerChain(
-        chain,
+      await registerChain({
         addresses,
-        foreignCoins,
+        chainIdMap,
+        chainName: chain,
         coreRegistry,
-        chainIdMap
-      );
-    } catch (error) {
-      console.error(`Error registering ${chain} chain:`, error);
+        foreignCoins,
+      });
+    } catch (err: any) {
+      logger.error(`Error registering ${chain} chain: ${err}`, {
+        chain: NetworkID.ZetaChain,
+      });
     }
   }
 
   for (const contract of contractsToRegister) {
     try {
-      await registerContract(contract, coreRegistry, chainIdMap);
-    } catch (error) {
-      console.error(error);
+      await registerContract({ chainIdMap, contract, coreRegistry });
+    } catch (err: any) {
+      logger.error(`Error registering contract ${contract.type}: ${err}`, {
+        chain: NetworkID.ZetaChain,
+      });
     }
   }
 };
 
-async function bootstrapChainData(coreRegistry: any, targetRegistry: any) {
+const getTargetRegistry = ({
+  chain,
+  ethereumContracts,
+  bnbContracts,
+}: {
+  bnbContracts: any;
+  chain: string;
+  ethereumContracts: any;
+}) => {
+  if (chain === "ethereum") {
+    return ethereumContracts.registry;
+  }
+  if (chain === "bnb") {
+    return bnbContracts.registry;
+  }
+  return null;
+};
+
+const bootstrapChainData = async ({
+  coreRegistry,
+  targetRegistry,
+}: {
+  coreRegistry: any;
+  targetRegistry: any;
+}) => {
   try {
     const allChainsResult = await coreRegistry.getAllChains();
     const allChains = allChainsResult.map((chain: any) => ({
@@ -93,31 +128,58 @@ async function bootstrapChainData(coreRegistry: any, targetRegistry: any) {
     }));
 
     const tx = await targetRegistry.bootstrapChains(allChains, [], {
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
     });
 
     await tx.wait();
-  } catch (error) {
-    console.error(error);
+    logger.info("Bootstrap chain data completed", {
+      chain: NetworkID.ZetaChain,
+    });
+  } catch (err: any) {
+    logger.error(`Error bootstrapping chain data: ${err}`, {
+      chain: NetworkID.ZetaChain,
+    });
+    throw err;
   }
-}
+};
 
-async function registerChain(
-  chainName: any,
-  addresses: any[],
-  foreignCoins: any[],
-  coreRegistry: any,
-  chainIdMap: Record<string, number>
-) {
+const registerChain = async ({
+  chainName,
+  addresses,
+  foreignCoins,
+  coreRegistry,
+  chainIdMap,
+}: {
+  addresses: any[];
+  chainIdMap: Record<string, number>;
+  chainName: string;
+  coreRegistry: any;
+  foreignCoins: any[];
+}) => {
   const chainId = chainIdMap[chainName];
   const registryAddress = addresses.find(
     (item: any) => item.chain === chainName && item.type === "registry"
   )?.address;
+
+  if (!registryAddress) {
+    logger.error(`Registry address not found for chain: ${chainName}`, {
+      chain: NetworkID.ZetaChain,
+    });
+    return;
+  }
+
   const registryBytes = ethers.getBytes(registryAddress);
   const gasZRC20 = foreignCoins.find(
     (coin: any) =>
       toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
   )?.zrc20_contract_address;
+
+  if (!gasZRC20) {
+    logger.error(`Gas ZRC20 not found for chain: ${chainName}`, {
+      chain: NetworkID.ZetaChain,
+    });
+    return;
+  }
 
   const tx = await coreRegistry.changeChainStatus(
     chainId,
@@ -125,19 +187,27 @@ async function registerChain(
     registryBytes,
     true,
     {
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
     }
   );
-  return await tx.wait();
-}
 
-async function registerContract(
-  contract: any,
-  coreRegistry: any,
-  chainIdMap: Record<string, number>
-) {
+  await tx.wait();
+  logger.info(`Chain ${chainName} registered successfully`, {
+    chain: NetworkID.ZetaChain,
+  });
+};
+
+const registerContract = async ({
+  contract,
+  coreRegistry,
+  chainIdMap,
+}: {
+  chainIdMap: Record<string, number>;
+  contract: any;
+  coreRegistry: any;
+}) => {
   const chainId = chainIdMap[contract.chain];
-  let contractType = contract.type;
+  const { type: contractType } = contract;
   const addressBytes = ethers.getBytes(contract.address);
 
   const tx = await coreRegistry.registerContract(
@@ -145,27 +215,46 @@ async function registerContract(
     contractType,
     addressBytes,
     {
-      gasLimit: 1000000,
+      gasLimit: 1_000_000,
     }
   );
 
-  return await tx.wait();
-}
+  await tx.wait();
+  logger.info(
+    `Contract ${contractType} registered on chain ${contract.chain}`,
+    {
+      chain: NetworkID.ZetaChain,
+    }
+  );
+};
 
-async function approveAllZRC20GasTokens(
-  coreRegistry: any,
-  foreignCoins: any[],
-  deployer: any,
-  chainIdMap: Record<string, number>
-) {
+const approveAllZRC20GasTokens = async ({
+  coreRegistry,
+  foreignCoins,
+  deployer,
+  chainIdMap,
+}: {
+  chainIdMap: Record<string, number>;
+  coreRegistry: any;
+  deployer: any;
+  foreignCoins: any[];
+}) => {
   const MAX_UINT256 = ethers.MaxUint256;
 
   for (const chainId of Object.values(chainIdMap)) {
-    if (chainId === toNumber(NetworkID.ZetaChain)) continue;
+    if (chainId === ZetaChainID) continue;
+
     const gasZRC20Address = foreignCoins.find(
       (coin: any) =>
         toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
     )?.zrc20_contract_address;
+
+    if (!gasZRC20Address) {
+      logger.error(`Gas ZRC20 address not found for chain ID: ${chainId}`, {
+        chain: NetworkID.ZetaChain,
+      });
+      continue;
+    }
 
     const gasZRC20Contract = new ethers.Contract(
       gasZRC20Address,
@@ -179,8 +268,15 @@ async function approveAllZRC20GasTokens(
         MAX_UINT256
       );
       await approveTx.wait();
-    } catch (error) {
-      throw error;
+
+      logger.info(`Approved ZRC20 gas token for chain ID: ${chainId}`, {
+        chain: NetworkID.ZetaChain,
+      });
+    } catch (err: any) {
+      logger.error(`Error approving ZRC20 for chain ID ${chainId}: ${err}`, {
+        chain: NetworkID.ZetaChain,
+      });
+      throw err;
     }
   }
-}
+};
