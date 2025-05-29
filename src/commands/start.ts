@@ -16,61 +16,8 @@ import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
-import {
-  initLogger,
-  logger,
-  LoggerLevel,
-  loggerLevels,
-  logRaw,
-} from "../logger";
+import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
 import { initLocalnetAddressesSchema } from "../types/zodSchemas";
-
-// Helper function to format object data as a table string
-const formatAsTable = (data: Record<string, string>): string => {
-  const keys = Object.keys(data);
-  if (keys.length === 0) return "Empty table";
-
-  // Calculate column widths
-  const indexWidth = Math.max(...keys.map((k) => k.length), 10);
-  const valueWidth = Math.max(...Object.values(data).map((v) => v.length), 10);
-
-  // Format header with colors
-  const header =
-    ansis.cyan(
-      "┌" + "─".repeat(indexWidth + 2) + "┬" + "─".repeat(valueWidth + 2) + "┐"
-    ) +
-    "\n" +
-    ansis.cyan("│") +
-    ansis.yellow(" " + "(index)".padEnd(indexWidth) + " ") +
-    ansis.cyan("│") +
-    ansis.yellow(" " + "Values".padEnd(valueWidth) + " ") +
-    ansis.cyan("│") +
-    "\n" +
-    ansis.cyan(
-      "├" + "─".repeat(indexWidth + 2) + "┼" + "─".repeat(valueWidth + 2) + "┤"
-    );
-
-  // Format rows with colors
-  const rows = Object.entries(data)
-    .map(
-      ([key, value]) =>
-        ansis.cyan("│") +
-        ansis.green(" " + key.padEnd(indexWidth) + " ") +
-        ansis.cyan("│") +
-        ansis.white(" " + value.padEnd(valueWidth) + " ") +
-        ansis.cyan("│")
-    )
-    .join("\n");
-
-  // Format footer with colors
-  const footer =
-    "\n" +
-    ansis.cyan(
-      "└" + "─".repeat(indexWidth + 2) + "┴" + "─".repeat(valueWidth + 2) + "┘"
-    );
-
-  return header + "\n" + rows + footer;
-};
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
@@ -267,81 +214,10 @@ const startLocalnet = async (options: {
       port: options.port,
     });
 
-    // Immediately log the raw result to help diagnose the issue
-    logger.debug("Got result from initLocalnet", { chain: "localnet" });
-    logger.debug(`Chains specified: ${options.chains.join(", ") || "none"}`, {
-      chain: "localnet",
-    });
-    logger.debug(
-      JSON.stringify(
-        {
-          message: `rawInitialAddresses type: ${typeof rawInitialAddresses}`,
-          rawInitialAddresses,
-        },
-        null,
-        2
-      ),
-      {
-        chain: "localnet",
-      }
-    );
-    logger.debug(
-      JSON.stringify(
-        {
-          message: `rawInitialAddresses length: ${
-            Array.isArray(rawInitialAddresses)
-              ? rawInitialAddresses.length
-              : "not an array"
-          }`,
-          rawInitialAddresses,
-        },
-        null,
-        2
-      ),
-      { chain: "localnet" }
-    );
-
-    // Additional direct console output for npx context
-    if (!process.stdin.isTTY) {
-      logger.debug("Running in non-TTY mode (like npx)", { chain: "localnet" });
-
-      // Print first few items directly to ensure we see something
-      if (
-        Array.isArray(rawInitialAddresses) &&
-        rawInitialAddresses.length > 0
-      ) {
-        logger.debug(
-          `First few items: ${JSON.stringify(rawInitialAddresses.slice(0, 3))}`,
-          { chain: "localnet" }
-        );
-      } else {
-        logger.debug(
-          `rawInitialAddresses: ${JSON.stringify(rawInitialAddresses)}`,
-          { chain: "localnet" }
-        );
-      }
-    }
-
-    logger.debug(
-      JSON.stringify(
-        {
-          rawInitialAddresses,
-        },
-        null,
-        2
-      ),
-      { chain: "localnet" }
-    );
-
     const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
 
     // Get unique chains
     const chains = [...new Set(addresses.map((item) => item.chain))];
-
-    logger.debug(
-      `DEBUG: Found ${chains.length} unique chains: ${chains.join(", ")}`,
-      { chain: "localnet" }
-    );
 
     // Create tables for each chain
     chains.forEach((chain) => {
@@ -352,26 +228,8 @@ const startLocalnet = async (options: {
           return acc;
         }, {} as Record<string, string>);
 
-      logger.debug(
-        JSON.stringify(
-          {
-            chain,
-            chainContracts,
-            message: `Creating table for chain ${chain} with ${
-              Object.keys(chainContracts).length
-            } contracts`,
-          },
-          null,
-          2
-        ),
-        { chain: "localnet" }
-      );
-
-      // Print chain name in bold and cyan color
-      logRaw(ansis.bold.cyan(`\n${chain.toUpperCase()}`));
-
-      // Print the formatted table
-      logRaw(formatAsTable(chainContracts));
+      console.log(`\n${chain.toUpperCase()}`);
+      console.table(chainContracts);
     });
 
     fs.writeFileSync(
