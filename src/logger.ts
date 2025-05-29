@@ -67,8 +67,8 @@ export const initLogger = (level: LoggerLevel = loggerLevel) => {
 export const logRaw = (message: string, level: LoggerLevel = "info") => {
   // Use the winston logger directly to bypass the chain formatting
   if (logger) {
-    const logMethod = logger[level] as (message: string, meta?: any) => void;
-    if (logMethod) {
+    const logMethod = logger[level];
+    if (logMethod && typeof logMethod === "function") {
       // Use a special 'raw' flag to bypass the formatter
       logMethod(message, { raw: true });
     }
