@@ -49,8 +49,6 @@ export const createToken = async (
     gatewayZEVM,
     uniswapFactoryInstance,
     uniswapRouterInstance,
-    uniswapV3Factory,
-    uniswapV3PositionManager,
     wzeta,
     fungibleModuleSigner,
   } = contracts.zetachainContracts;
@@ -187,25 +185,13 @@ export const createToken = async (
       .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
   ]);
 
-  await Promise.all([
-    uniswapV2AddLiquidity(
-      uniswapRouterInstance,
-      uniswapFactoryInstance,
-      zrc20,
-      wzeta,
-      deployer,
-      zrc20Amount,
-      wzetaAmount
-    ),
-
-    uniswapV3AddLiquidity(
-      zrc20,
-      wzeta,
-      deployer,
-      zrc20Amount,
-      wzetaAmount,
-      uniswapV3Factory,
-      uniswapV3PositionManager
-    ),
-  ]);
+  await uniswapV2AddLiquidity(
+    uniswapRouterInstance,
+    uniswapFactoryInstance,
+    zrc20,
+    wzeta,
+    deployer,
+    zrc20Amount,
+    wzetaAmount
+  );
 };

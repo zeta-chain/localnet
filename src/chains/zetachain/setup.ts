@@ -30,10 +30,7 @@ export const zetachainSetup = async (
   const wzeta = await weth9Factory.deploy(deployOpts);
 
   // Setup both Uniswap V2 and V3
-  const [v2Setup, v3Setup] = await Promise.all([
-    prepareUniswapV2(deployer, wzeta),
-    prepareUniswapV3(deployer, wzeta),
-  ]);
+  const v2Setup = await prepareUniswapV2(deployer, wzeta);
 
   const [
     uniswapFactoryInstanceAddress,
@@ -111,9 +108,6 @@ export const zetachainSetup = async (
     tss,
     uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,
     uniswapRouterInstance: v2Setup.uniswapRouterInstance,
-    uniswapV3Factory: v3Setup.uniswapV3FactoryInstance,
-    uniswapV3PositionManager: v3Setup.nonfungiblePositionManagerInstance,
-    uniswapV3Router: v3Setup.swapRouterInstance,
     wzeta,
   };
 };
