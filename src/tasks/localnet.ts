@@ -10,6 +10,7 @@ import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
 import { isDockerAvailable } from "../isDockerAvailable";
+import { setRegistryInitComplete } from "../types/registryState";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
@@ -164,6 +165,8 @@ const localnet = async (args: any) => {
       JSON.stringify({ addresses, pid: process.pid }, null, 2),
       "utf-8"
     );
+
+    setRegistryInitComplete(true);
   } catch (error: any) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();

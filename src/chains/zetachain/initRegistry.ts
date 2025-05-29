@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { setRegistryInitComplete } from "../../types/registryState";
 
 const ZetaChainID = 31337;
 
@@ -17,6 +18,8 @@ export const initRegistry = async ({
   contracts: any;
   res: any[];
 }) => {
+  setRegistryInitComplete(false);
+
   const chainIdMap: Record<string, number> = {
     bnb: toNumber(NetworkID.BNB),
     ethereum: toNumber(NetworkID.Ethereum),
@@ -132,9 +135,6 @@ const bootstrapChainData = async ({
     });
 
     await tx.wait();
-    logger.info("Bootstrap chain data completed", {
-      chain: NetworkID.ZetaChain,
-    });
   } catch (err: any) {
     logger.error(`Error bootstrapping chain data: ${err}`, {
       chain: NetworkID.ZetaChain,
@@ -192,9 +192,6 @@ const registerChain = async ({
   );
 
   await tx.wait();
-  logger.info(`Chain ${chainName} registered successfully`, {
-    chain: NetworkID.ZetaChain,
-  });
 };
 
 const registerContract = async ({
@@ -220,12 +217,6 @@ const registerContract = async ({
   );
 
   await tx.wait();
-  logger.info(
-    `Contract ${contractType} registered on chain ${contract.chain}`,
-    {
-      chain: NetworkID.ZetaChain,
-    }
-  );
 };
 
 const approveAllZRC20GasTokens = async ({
@@ -268,10 +259,6 @@ const approveAllZRC20GasTokens = async ({
         MAX_UINT256
       );
       await approveTx.wait();
-
-      logger.info(`Approved ZRC20 gas token for chain ID: ${chainId}`, {
-        chain: NetworkID.ZetaChain,
-      });
     } catch (err: any) {
       logger.error(`Error approving ZRC20 for chain ID ${chainId}: ${err}`, {
         chain: NetworkID.ZetaChain,
