@@ -91,6 +91,7 @@ interface ProcessInfo {
  * transaction monitors).
  */
 export let backgroundProcessIds: NodeJS.Timeout[] = [];
+let readlineInterface: readline.Interface | undefined;
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -154,15 +155,17 @@ const startLocalnet = async (options: {
   // Set up readline interface for interactive terminal sessions to handle process termination
   // Only create the interface if we're running in a TTY (interactive terminal)
   // This ensures proper cleanup and return of shell control when the program runs in background
-  let rl: readline.Interface | undefined;
   if (process.stdin.isTTY) {
-    rl = readline.createInterface({
+    readlineInterface = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
-    rl.on("close", async () => {
+    readlineInterface.on("close", async () => {
       await cleanup();
       process.exit(0);
+    });
+    readlineInterface.on("error", (err) => {
+      logger.error(`Readline interface error: ${err}`, { chain: "localnet" });
     });
   } else {
     process.on("SIGINT", cleanup);
@@ -377,6 +380,12 @@ const cleanup = async () => {
   logger.info("Shutting down processes and cleaning up...", {
     chain: "localnet",
   });
+
+  // Close readline interface if it exists
+  if (readlineInterface) {
+    readlineInterface.close();
+    readlineInterface = undefined;
+  }
 
   // Stop all background processes
   for (const intervalId of backgroundProcessIds) {
