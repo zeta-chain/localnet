@@ -1,7 +1,6 @@
 import ansis from "ansis";
 import winston from "winston";
 
-import { loggerLevel } from "./commands/start";
 import { NetworkID } from "./constants";
 
 export const loggerLevels = [
@@ -42,7 +41,7 @@ const chainFormat = winston.format.printf(({ level, message, chain }) => {
 
 export let logger: winston.Logger;
 
-export const initLogger = (level: LoggerLevel = loggerLevel) => {
+export const initLogger = (level: LoggerLevel = "info") => {
   logger = winston.createLogger({
     format: winston.format.combine(
       winston.format.errors({ stack: true }),

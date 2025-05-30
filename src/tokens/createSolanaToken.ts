@@ -6,7 +6,7 @@ import {
 } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 
-import { ed25519KeyPairTSS as tssKeypair } from "../chains/solana/setup";
+import { ed25519KeyPairTSS as tssKeypair } from "../chains/solana/constants";
 import { NetworkID } from "../constants";
 import { logger } from "../logger";
 
