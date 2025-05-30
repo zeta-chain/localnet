@@ -11,6 +11,7 @@ import readline from "readline/promises";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../";
+import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
@@ -25,8 +26,6 @@ const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
 const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
 
-export let loggerLevel: LoggerLevel;
-
 interface ProcessInfo {
   command: string;
   pid: number;
@@ -37,7 +36,6 @@ interface ProcessInfo {
  * cleaned up when the localnet is shut down (for example, Solana and Sui
  * transaction monitors).
  */
-export let backgroundProcessIds: NodeJS.Timeout[] = [];
 let readlineInterface: readline.Interface | undefined;
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
@@ -305,10 +303,7 @@ const cleanup = async () => {
   }
 
   // Stop all background processes
-  for (const intervalId of backgroundProcessIds) {
-    clearInterval(intervalId);
-  }
-  backgroundProcessIds = [];
+  clearBackgroundProcesses();
 
   if (fs.existsSync(PROCESS_FILE)) {
     try {

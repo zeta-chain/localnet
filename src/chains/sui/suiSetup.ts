@@ -8,8 +8,8 @@ import * as fs from "fs";
 import os from "os";
 import path from "path";
 
+import { addBackgroundProcess } from "../../backgroundProcesses";
 import { cloneRepository } from "../../cloneRepository";
-import { backgroundProcessIds } from "../../commands/start";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { suiDeposit } from "./deposit";
@@ -304,7 +304,7 @@ const pollEvents = async (context: any) => {
     }
   }, POLLING_INTERVAL_MS);
 
-  backgroundProcessIds.push(pollInterval);
+  addBackgroundProcess(pollInterval);
 };
 
 const runSudoCommand = (command: any, args: any) => {

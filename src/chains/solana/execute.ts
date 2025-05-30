@@ -3,13 +3,15 @@ import {
   getAssociatedTokenAddress,
   getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./constants";
 import Gateway_IDL from "./idl/gateway.json";
-import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./setup";
 
 export const solanaExecute = async ({
   sender,
