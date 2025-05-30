@@ -16,4 +16,4 @@ export const clearBackgroundProcesses = () => {
   backgroundProcessIds = [];
 };
 
-export const getBackgroundProcessIds = () => backgroundProcessIds;
+export const getBackgroundProcessIds = () => [...backgroundProcessIds];
