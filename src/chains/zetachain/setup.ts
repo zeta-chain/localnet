@@ -1,3 +1,4 @@
+import * as CoreRegistry from "@zetachain/protocol-contracts/abi/CoreRegistry.sol/CoreRegistry.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
 import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
@@ -14,12 +15,13 @@ export const zetachainSetup = async (
   tss: Signer,
   provider: any
 ) => {
-  await Promise.all([
+  const [, , deployerAddress] = await Promise.all([
     provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]),
     provider.send("anvil_setBalance", [
       FUNGIBLE_MODULE_ADDRESS,
       ethers.parseEther("100000").toString(),
     ]),
+    deployer.getAddress(),
   ]);
 
   const weth9Factory = new ethers.ContractFactory(
@@ -42,21 +44,29 @@ export const zetachainSetup = async (
     provider.getSigner(FUNGIBLE_MODULE_ADDRESS),
   ]);
 
+  const proxyFactory = new ethers.ContractFactory(
+    ERC1967Proxy.abi,
+    ERC1967Proxy.bytecode,
+    deployer
+  );
+
   const systemContractFactory = new ethers.ContractFactory(
     SystemContract.abi,
     SystemContract.bytecode,
     deployer
   );
-  const gatewayZEVMFactory = new ethers.ContractFactory(
-    GatewayZEVM.abi,
-    GatewayZEVM.bytecode,
-    deployer
-  );
+
   const systemContract: any = await systemContractFactory.deploy(
     wzeta.target,
     uniswapFactoryInstanceAddress,
     uniswapRouterInstanceAddress,
     deployOpts
+  );
+
+  const gatewayZEVMFactory = new ethers.ContractFactory(
+    GatewayZEVM.abi,
+    GatewayZEVM.bytecode,
+    deployer
   );
 
   const gatewayZEVMImpl = await gatewayZEVMFactory.deploy(deployOpts);
@@ -66,15 +76,10 @@ export const zetachainSetup = async (
     gatewayZEVMInterface.getFunction("initialize");
   const gatewayZEVMInitData = gatewayZEVMInterface.encodeFunctionData(
     gatewayZEVMInitFragment as ethers.FunctionFragment,
-    [wzeta.target, await deployer.getAddress()]
+    [wzeta.target, deployerAddress]
   );
 
-  const proxyZEVMFactory = new ethers.ContractFactory(
-    ERC1967Proxy.abi,
-    ERC1967Proxy.bytecode,
-    deployer
-  );
-  const proxyZEVM = (await proxyZEVMFactory.deploy(
+  const proxyZEVM = (await proxyFactory.deploy(
     gatewayZEVMImpl.target,
     gatewayZEVMInitData,
     deployOpts
@@ -83,6 +88,34 @@ export const zetachainSetup = async (
   const gatewayZEVM = new ethers.Contract(
     proxyZEVM.target,
     GatewayZEVM.abi,
+    deployer
+  );
+
+  const coreRegistryFactory = new ethers.ContractFactory(
+    CoreRegistry.abi,
+    CoreRegistry.bytecode,
+    deployer
+  );
+
+  const coreRegistryImpl = await coreRegistryFactory.deploy(deployOpts);
+
+  const coreRegistryInterface = new ethers.Interface(CoreRegistry.abi);
+  const coreRegistryInitFragment =
+    coreRegistryInterface.getFunction("initialize");
+  const coreRegistryInitData = coreRegistryInterface.encodeFunctionData(
+    coreRegistryInitFragment as ethers.FunctionFragment,
+    [deployerAddress, deployerAddress, gatewayZEVM.target]
+  );
+
+  const proxyCoreRegistry = (await proxyFactory.deploy(
+    coreRegistryImpl.target,
+    coreRegistryInitData,
+    deployOpts
+  )) as any;
+
+  const coreRegistry = new ethers.Contract(
+    proxyCoreRegistry.target,
+    CoreRegistry.abi,
     deployer
   );
 
@@ -102,6 +135,7 @@ export const zetachainSetup = async (
   ]);
 
   return {
+    coreRegistry,
     fungibleModuleSigner,
     gatewayZEVM,
     systemContract,

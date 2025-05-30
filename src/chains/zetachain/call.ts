@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { isRegistryInitComplete } from "../../types/registryState";
 import { evmExecute } from "../evm/execute";
 import { zetachainOnRevert } from "./onRevert";
 
@@ -19,9 +20,11 @@ export const zetachainCall = async ({
     provider,
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
-  logger.info("Gateway: 'Called' event emitted", {
-    chain: NetworkID.ZetaChain,
-  });
+  if (isRegistryInitComplete()) {
+    logger.info("Gateway: 'Called' event emitted", {
+      chain: NetworkID.ZetaChain,
+    });
+  }
   const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
   const chainID = contracts.foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20

@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { isRegistryInitComplete } from "../../types/registryState";
 import { zetachainExecute } from "../zetachain/execute";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 
@@ -14,7 +15,9 @@ export const evmCall = async ({
   foreignCoins,
   exitOnError = false,
 }: any) => {
-  logger.info("Gateway: 'Called' event emitted", { chain: chainID });
+  if (isRegistryInitComplete()) {
+    logger.info("Gateway: 'Called' event emitted", { chain: chainID });
+  }
   const sender = args[0];
   try {
     zetachainExecute({
