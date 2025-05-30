@@ -10,6 +10,7 @@ import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
 import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
+import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 
@@ -29,6 +30,19 @@ export const initLocalnet = async ({
   exitOnError: boolean;
   port: number;
 }): Promise<(InitLocalnetAddress | undefined)[]> => {
+  logger.debug(
+    JSON.stringify(
+      {
+        chains,
+        message: "Starting initLocalnet with chains: " + chains.join(", "),
+      },
+      null,
+      2
+    ),
+    {
+      chain: "localnet",
+    }
+  );
   const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
   provider.pollingInterval = 100;
 
@@ -46,8 +60,11 @@ export const initLocalnet = async ({
     )
   ).connect(provider);
 
+  logger.debug("Setting up zetachain contracts", { chain: "localnet" });
   const zetachainContracts = await zetachainSetup(deployer, tss, provider);
+  logger.debug("Zetachain contracts setup complete", { chain: "localnet" });
 
+  logger.debug("Setting up chain contracts in parallel", { chain: "localnet" });
   const [
     solanaContracts,
     suiContracts,
@@ -97,6 +114,7 @@ export const initLocalnet = async ({
       zetachainContracts,
     }),
   ]);
+  logger.debug("Chain contracts setup complete", { chain: "localnet" });
 
   const contracts = {
     bnbContracts,
@@ -111,6 +129,18 @@ export const initLocalnet = async ({
     zetachainContracts,
   };
 
+  logger.debug(
+    JSON.stringify(
+      {
+        contracts: Object.keys(contracts),
+        message: "Creating tokens",
+      },
+      null,
+      2
+    ),
+    { chain: "localnet" }
+  );
+
   await Promise.all([
     createToken(contracts, "ETH", true, NetworkID.Ethereum, 18),
     createToken(contracts, "USDC", false, NetworkID.Ethereum, 18),
@@ -122,7 +152,9 @@ export const initLocalnet = async ({
     createToken(contracts, "USDC", false, NetworkID.Sui, 9),
     createToken(contracts, "TON", true, NetworkID.TON, 9),
   ]);
+  logger.debug("Token creation complete", { chain: "localnet" });
 
+  logger.debug("Setting up event handlers", { chain: "localnet" });
   zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
     zetachainCall({ args, contracts, exitOnError })
   );
@@ -134,7 +166,9 @@ export const initLocalnet = async ({
   zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
     zetachainWithdrawAndCall({ args, contracts, exitOnError })
   );
+  logger.debug("Event handlers setup complete", { chain: "localnet" });
 
+  logger.debug("Building result array", { chain: "localnet" });
   let res = [
     ...Object.entries(zetachainContracts)
       .filter(([, value]) => value.target !== undefined)
@@ -225,5 +259,18 @@ export const initLocalnet = async ({
     ];
   }
 
+  logger.debug(
+    JSON.stringify(
+      {
+        res,
+        resLen: `Result array built with ${res.length} items`,
+      },
+      null,
+      2
+    ),
+    {
+      chain: "localnet",
+    }
+  );
   return res;
 };
