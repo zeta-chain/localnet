@@ -27,27 +27,17 @@ export const chains: Record<string, { color: any; name: string }> = {
 };
 
 // Create a custom format for chain-based logging
-const chainFormat = winston.format.printf((info) => {
-  // Destructure with type safety
-  const { level, message, chain } = info;
-
-  // Skip formatting for raw messages marked with a special symbol
-  if (info.raw === true) {
-    return message as string;
-  }
-
+const chainFormat = winston.format.printf(({ level, message, chain }) => {
   if (chain === "localnet") {
     return `${ansis.gray(`[${ansis.bold("LOCALNET")}]`)} ${ansis.gray(
-      message as string
+      message
     )}`;
   }
   const chainDetails = chains[chain as string];
   const color = chainDetails?.color || ansis.black;
   const chainName = chainDetails?.name || `Unknown Chain (${chain})`;
   const messageColor = level === "error" ? ansis.red : color;
-  return `${color(`[${ansis.bold(chainName)}]`)} ${messageColor(
-    message as string
-  )}`;
+  return `${color(`[${ansis.bold(chainName)}]`)} ${messageColor(message)}`;
 });
 
 export let logger: winston.Logger;
@@ -61,16 +51,4 @@ export const initLogger = (level: LoggerLevel = loggerLevel) => {
     level,
     transports: [new winston.transports.Console()],
   });
-};
-
-// Helper function to log messages without chain prefix
-export const logRaw = (message: string, level: LoggerLevel = "info") => {
-  // Use the winston logger directly to bypass the chain formatting
-  if (logger) {
-    const logMethod = logger[level];
-    if (logMethod && typeof logMethod === "function") {
-      // Use a special 'raw' flag to bypass the formatter
-      logMethod(message, { raw: true });
-    }
-  }
 };
