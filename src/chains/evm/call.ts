@@ -28,6 +28,18 @@ export const evmCall = async ({
     return;
   }
 
+  // Validate event structure - must have at least 6 arguments with revert options
+  if (!args || args.length < 6 || !args[5]) {
+    logger.info(
+      "Skipping event with invalid structure (likely registry event)",
+      {
+        argsLength: args?.length,
+        chain: chainID,
+      }
+    );
+    return;
+  }
+
   const sender = args[0];
   const receiver = args[1];
   logger.info(`Processing Called event from ${sender} to ${receiver}`, {
