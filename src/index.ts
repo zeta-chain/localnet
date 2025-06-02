@@ -13,6 +13,7 @@ import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
+import { delay } from "./utils/nonce";
 
 const foreignCoins: any[] = [];
 
@@ -86,6 +87,9 @@ export const initLocalnet = async ({
     tss,
     zetachainContracts,
   });
+
+  // Add a small delay to ensure nonce management works properly
+  await delay(100);
 
   const bnbContracts = await evmSetup({
     chainID: NetworkID.BNB,
