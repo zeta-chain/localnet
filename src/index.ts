@@ -8,7 +8,10 @@ import { solanaSetup } from "./chains/solana/setup";
 import { suiSetup } from "./chains/sui/suiSetup";
 import * as ton from "./chains/ton";
 import { zetachainCall } from "./chains/zetachain/call";
-import { initRegistry } from "./chains/zetachain/initRegistry";
+import {
+  initRegistry,
+  registerGatewayContracts,
+} from "./chains/zetachain/initRegistry";
 import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
@@ -330,6 +333,11 @@ export const initLocalnet = async ({
     });
 
     logger.info("Event handlers setup complete");
+
+    // Now register gateway contracts after event handlers are ready
+    logger.info("Registering gateway contracts");
+    await registerGatewayContracts({ contracts, res });
+    logger.info("Gateway contracts registered");
 
     if (suiContracts) {
       res = [...res, ...suiContracts.addresses];

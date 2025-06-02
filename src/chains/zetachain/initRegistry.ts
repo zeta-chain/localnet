@@ -43,7 +43,11 @@ export const initRegistry = async ({
     const chains = [...new Set(addresses.map((item: any) => item.chain))];
     const contractsToRegister = addresses.filter(
       (item: any) =>
-        !item.type.includes("ZRC-20") && item.chain && item.address && item.type
+        !item.type.includes("ZRC-20") &&
+        !item.type.includes("gateway") &&
+        item.chain &&
+        item.address &&
+        item.type
     );
 
     try {
@@ -294,5 +298,60 @@ const approveAllZRC20GasTokens = async ({
       });
       throw err;
     }
+  }
+};
+
+export const registerGatewayContracts = async ({
+  contracts,
+  res,
+}: {
+  contracts: any;
+  res: any[];
+}) => {
+  try {
+    logger.info("Registering gateway contracts");
+
+    const chainIdMap: Record<string, number> = {
+      bnb: toNumber(NetworkID.BNB),
+      ethereum: toNumber(NetworkID.Ethereum),
+      zetachain: ZetaChainID,
+    };
+
+    const { zetachainContracts } = contracts;
+    const { coreRegistry } = zetachainContracts;
+
+    const addresses = res.filter(
+      (item: any) => typeof item === "object" && item.address
+    );
+
+    const gatewayContracts = addresses.filter(
+      (item: any) =>
+        item.type.includes("gateway") && item.chain && item.address && item.type
+    );
+
+    for (const contract of gatewayContracts) {
+      try {
+        logger.info(`Registering gateway contract ${contract.type}`);
+        await registerContract({ chainIdMap, contract, coreRegistry });
+      } catch (err: any) {
+        logger.error(
+          `Error registering gateway contract ${contract.type}: ${err}`,
+          {
+            chain: NetworkID.ZetaChain,
+            error: err.message,
+            stack: err.stack,
+          }
+        );
+        throw err;
+      }
+    }
+
+    logger.info("Gateway contracts registration complete");
+  } catch (error) {
+    logger.error("Fatal error in registerGatewayContracts", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
   }
 };
