@@ -49,13 +49,8 @@ export const initLocalnet = async ({
 
   const zetachainContracts = await zetachainSetup(deployer, tss, provider);
 
-  const [
-    solanaContracts,
-    suiContracts,
-    ethereumContracts,
-    bnbContracts,
-    tonContracts,
-  ] = await Promise.all([
+  // Run non-EVM chains in parallel (they don't share wallets)
+  const [solanaContracts, suiContracts, tonContracts] = await Promise.all([
     solanaSetup({
       deployer,
       foreignCoins,
@@ -70,24 +65,6 @@ export const initLocalnet = async ({
       skip: !chains.includes("sui"),
       zetachainContracts,
     }),
-    evmSetup({
-      chainID: NetworkID.Ethereum,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      provider,
-      tss,
-      zetachainContracts,
-    }),
-    evmSetup({
-      chainID: NetworkID.BNB,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      provider,
-      tss,
-      zetachainContracts,
-    }),
     ton.setup({
       chainID: NetworkID.TON,
       deployer,
@@ -98,6 +75,27 @@ export const initLocalnet = async ({
       zetachainContracts,
     }),
   ]);
+
+  // Run EVM chains sequentially to avoid nonce conflicts
+  const ethereumContracts = await evmSetup({
+    chainID: NetworkID.Ethereum,
+    deployer,
+    exitOnError,
+    foreignCoins,
+    provider,
+    tss,
+    zetachainContracts,
+  });
+
+  const bnbContracts = await evmSetup({
+    chainID: NetworkID.BNB,
+    deployer,
+    exitOnError,
+    foreignCoins,
+    provider,
+    tss,
+    zetachainContracts,
+  });
 
   const contracts = {
     bnbContracts,

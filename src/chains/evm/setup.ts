@@ -141,20 +141,21 @@ export const evmSetup = async ({
   //   deployOpts
   // );
 
-  await Promise.all([
-    custody.initialize(
-      gatewayEVM.target,
-      tssAddress,
-      deployerAddress,
-      deployOpts
-    ),
-    (gatewayEVM as any)
-      .connect(deployer)
-      .setCustody(custodyImpl.target, deployOpts),
-    (gatewayEVM as any)
-      .connect(deployer)
-      .setConnector(zetaConnectorImpl.target, deployOpts),
-  ]);
+  // Execute these sequentially to avoid nonce conflicts
+  await custody.initialize(
+    gatewayEVM.target,
+    tssAddress,
+    deployerAddress,
+    deployOpts
+  );
+
+  await (gatewayEVM as any)
+    .connect(deployer)
+    .setCustody(custodyImpl.target, deployOpts);
+
+  await (gatewayEVM as any)
+    .connect(deployer)
+    .setConnector(zetaConnectorImpl.target, deployOpts);
 
   gatewayEVM.on("Called", async (...args: Array<any>) => {
     evmCall({
