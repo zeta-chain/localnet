@@ -29,6 +29,11 @@ export const evmCall = async ({
   }
 
   const sender = args[0];
+  const receiver = args[1];
+  logger.info(`Processing Called event from ${sender} to ${receiver}`, {
+    chain: chainID,
+  });
+
   try {
     zetachainExecute({
       args,

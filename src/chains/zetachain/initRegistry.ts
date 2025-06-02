@@ -349,6 +349,9 @@ export const registerGatewayContracts = async ({
     }
 
     logger.info("Gateway contracts registration complete");
+
+    // Wait a bit to ensure all registry-triggered events have been emitted
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   } catch (error) {
     logger.error("Fatal error in registerGatewayContracts", {
       error: error instanceof Error ? error.message : String(error),
