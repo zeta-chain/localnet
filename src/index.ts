@@ -203,26 +203,46 @@ export const initLocalnet = async ({
         chain: "zetachain",
         type: "tss",
       },
-      ...Object.entries(ethereumContracts).map(([key, value]) => {
-        return {
-          address: value.target,
-          chain: "ethereum",
-          type: key,
-        };
-      }),
-      ...Object.entries(bnbContracts).map(([key, value]) => {
-        return {
-          address: value.target,
-          chain: "bnb",
-          type: key,
-        };
-      }),
+      ...Object.entries(ethereumContracts)
+        .filter(
+          ([key, value]) =>
+            typeof value !== "function" && value?.target !== undefined
+        )
+        .map(([key, value]: [string, any]) => {
+          return {
+            address: value.target,
+            chain: "ethereum",
+            type: key,
+          };
+        }),
+      ...Object.entries(bnbContracts)
+        .filter(
+          ([key, value]) =>
+            typeof value !== "function" && value?.target !== undefined
+        )
+        .map(([key, value]: [string, any]) => {
+          return {
+            address: value.target,
+            chain: "bnb",
+            type: key,
+          };
+        }),
     ];
 
     // Init registry
     logger.info("Initializing registry");
     await initRegistry({ contracts, res });
     logger.info("Registry initialization complete");
+
+    // Now set up event handlers after registry is initialized
+    logger.info("Setting up event handlers");
+    if (ethereumContracts.setupEventHandlers) {
+      ethereumContracts.setupEventHandlers();
+    }
+    if (bnbContracts.setupEventHandlers) {
+      bnbContracts.setupEventHandlers();
+    }
+    logger.info("Event handlers setup complete");
 
     if (suiContracts) {
       res = [...res, ...suiContracts.addresses];

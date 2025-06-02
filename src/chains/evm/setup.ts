@@ -158,58 +158,63 @@ export const evmSetup = async ({
     .connect(deployer)
     .setConnector(zetaConnectorImpl.target, deployOpts);
 
-  gatewayEVM.on("Called", async (...args: Array<any>) => {
-    await eventQueue.enqueue(async () => {
-      await evmCall({
-        args,
-        chainID,
-        deployer,
-        exitOnError,
-        foreignCoins,
-        provider,
-        zetachainContracts,
-      });
-    }, []);
-  });
+  // Return event handler setup functions instead of registering immediately
+  // This prevents events from being processed during setup
+  const setupEventHandlers = () => {
+    gatewayEVM.on("Called", async (...args: Array<any>) => {
+      await eventQueue.enqueue(async () => {
+        await evmCall({
+          args,
+          chainID,
+          deployer,
+          exitOnError,
+          foreignCoins,
+          provider,
+          zetachainContracts,
+        });
+      }, []);
+    });
 
-  gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    await eventQueue.enqueue(async () => {
-      await evmDeposit({
-        args,
-        chainID,
-        custody,
-        deployer,
-        exitOnError,
-        foreignCoins,
-        gatewayEVM,
-        provider,
-        tss,
-        zetachainContracts,
-      });
-    }, []);
-  });
+    gatewayEVM.on("Deposited", async (...args: Array<any>) => {
+      await eventQueue.enqueue(async () => {
+        await evmDeposit({
+          args,
+          chainID,
+          custody,
+          deployer,
+          exitOnError,
+          foreignCoins,
+          gatewayEVM,
+          provider,
+          tss,
+          zetachainContracts,
+        });
+      }, []);
+    });
 
-  gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
-    await eventQueue.enqueue(async () => {
-      await evmDepositAndCall({
-        args,
-        chainID,
-        custody,
-        deployer,
-        exitOnError: false,
-        foreignCoins,
-        gatewayEVM,
-        provider,
-        tss,
-        zetachainContracts,
-      });
-    }, []);
-  });
+    gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
+      await eventQueue.enqueue(async () => {
+        await evmDepositAndCall({
+          args,
+          chainID,
+          custody,
+          deployer,
+          exitOnError: false,
+          foreignCoins,
+          gatewayEVM,
+          provider,
+          tss,
+          zetachainContracts,
+        });
+      }, []);
+    });
+  };
 
   return {
     custody,
     gatewayEVM,
     registry,
+    setupEventHandlers,
     testEVMZeta,
     zetaConnector: zetaConnectorProxy,
   };
