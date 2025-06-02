@@ -20,6 +20,17 @@ export const evmCall = async ({
     logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   }
 
+  // Log event details for debugging
+  logger.info(
+    `Event args length: ${args?.length}, has args[5]: ${!!args?.[5]}`,
+    {
+      chain: chainID,
+      hasRevertOptions: !!args?.[5],
+      receiver: args?.[1],
+      sender: args?.[0],
+    }
+  );
+
   // Skip processing events during gateway registration
   if (isRegisteringGatewaysActive()) {
     logger.info("Skipping event during gateway registration", {
