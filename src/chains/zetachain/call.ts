@@ -4,6 +4,7 @@ import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
 import { isRegistryInitComplete } from "../../types/registryState";
+import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { evmExecute } from "../evm/execute";
 import { zetachainOnRevert } from "./onRevert";
 
@@ -25,6 +26,15 @@ export const zetachainCall = async ({
       chain: NetworkID.ZetaChain,
     });
   }
+
+  // Skip processing events during gateway registration
+  if (isRegisteringGatewaysActive()) {
+    logger.info("Skipping event during gateway registration", {
+      chain: NetworkID.ZetaChain,
+    });
+    return;
+  }
+
   const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
   const chainID = contracts.foreignCoins.find(
     (coin: any) => coin.zrc20_contract_address === zrc20
