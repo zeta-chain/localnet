@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { isRegistryInitComplete } from "../../types/registryState";
+import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainExecute } from "../zetachain/execute";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 
@@ -18,6 +19,15 @@ export const evmCall = async ({
   if (isRegistryInitComplete()) {
     logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   }
+
+  // Skip processing events during gateway registration
+  if (isRegisteringGatewaysActive()) {
+    logger.info("Skipping event during gateway registration", {
+      chain: chainID,
+    });
+    return;
+  }
+
   const sender = args[0];
   try {
     zetachainExecute({

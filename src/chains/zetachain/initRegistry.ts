@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { setRegistryInitComplete } from "../../types/registryState";
+import { setRegisteringGateways } from "../../utils/registryUtils";
 
 const ZetaChainID = 31337;
 
@@ -310,6 +311,7 @@ export const registerGatewayContracts = async ({
 }) => {
   try {
     logger.info("Registering gateway contracts");
+    setRegisteringGateways(true);
 
     const chainIdMap: Record<string, number> = {
       bnb: toNumber(NetworkID.BNB),
@@ -353,5 +355,7 @@ export const registerGatewayContracts = async ({
       stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
+  } finally {
+    setRegisteringGateways(false);
   }
 };

@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { evmOnRevert } from "./onRevert";
@@ -21,6 +22,15 @@ export const evmDeposit = async ({
   exitOnError = false,
 }: any) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
+
+  // Skip processing events during gateway registration
+  if (isRegisteringGatewaysActive()) {
+    logger.info("Skipping event during gateway registration", {
+      chain: chainID,
+    });
+    return;
+  }
+
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
