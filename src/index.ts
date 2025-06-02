@@ -13,6 +13,7 @@ import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
+import { eventQueue } from "./utils/eventQueue";
 import { delay } from "./utils/nonce";
 
 const foreignCoins: any[] = [];
@@ -243,6 +244,15 @@ export const initLocalnet = async ({
       bnbContracts.setupEventHandlers();
     }
     logger.info("Event handlers setup complete");
+
+    // Enable event processing now that everything is initialized
+    logger.info("Enabling event processing");
+    eventQueue.enableEventProcessing();
+
+    // Process any queued events
+    logger.info("Processing any queued events");
+    await eventQueue.processQueue();
+    logger.info("Event processing complete");
 
     if (suiContracts) {
       res = [...res, ...suiContracts.addresses];

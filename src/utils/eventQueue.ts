@@ -9,6 +9,7 @@ class EventQueue {
   private static instance: EventQueue;
   private queue: QueuedEvent[] = [];
   private processing = false;
+  private eventProcessingEnabled = false;
 
   private constructor() {}
 
@@ -19,12 +20,22 @@ class EventQueue {
     return EventQueue.instance;
   }
 
+  public enableEventProcessing() {
+    this.eventProcessingEnabled = true;
+  }
+
   public async enqueue(
     handler: (...args: any[]) => Promise<void>,
     args: any[]
   ) {
+    // Always queue events during initialization
+    if (!this.eventProcessingEnabled) {
+      this.queue.push({ args, handler });
+      return;
+    }
+
     if (isRegistryInitComplete()) {
-      // If registry is already initialized, process immediately
+      // If registry is already initialized and processing is enabled, process immediately
       await handler(...args);
     } else {
       // Otherwise, queue for later
@@ -33,7 +44,11 @@ class EventQueue {
   }
 
   public async processQueue() {
-    if (this.processing || this.queue.length === 0) {
+    if (
+      this.processing ||
+      this.queue.length === 0 ||
+      !this.eventProcessingEnabled
+    ) {
       return;
     }
 

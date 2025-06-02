@@ -116,10 +116,7 @@ export const initRegistry = async ({
     setRegistryInitComplete(true);
     logger.info("Registry initialization marked as complete");
 
-    // Process any queued events
-    logger.info("Processing queued events");
-    await eventQueue.processQueue();
-    logger.info("Event queue processing complete");
+    // Don't process events here - they'll be processed after all initialization
   } catch (error) {
     logger.error("Fatal error in initRegistry", {
       error: error instanceof Error ? error.message : String(error),
