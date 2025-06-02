@@ -143,18 +143,6 @@ export const initLocalnet = async ({
 
     logger.debug("Token creation complete", { chain: "localnet" });
 
-    zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
-      zetachainCall({ args, contracts, exitOnError })
-    );
-
-    zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
-      zetachainWithdraw({ args, contracts, exitOnError })
-    );
-
-    zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
-      zetachainWithdrawAndCall({ args, contracts, exitOnError })
-    );
-
     let res = [
       ...Object.entries(zetachainContracts)
         .filter(([, value]) => value.target !== undefined)
@@ -239,6 +227,19 @@ export const initLocalnet = async ({
 
     // Now set up ALL event handlers after everything is initialized
     logger.info("Setting up event handlers");
+
+    // Set up ZetaChain event handlers
+    zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
+      zetachainCall({ args, contracts, exitOnError })
+    );
+
+    zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
+      zetachainWithdraw({ args, contracts, exitOnError })
+    );
+
+    zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
+      zetachainWithdrawAndCall({ args, contracts, exitOnError })
+    );
 
     // Set up EVM event handlers
     ethereumContracts.gatewayEVM.on("Called", async (...args: any[]) => {
