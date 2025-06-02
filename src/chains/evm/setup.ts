@@ -3,13 +3,24 @@ import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.so
 import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import * as Registry from "@zetachain/protocol-contracts/abi/Registry.sol/Registry.json";
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
+import * as ZetaConnectorNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNative.sol/ZetaConnectorNative.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
 import { ethers } from "ethers";
 
+import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { evmCall } from "./call";
 import { evmDeposit } from "./deposit";
 import { evmDepositAndCall } from "./depositAndCall";
+
+const getZetaConnectorArtifacts = (chainId: number | string) => {
+  return chainId === NetworkID.Ethereum
+    ? { abi: ZetaConnectorNative.abi, bytecode: ZetaConnectorNative.bytecode }
+    : {
+        abi: ZetaConnectorNonNative.abi,
+        bytecode: ZetaConnectorNonNative.bytecode,
+      };
+};
 
 export const evmSetup = async ({
   deployer,
@@ -44,18 +55,35 @@ export const evmSetup = async ({
     deployer
   );
 
+  const custodyFactory = new ethers.ContractFactory(
+    Custody.abi,
+    Custody.bytecode,
+    deployer
+  );
+
+  const zetaConnectorArtifacts = getZetaConnectorArtifacts(chainID);
+  const zetaConnectorFactory = new ethers.ContractFactory(
+    zetaConnectorArtifacts.abi,
+    zetaConnectorArtifacts.bytecode,
+    deployer
+  );
+
   const [
     tssAddress,
     deployerAddress,
     testEVMZeta,
     gatewayEVMImpl,
     registryImpl,
+    custodyImpl,
+    zetaConnectorImpl,
   ] = await Promise.all([
     tss.getAddress(),
     deployer.getAddress(),
     testERC20Factory.deploy("zeta", "ZETA", deployOpts),
     gatewayEVMFactory.deploy(deployOpts),
     registryFactory.deploy(deployOpts),
+    custodyFactory.deploy(deployOpts),
+    zetaConnectorFactory.deploy(deployOpts),
   ]);
 
   const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
@@ -102,44 +130,32 @@ export const evmSetup = async ({
     deployer
   );
 
-  const zetaConnectorFactory = new ethers.ContractFactory(
-    ZetaConnectorNonNative.abi,
-    ZetaConnectorNonNative.bytecode,
-    deployer
-  );
-
-  const custodyFactory = new ethers.ContractFactory(
-    Custody.abi,
-    Custody.bytecode,
-    deployer
-  );
-
-  const [zetaConnectorImpl, custodyImpl] = await Promise.all([
-    zetaConnectorFactory.deploy(deployOpts),
-    custodyFactory.deploy(deployOpts),
-  ]);
-
-  const zetaConnectorProxy = new ethers.Contract(
-    zetaConnectorImpl.target,
-    ZetaConnectorNonNative.abi,
-    deployer
-  );
-
   const custody = new ethers.Contract(
     custodyImpl.target,
     Custody.abi,
     deployer
   );
 
-  // Temporarily disable
-  //
-  // await zetaConnectorProxy.initialize(
-  //   gatewayEVM.target,
-  //   testEVMZeta.target,
-  //   await tss.getAddress(),
-  //   await deployer.getAddress(),
-  //   deployOpts
-  // );
+  const zetaConnectorInterface = new ethers.Interface(
+    zetaConnectorArtifacts.abi
+  );
+  const zetaConnectorInitFragment =
+    zetaConnectorInterface.getFunction("initialize");
+  const zetaConnectorInitData = zetaConnectorInterface.encodeFunctionData(
+    zetaConnectorInitFragment as ethers.FunctionFragment,
+    [gatewayEVM.target, testEVMZeta.target, tssAddress, deployerAddress]
+  );
+  const proxyConnector = (await proxyFactory.deploy(
+    zetaConnectorImpl.target,
+    zetaConnectorInitData,
+    deployOpts
+  )) as any;
+
+  const zetaConnector = new ethers.Contract(
+    proxyConnector.target,
+    zetaConnectorArtifacts.abi,
+    deployer
+  );
 
   await Promise.all([
     custody.initialize(
@@ -153,7 +169,7 @@ export const evmSetup = async ({
       .setCustody(custodyImpl.target, deployOpts),
     (gatewayEVM as any)
       .connect(deployer)
-      .setConnector(zetaConnectorImpl.target, deployOpts),
+      .setConnector(zetaConnector.target, deployOpts),
   ]);
 
   gatewayEVM.on("Called", async (...args: Array<any>) => {
@@ -203,6 +219,6 @@ export const evmSetup = async ({
     gatewayEVM,
     registry,
     testEVMZeta,
-    zetaConnector: zetaConnectorProxy,
+    zetaConnector,
   };
 };
