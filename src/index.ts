@@ -1,5 +1,8 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
+import { evmCall } from "./chains/evm/call";
+import { evmDeposit } from "./chains/evm/deposit";
+import { evmDepositAndCall } from "./chains/evm/depositAndCall";
 import { evmSetup } from "./chains/evm/setup";
 import { solanaSetup } from "./chains/solana/setup";
 import { suiSetup } from "./chains/sui/suiSetup";
@@ -13,7 +16,6 @@ import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
-import { eventQueue } from "./utils/eventQueue";
 import { delay } from "./utils/nonce";
 
 const foreignCoins: any[] = [];
@@ -235,24 +237,98 @@ export const initLocalnet = async ({
     await initRegistry({ contracts, res });
     logger.info("Registry initialization complete");
 
-    // Now set up event handlers after registry is initialized
+    // Now set up ALL event handlers after everything is initialized
     logger.info("Setting up event handlers");
-    if (ethereumContracts.setupEventHandlers) {
-      ethereumContracts.setupEventHandlers();
-    }
-    if (bnbContracts.setupEventHandlers) {
-      bnbContracts.setupEventHandlers();
-    }
+
+    // Set up EVM event handlers
+    ethereumContracts.gatewayEVM.on("Called", async (...args: any[]) => {
+      await evmCall({
+        args,
+        chainID: NetworkID.Ethereum,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        zetachainContracts,
+      });
+    });
+
+    ethereumContracts.gatewayEVM.on("Deposited", async (...args: any[]) => {
+      await evmDeposit({
+        args,
+        chainID: NetworkID.Ethereum,
+        custody: ethereumContracts.custody,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        gatewayEVM: ethereumContracts.gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    });
+
+    ethereumContracts.gatewayEVM.on(
+      "DepositedAndCalled",
+      async (...args: any[]) => {
+        await evmDepositAndCall({
+          args,
+          chainID: NetworkID.Ethereum,
+          custody: ethereumContracts.custody,
+          deployer,
+          exitOnError: false,
+          foreignCoins,
+          gatewayEVM: ethereumContracts.gatewayEVM,
+          provider,
+          tss,
+          zetachainContracts,
+        });
+      }
+    );
+
+    bnbContracts.gatewayEVM.on("Called", async (...args: any[]) => {
+      await evmCall({
+        args,
+        chainID: NetworkID.BNB,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        zetachainContracts,
+      });
+    });
+
+    bnbContracts.gatewayEVM.on("Deposited", async (...args: any[]) => {
+      await evmDeposit({
+        args,
+        chainID: NetworkID.BNB,
+        custody: bnbContracts.custody,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        gatewayEVM: bnbContracts.gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    });
+
+    bnbContracts.gatewayEVM.on("DepositedAndCalled", async (...args: any[]) => {
+      await evmDepositAndCall({
+        args,
+        chainID: NetworkID.BNB,
+        custody: bnbContracts.custody,
+        deployer,
+        exitOnError: false,
+        foreignCoins,
+        gatewayEVM: bnbContracts.gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    });
+
     logger.info("Event handlers setup complete");
-
-    // Enable event processing now that everything is initialized
-    logger.info("Enabling event processing");
-    eventQueue.enableEventProcessing();
-
-    // Process any queued events
-    logger.info("Processing any queued events");
-    await eventQueue.processQueue();
-    logger.info("Event processing complete");
 
     if (suiContracts) {
       res = [...res, ...suiContracts.addresses];

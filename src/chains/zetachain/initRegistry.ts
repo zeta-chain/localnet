@@ -4,7 +4,6 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { setRegistryInitComplete } from "../../types/registryState";
-import { eventQueue } from "../../utils/eventQueue";
 
 const ZetaChainID = 31337;
 
