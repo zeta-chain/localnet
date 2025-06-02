@@ -5,6 +5,7 @@ import { ethers, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { connectorWithdraw } from "../evm/connectorWithdraw";
 import { evmCustodyWithdraw } from "../evm/custodyWithdraw";
 import { evmTSSTransfer } from "../evm/tssTransfer";
 import { solanaWithdraw } from "../solana/withdraw";
@@ -23,26 +24,27 @@ export const zetachainWithdraw = async ({
     deployer,
     tss,
     provider,
-    zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
+    zetachainContracts: { fungibleModuleSigner, gatewayZEVM, wzeta },
   } = contracts;
   logger.info("Gateway: 'Withdrawn' event emitted", {
     chain: NetworkID.ZetaChain,
   });
-  const [sender, , receiver, zrc20, amount, , , , , revertOptions] = args;
-  const chainID = foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
-  )?.foreign_chain_id;
+  const [sender, chainId, receiver, zrc20, amount, , , , , revertOptions] =
+    args;
+  const isZeta = zrc20 === wzeta.target;
+  let chainID = chainId.toString();
+  if (!isZeta) {
+    chainID = foreignCoins.find(
+      (coin: any) => coin.zrc20_contract_address === zrc20
+    )?.foreign_chain_id;
+  }
 
-  let asset = foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
-  ).asset;
+  let asset =
+    foreignCoins.find((coin: any) => coin.zrc20_contract_address === zrc20)
+      ?.asset || (isZeta ? "ZETA" : null);
 
   try {
     (tss as NonceManager).reset();
-    const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
-    const coinType = await zrc20Contract.COIN_TYPE();
-    const isGasToken = coinType === 1n;
-    const isERC20orZETA = coinType === 2n;
 
     if (chainID === NetworkID.Solana) {
       const receiverAddress = ethers.toUtf8String(receiver);
@@ -82,21 +84,38 @@ export const zetachainWithdraw = async ({
       });
     }
 
-    // EVM chain
-    if (isGasToken) {
+    let coinType;
+    if (!isZeta) {
+      const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+      coinType = await zrc20Contract.COIN_TYPE();
+    }
+
+    // if the token is gas token
+    if (coinType === 1n) {
       return await evmTSSTransfer({ args, foreignCoins, tss });
     }
 
-    if (isERC20orZETA) {
-      const evmContracts =
-        chainID === NetworkID.Ethereum
-          ? contracts.ethereumContracts
-          : contracts.bnbContracts;
+    const evmContracts =
+      chainID === NetworkID.Ethereum
+        ? contracts.ethereumContracts
+        : contracts.bnbContracts;
 
+    // if the token is ERC20 token
+    if (coinType === 2n) {
       return await evmCustodyWithdraw({
         args,
         evmContracts,
         foreignCoins,
+        tss,
+      });
+    }
+
+    // if the token is ZETA token
+    if (isZeta) {
+      return await connectorWithdraw({
+        args,
+        chainID,
+        evmContracts,
         tss,
       });
     }

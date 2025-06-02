@@ -1,3 +1,4 @@
+import { ChainId } from "@uniswap/sdk-core";
 import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
@@ -5,6 +6,7 @@ import * as Registry from "@zetachain/protocol-contracts/abi/Registry.sol/Regist
 import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/TestERC20.json";
 import * as ZetaConnectorNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNative.sol/ZetaConnectorNative.json";
 import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaConnectorNonNative.sol/ZetaConnectorNonNative.json";
+import * as ZetaNonEth from "@zetachain/protocol-contracts/abi/ZetaNonEth.sol/ZetaNonEth.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -13,13 +15,19 @@ import { evmCall } from "./call";
 import { evmDeposit } from "./deposit";
 import { evmDepositAndCall } from "./depositAndCall";
 
-const getZetaConnectorArtifacts = (chainId: number | string) => {
-  return chainId === NetworkID.Ethereum
+const getZetaConnectorArtifacts = (isNative: boolean | string) => {
+  return isNative
     ? { abi: ZetaConnectorNative.abi, bytecode: ZetaConnectorNative.bytecode }
     : {
         abi: ZetaConnectorNonNative.abi,
         bytecode: ZetaConnectorNonNative.bytecode,
       };
+};
+
+const getZetaTokenArtifacts = (isNative: boolean | string) => {
+  return isNative
+    ? { abi: TestERC20.abi, bytecode: TestERC20.bytecode }
+    : { abi: ZetaNonEth.abi, bytecode: ZetaNonEth.bytecode };
 };
 
 export const evmSetup = async ({
@@ -31,12 +39,7 @@ export const evmSetup = async ({
   foreignCoins,
   provider,
 }: any) => {
-  const testERC20Factory = new ethers.ContractFactory(
-    TestERC20.abi,
-    TestERC20.bytecode,
-    deployer
-  );
-
+  const isNative = chainID === NetworkID.Ethereum;
   const proxyFactory = new ethers.ContractFactory(
     ERC1967Proxy.abi,
     ERC1967Proxy.bytecode,
@@ -61,7 +64,7 @@ export const evmSetup = async ({
     deployer
   );
 
-  const zetaConnectorArtifacts = getZetaConnectorArtifacts(chainID);
+  const zetaConnectorArtifacts = getZetaConnectorArtifacts(isNative);
   const zetaConnectorFactory = new ethers.ContractFactory(
     zetaConnectorArtifacts.abi,
     zetaConnectorArtifacts.bytecode,
@@ -71,7 +74,6 @@ export const evmSetup = async ({
   const [
     tssAddress,
     deployerAddress,
-    testEVMZeta,
     gatewayEVMImpl,
     registryImpl,
     custodyImpl,
@@ -79,12 +81,28 @@ export const evmSetup = async ({
   ] = await Promise.all([
     tss.getAddress(),
     deployer.getAddress(),
-    testERC20Factory.deploy("zeta", "ZETA", deployOpts),
     gatewayEVMFactory.deploy(deployOpts),
     registryFactory.deploy(deployOpts),
     custodyFactory.deploy(deployOpts),
     zetaConnectorFactory.deploy(deployOpts),
   ]);
+
+  const zetaTokenArtifacts = await getZetaTokenArtifacts(isNative);
+  const testERC20Factory = new ethers.ContractFactory(
+    zetaTokenArtifacts.abi,
+    zetaTokenArtifacts.bytecode,
+    deployer
+  );
+  let testEVMZeta;
+  if (isNative) {
+    testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
+  } else {
+    testEVMZeta = await testERC20Factory.deploy(
+      tssAddress,
+      deployerAddress,
+      deployOpts
+    );
+  }
 
   const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
   const gatewayEVMInitFragment = gatewayEVMInterface.getFunction("initialize");
@@ -156,6 +174,19 @@ export const evmSetup = async ({
     zetaConnectorArtifacts.abi,
     deployer
   );
+
+  if (!isNative) {
+    const zetaNonEthContract = new ethers.Contract(
+      testEVMZeta.target,
+      ZetaNonEth.abi,
+      tss
+    );
+
+    await zetaNonEthContract.updateTssAndConnectorAddresses(
+      tssAddress,
+      zetaConnector.target
+    );
+  }
 
   await Promise.all([
     custody.initialize(
