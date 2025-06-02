@@ -7,6 +7,7 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import { ethers } from "ethers";
 
 import { deployOpts } from "../../deployOpts";
+import { eventQueue } from "../../utils/eventQueue";
 import { evmCall } from "./call";
 import { evmDeposit } from "./deposit";
 import { evmDepositAndCall } from "./depositAndCall";
@@ -158,45 +159,51 @@ export const evmSetup = async ({
     .setConnector(zetaConnectorImpl.target, deployOpts);
 
   gatewayEVM.on("Called", async (...args: Array<any>) => {
-    evmCall({
-      args,
-      chainID,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      provider,
-      zetachainContracts,
-    });
+    await eventQueue.enqueue(async () => {
+      await evmCall({
+        args,
+        chainID,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        provider,
+        zetachainContracts,
+      });
+    }, []);
   });
 
   gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    evmDeposit({
-      args,
-      chainID,
-      custody,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      gatewayEVM,
-      provider,
-      tss,
-      zetachainContracts,
-    });
+    await eventQueue.enqueue(async () => {
+      await evmDeposit({
+        args,
+        chainID,
+        custody,
+        deployer,
+        exitOnError,
+        foreignCoins,
+        gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    }, []);
   });
 
   gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
-    evmDepositAndCall({
-      args,
-      chainID,
-      custody,
-      deployer,
-      exitOnError: false,
-      foreignCoins,
-      gatewayEVM,
-      provider,
-      tss,
-      zetachainContracts,
-    });
+    await eventQueue.enqueue(async () => {
+      await evmDepositAndCall({
+        args,
+        chainID,
+        custody,
+        deployer,
+        exitOnError: false,
+        foreignCoins,
+        gatewayEVM,
+        provider,
+        tss,
+        zetachainContracts,
+      });
+    }, []);
   });
 
   return {

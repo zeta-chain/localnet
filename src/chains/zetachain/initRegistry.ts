@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { setRegistryInitComplete } from "../../types/registryState";
+import { eventQueue } from "../../utils/eventQueue";
 
 const ZetaChainID = 31337;
 
@@ -94,6 +95,12 @@ export const initRegistry = async ({
       });
     }
   }
+
+  // Mark registry initialization as complete
+  setRegistryInitComplete(true);
+
+  // Process any queued events
+  await eventQueue.processQueue();
 };
 
 const getTargetRegistry = ({

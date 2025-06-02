@@ -33,3 +33,37 @@ export function wrapWithNonceManager(
   }
   return new ethers.NonceManager(signer);
 }
+
+// Global nonce tracking for bundled environments
+const nonceMap = new Map<string, number>();
+
+/**
+ * Gets the next nonce for a signer, with manual tracking as a fallback
+ */
+export async function getNextNonce(signer: ethers.Signer): Promise<number> {
+  const address = await signer.getAddress();
+  const currentNonce = await signer.getNonce();
+
+  // Get the tracked nonce for this address
+  const trackedNonce = nonceMap.get(address) || currentNonce;
+
+  // Use the higher of the two to avoid conflicts
+  const nextNonce = Math.max(currentNonce, trackedNonce);
+
+  // Update the tracked nonce
+  nonceMap.set(address, nextNonce + 1);
+
+  return nextNonce;
+}
+
+/**
+ * Sends a transaction with manual nonce management
+ */
+export async function sendTransactionWithNonce(
+  signer: ethers.Signer,
+  transaction: ethers.TransactionRequest
+): Promise<ethers.TransactionResponse> {
+  const nonce = await getNextNonce(signer);
+  const txWithNonce = { ...transaction, nonce };
+  return await signer.sendTransaction(txWithNonce);
+}
