@@ -47,9 +47,14 @@ export async function setup(opts: SetupOptions) {
   }
 
   try {
+    logger.info("Starting TON setup", { chain: opts.chainID });
     return await setupThrowable(opts);
   } catch (error) {
-    logger.error("Unable to setup TON", { chain: opts.chainID, error });
+    logger.error("Unable to setup TON", {
+      chain: opts.chainID,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw error;
   }
 }
@@ -60,14 +65,38 @@ export async function setup(opts: SetupOptions) {
  *  - Setup observer-signer event-listener
  */
 async function setupThrowable(opts: SetupOptions) {
+  logger.info("Creating TON RPC client", { chain: opts.chainID });
   const rpcClient = await client();
+  logger.info("TON RPC client created", { chain: opts.chainID });
 
+  logger.info("Waiting for TON node", {
+    chain: opts.chainID,
+    healthEndpoint: cfg.ENDPOINT_HEALTH,
+    rpcEndpoint: cfg.ENDPOINT_RPC,
+  });
   await node.waitForNodeWithRPC(cfg.ENDPOINT_HEALTH, rpcClient);
+  logger.info("TON node is ready", { chain: opts.chainID });
 
+  logger.info("Creating deployer from faucet", {
+    chain: opts.chainID,
+    faucetUrl: cfg.ENDPOINT_FAUCET,
+  });
   const deployer = await deployerFromFaucetURL(cfg.ENDPOINT_FAUCET, rpcClient);
+  logger.info("Deployer created", {
+    chain: opts.chainID,
+    deployerAddress: deployer.address().toRawString(),
+  });
 
+  logger.info("Getting TSS address", { chain: opts.chainID });
   const tssAddress = await opts.tss.getAddress();
+  logger.info("TSS address obtained", { chain: opts.chainID, tssAddress });
+
+  logger.info("Provisioning gateway", { chain: opts.chainID });
   const gateway = await provisionGateway(deployer, tssAddress);
+  logger.info("Gateway provisioned", {
+    chain: opts.chainID,
+    gatewayAddress: gateway.address.toRawString(),
+  });
 
   logger.info(
     `TON Gateway (${gateway.address.toRawString()}) deployed by ${deployer
@@ -77,7 +106,9 @@ async function setupThrowable(opts: SetupOptions) {
   );
 
   // Observe inbound transactions (async loop)
+  logger.info("Setting up inbound observer", { chain: opts.chainID });
   observerInbounds(rpcClient, gateway, onInbound(opts, rpcClient, gateway));
+  logger.info("Inbound observer setup complete", { chain: opts.chainID });
 
   const env: Env = {
     client: rpcClient,
@@ -85,7 +116,7 @@ async function setupThrowable(opts: SetupOptions) {
     gateway,
   };
 
-  return {
+  const result = {
     addresses: [
       {
         address: deployer.address().toRawString(),
@@ -100,6 +131,9 @@ async function setupThrowable(opts: SetupOptions) {
     ],
     env,
   };
+
+  logger.info("TON setup complete", { chain: opts.chainID });
+  return result;
 }
 
 const revertGasLimit = 200_000;

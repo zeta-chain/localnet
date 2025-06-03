@@ -167,23 +167,24 @@ export const createToken = async (
   const zrc20Amount = ethers.parseUnits("100", await (zrc20 as any).decimals());
   const wzetaAmount = ethers.parseUnits("100", await (wzeta as any).decimals());
 
-  await Promise.all([
-    (zrc20 as any).deposit(
-      await deployer.getAddress(),
-      ethers.parseEther("1000"),
+  // Execute transactions sequentially to avoid nonce conflicts
+  await (zrc20 as any).deposit(
+    await deployer.getAddress(),
+    ethers.parseEther("1000"),
+    deployOpts
+  );
+
+  await (zrc20 as any)
+    .connect(deployer)
+    .transfer(
+      fungibleModuleSigner.getAddress(),
+      ethers.parseUnits("100", await (zrc20 as any).decimals()),
       deployOpts
-    ),
-    (zrc20 as any)
-      .connect(deployer)
-      .transfer(
-        fungibleModuleSigner.getAddress(),
-        ethers.parseUnits("100", await (zrc20 as any).decimals()),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .deposit({ value: ethers.parseEther("1000"), ...deployOpts }),
-  ]);
+    );
+
+  await (wzeta as any)
+    .connect(deployer)
+    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
 
   await uniswapV2AddLiquidity(
     uniswapRouterInstance,

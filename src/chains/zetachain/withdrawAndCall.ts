@@ -4,6 +4,7 @@ import { ethers, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { evmCustodyWithdrawAndCall } from "../evm/custodyWithdrawAndCall";
 import { evmExecute } from "../evm/execute";
 import { solanaExecute } from "../solana/execute";
@@ -26,6 +27,15 @@ export const zetachainWithdrawAndCall = async ({
   logger.info("Gateway: 'WithdrawnAndCalled' event emitted", {
     chain: NetworkID.ZetaChain,
   });
+
+  // Skip processing events during gateway registration
+  if (isRegisteringGatewaysActive()) {
+    logger.debug("Skipping event during gateway registration", {
+      chain: NetworkID.ZetaChain,
+    });
+    return;
+  }
+
   const [
     sender,
     ,

@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { setRegistryInitComplete } from "../../types/registryState";
+import { setRegisteringGateways } from "../../utils/registryUtils";
 
 const ZetaChainID = 31337;
 
@@ -18,81 +19,127 @@ export const initRegistry = async ({
   contracts: any;
   res: any[];
 }) => {
-  setRegistryInitComplete(false);
-
-  const chainIdMap: Record<string, number> = {
-    bnb: toNumber(NetworkID.BNB),
-    ethereum: toNumber(NetworkID.Ethereum),
-    zetachain: ZetaChainID,
-  };
-
-  const {
-    zetachainContracts,
-    ethereumContracts,
-    bnbContracts,
-    foreignCoins,
-    deployer,
-  } = contracts;
-  const { coreRegistry } = zetachainContracts;
-
-  const addresses = res.filter(
-    (item: any) => typeof item === "object" && item.address
-  );
-  const chains = [...new Set(addresses.map((item: any) => item.chain))];
-  const contractsToRegister = addresses.filter(
-    (item: any) =>
-      !item.type.includes("ZRC-20") && item.chain && item.address && item.type
-  );
-
   try {
-    await approveAllZRC20GasTokens({
-      chainIdMap,
-      coreRegistry,
-      deployer,
-      foreignCoins,
-    });
-  } catch (err: any) {
-    logger.error(`Error approving ZRC20 gas tokens: ${err}`, {
-      chain: NetworkID.ZetaChain,
-    });
-  }
+    logger.debug("Starting registry initialization", { chain: "localnet" });
+    setRegistryInitComplete(false);
 
-  for (const chain of chains) {
-    if (chain === "zetachain") continue;
+    const chainIdMap: Record<string, number> = {
+      bnb: toNumber(NetworkID.BNB),
+      ethereum: toNumber(NetworkID.Ethereum),
+      zetachain: ZetaChainID,
+    };
+
+    const {
+      zetachainContracts,
+      ethereumContracts,
+      bnbContracts,
+      foreignCoins,
+      deployer,
+    } = contracts;
+    const { coreRegistry } = zetachainContracts;
+
+    const addresses = res.filter(
+      (item: any) => typeof item === "object" && item.address
+    );
+    const chains = [...new Set(addresses.map((item: any) => item.chain))];
+    const contractsToRegister = addresses.filter(
+      (item: any) =>
+        !item.type.includes("ZRC-20") &&
+        !item.type.includes("gateway") &&
+        !item.type.includes("SPL-20") &&
+        item.chain !== "solana" &&
+        item.chain !== "sui" &&
+        item.chain !== "ton" &&
+        item.chain &&
+        item.address &&
+        item.type
+    );
 
     try {
-      const targetRegistry = getTargetRegistry({
-        bnbContracts,
-        chain,
-        ethereumContracts,
-      });
-
-      if (targetRegistry) {
-        await bootstrapChainData({ coreRegistry, targetRegistry });
-      }
-
-      await registerChain({
-        addresses,
+      logger.debug("Approving ZRC20 gas tokens", { chain: "localnet" });
+      await approveAllZRC20GasTokens({
         chainIdMap,
-        chainName: chain,
         coreRegistry,
+        deployer,
         foreignCoins,
       });
+      logger.debug("ZRC20 gas tokens approval complete", { chain: "localnet" });
     } catch (err: any) {
-      logger.error(`Error registering ${chain} chain: ${err}`, {
+      logger.error(`Error approving ZRC20 gas tokens: ${err}`, {
         chain: NetworkID.ZetaChain,
+        error: err.message,
+        stack: err.stack,
       });
+      throw err;
     }
-  }
 
-  for (const contract of contractsToRegister) {
-    try {
-      await registerContract({ chainIdMap, contract, coreRegistry });
-    } catch (err: any) {
-      logger.error(`Error registering contract ${contract.type}: ${err}`, {
-        chain: NetworkID.ZetaChain,
-      });
+    for (const chain of chains) {
+      if (chain === "zetachain") continue;
+
+      // Skip non-EVM chains that don't have registry contracts
+      if (["solana", "sui", "ton"].includes(chain)) continue;
+
+      try {
+        logger.debug(`Registering ${chain} chain`, { chain: "localnet" });
+        const targetRegistry = getTargetRegistry({
+          bnbContracts,
+          chain,
+          ethereumContracts,
+        });
+
+        if (targetRegistry) {
+          await bootstrapChainData({ coreRegistry, targetRegistry });
+        }
+
+        await registerChain({
+          addresses,
+          chainIdMap,
+          chainName: chain,
+          coreRegistry,
+          foreignCoins,
+        });
+        logger.debug(`${chain} chain registration complete`, {
+          chain: "localnet",
+        });
+      } catch (err: any) {
+        logger.error(`Error registering ${chain} chain: ${err}`, {
+          chain: NetworkID.ZetaChain,
+          error: err.message,
+          stack: err.stack,
+        });
+        throw err;
+      }
     }
+
+    for (const contract of contractsToRegister) {
+      try {
+        logger.debug(`Registering contract ${contract.type}`, {
+          chain: "localnet",
+        });
+        await registerContract({ chainIdMap, contract, coreRegistry });
+      } catch (err: any) {
+        logger.error(`Error registering contract ${contract.type}: ${err}`, {
+          chain: NetworkID.ZetaChain,
+          error: err.message,
+          stack: err.stack,
+        });
+        throw err;
+      }
+    }
+
+    // Mark registry initialization as complete
+    setRegistryInitComplete(true);
+    logger.debug("Registry initialization marked as complete", {
+      chain: "localnet",
+    });
+
+    // Don't process events here - they'll be processed after all initialization
+  } catch (error) {
+    logger.error("Fatal error in initRegistry", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
   }
 };
 
@@ -265,5 +312,76 @@ const approveAllZRC20GasTokens = async ({
       });
       throw err;
     }
+  }
+};
+
+export const registerGatewayContracts = async ({
+  contracts,
+  res,
+}: {
+  contracts: any;
+  res: any[];
+}) => {
+  try {
+    logger.debug("Registering gateway contracts", { chain: "localnet" });
+    setRegisteringGateways(true);
+
+    const chainIdMap: Record<string, number> = {
+      bnb: toNumber(NetworkID.BNB),
+      ethereum: toNumber(NetworkID.Ethereum),
+      zetachain: ZetaChainID,
+    };
+
+    const { zetachainContracts } = contracts;
+    const { coreRegistry } = zetachainContracts;
+
+    const addresses = res.filter(
+      (item: any) => typeof item === "object" && item.address
+    );
+
+    const gatewayContracts = addresses.filter(
+      (item: any) =>
+        item.type.includes("gateway") &&
+        item.chain !== "solana" && // Exclude Solana gateway
+        item.chain !== "sui" && // Exclude Sui gateway
+        item.chain !== "ton" && // Exclude TON gateway
+        item.chain &&
+        item.address &&
+        item.type
+    );
+
+    for (const contract of gatewayContracts) {
+      try {
+        logger.debug(`Registering gateway contract ${contract.type}`, {
+          chain: "localnet",
+        });
+        await registerContract({ chainIdMap, contract, coreRegistry });
+      } catch (err: any) {
+        logger.error(
+          `Error registering gateway contract ${contract.type}: ${err}`,
+          {
+            chain: NetworkID.ZetaChain,
+            error: err.message,
+            stack: err.stack,
+          }
+        );
+        throw err;
+      }
+    }
+
+    logger.debug("Gateway contracts registration complete", {
+      chain: "localnet",
+    });
+
+    // Wait a bit to ensure all registry-triggered events have been emitted
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  } catch (error) {
+    logger.error("Fatal error in registerGatewayContracts", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  } finally {
+    setRegisteringGateways(false);
   }
 };
