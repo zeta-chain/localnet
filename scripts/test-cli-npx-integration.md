@@ -29,7 +29,7 @@ Tests that localnet changes work correctly when consumed by the `cli` via **npx 
 
 ## Expected workspace structure
 
-```
+```text
 your-workspace/
 ├── localnet/         # This repo
 └── cli/              # CLI repo  

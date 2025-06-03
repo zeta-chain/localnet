@@ -101,10 +101,6 @@ echo "✅ Created: $LOCALNET_TARBALL"
 echo "2️⃣ Updating CLI package.json..."
 cd ../cli
 
-# Capture original localnet version for verification later
-ORIGINAL_LOCALNET_VERSION=$(grep -o '"@zetachain/localnet": "[^"]*"' package.json | cut -d'"' -f4)
-echo "  📝 Original localnet version: $ORIGINAL_LOCALNET_VERSION"
-
 cp package.json package.json.backup
 cp yarn.lock yarn.lock.backup
 echo "  🧹 Clearing yarn cache..."
@@ -135,13 +131,4 @@ rm -rf ~/.npm/_npx 2>/dev/null || true
 echo "  🧪 Running test..."
 echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init
 
-# Verify restoration (the cleanup function will handle actual restoration)
-echo "🔍 Verifying restoration will be handled by cleanup..."
-if [[ -f package.json.backup ]]; then
-    CURRENT_VERSION=$(grep -o '"@zetachain/localnet": "[^"]*"' package.json | cut -d'"' -f4)
-    echo "  📝 Current version in package.json: $CURRENT_VERSION"
-    echo "  📝 Will restore to: $ORIGINAL_LOCALNET_VERSION"
-fi
-
-echo ""
 echo "✅ Test completed successfully! Environment will be restored automatically." 
