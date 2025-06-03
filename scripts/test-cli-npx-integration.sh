@@ -4,6 +4,74 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Cleanup function to restore environment on script exit
+cleanup() {
+    echo ""
+    echo "🧹 Cleanup function triggered..."
+    
+    # Only proceed if we're in the CLI directory and have backups
+    if [[ -d "$WORKSPACE_ROOT/cli" ]]; then
+        cd "$WORKSPACE_ROOT/cli"
+        
+        # Remove CLI tarball if it exists
+        if [[ -n "${CLI_TARBALL:-}" && -f "$CLI_TARBALL" ]]; then
+            echo "  🗑️  Removing CLI tarball: $CLI_TARBALL"
+            rm -f "$CLI_TARBALL"
+        fi
+        
+        # Restore package.json if backup exists
+        if [[ -f package.json.backup ]]; then
+            echo "  📦 Restoring CLI package.json..."
+            mv package.json.backup package.json
+            echo "  ✅ package.json restored"
+        fi
+        
+        # Restore yarn.lock if backup exists
+        if [[ -f yarn.lock.backup ]]; then
+            echo "  📦 Restoring yarn.lock..."
+            mv yarn.lock.backup yarn.lock
+            echo "  ✅ yarn.lock restored"
+        fi
+        
+        # Remove any temporary files
+        rm -f package.json.tmp
+        
+        # Run yarn install to restore dependencies
+        echo "  📥 Running yarn install to restore dependencies..."
+        if yarn install > /dev/null 2>&1; then
+            echo "  ✅ Dependencies restored successfully"
+        else
+            echo "  ⚠️  Yarn install had issues, but files are restored"
+        fi
+    fi
+    
+    # Remove localnet tarball if it exists
+    if [[ -n "${LOCALNET_TARBALL:-}" && -d "$WORKSPACE_ROOT/localnet" ]]; then
+        cd "$WORKSPACE_ROOT/localnet"
+        if [[ -f "$LOCALNET_TARBALL" ]]; then
+            echo "  🗑️  Removing localnet tarball: $LOCALNET_TARBALL"
+            rm -f "$LOCALNET_TARBALL"
+        fi
+    fi
+    
+    # Clean localnet test files that might interfere
+    if [[ -d "$WORKSPACE_ROOT/localnet/test-ledger" ]]; then
+        echo "  🧹 Cleaning localnet test files..."
+        rm -rf "$WORKSPACE_ROOT/localnet/test-ledger"
+    fi
+    
+    # Return to original directory if it exists
+    if [[ -n "${ORIGINAL_DIR:-}" && -d "$ORIGINAL_DIR" ]]; then
+        cd "$ORIGINAL_DIR"
+        echo "  📍 Returned to original directory: $(pwd)"
+    fi
+    
+    echo "🧹 Cleanup completed!"
+}
+
+# Register cleanup function to run on script exit
+trap cleanup EXIT
+
 echo "🧪 Testing localnet changes with CLI integration..."
 
 # Remember starting directory
@@ -65,64 +133,15 @@ echo "5️⃣ Testing with npx..."
 echo "  🧹 Clearing npx cache..."
 rm -rf ~/.npm/_npx 2>/dev/null || true
 echo "  🧪 Running test..."
-npx --yes ./$CLI_TARBALL localnet start --stop-after-init
+echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init
 
-# Step 6: Cleanup
-echo "6️⃣ Cleaning up..."
-echo "  🗑️  Removing CLI tarball..."
-rm -f $CLI_TARBALL
-
-echo "  🗑️  Removing localnet tarball..."
-rm -f ../localnet/$LOCALNET_TARBALL
-
-echo "  📦 Restoring CLI package.json..."
+# Verify restoration (the cleanup function will handle actual restoration)
+echo "🔍 Verifying restoration will be handled by cleanup..."
 if [[ -f package.json.backup ]]; then
-    mv package.json.backup package.json
-    echo "  ✅ package.json restored"
-else
-    echo "  ❌ package.json.backup not found!"
-    ls -la package.json*
+    CURRENT_VERSION=$(grep -o '"@zetachain/localnet": "[^"]*"' package.json | cut -d'"' -f4)
+    echo "  📝 Current version in package.json: $CURRENT_VERSION"
+    echo "  📝 Will restore to: $ORIGINAL_LOCALNET_VERSION"
 fi
-
-echo "  📦 Restoring yarn.lock..."
-if [[ -f yarn.lock.backup ]]; then
-    mv yarn.lock.backup yarn.lock
-    echo "  ✅ yarn.lock restored"
-else
-    echo "  ❌ yarn.lock.backup not found!"
-    ls -la yarn.lock*
-fi
-
-echo "  🧹 Removing any leftovers..."
-rm -f package.json.tmp
-
-echo "  🧹 Cleaning localnet test files that might interfere..."
-rm -rf ../localnet/test-ledger/ 2>/dev/null || true
-
-echo "  📥 Running yarn install to restore dependencies..."
-if yarn install > /dev/null 2>&1; then
-    echo "  ✅ Dependencies restored successfully"
-else
-    echo "  ⚠️  Yarn install had issues, but files are restored"
-fi
-
-echo "✅ Cleanup completed!"
-
-# Verify restoration
-echo "🔍 Verifying restoration..."
-echo "  Current directory: $(pwd)"
-if grep -q "$ORIGINAL_LOCALNET_VERSION" package.json 2>/dev/null; then
-    echo "  ✅ package.json appears to be restored (contains $ORIGINAL_LOCALNET_VERSION)"
-else
-    echo "  ⚠️  package.json might not be properly restored"
-    echo "  Expected localnet version: $ORIGINAL_LOCALNET_VERSION"
-    echo "  Current localnet version in package.json:"
-    grep "@zetachain/localnet" package.json || echo "  No localnet dependency found"
-fi
-
-# Return to original directory
-cd "$ORIGINAL_DIR"
 
 echo ""
-echo "✅ Test completed and environment restored!"
-echo "📍 Current directory: $(pwd)" 
+echo "✅ Test completed successfully! Environment will be restored automatically." 
