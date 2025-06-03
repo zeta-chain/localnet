@@ -2,15 +2,14 @@
 
 echo "🧪 Testing localnet changes with CLI integration..."
 
+# Remember starting directory
+ORIGINAL_DIR=$(pwd)
 # Navigate to workspace root (parent of localnet/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$WORKSPACE_ROOT"
 
 echo "📍 Working from: $(pwd)"
-
-# Remember starting directory
-ORIGINAL_DIR=$(pwd)
 
 # Step 1: Pack localnet (with cache clearing)
 echo "1️⃣ Packing localnet..."
