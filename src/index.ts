@@ -38,7 +38,7 @@ export const initLocalnet = async ({
   port: number;
 }): Promise<(InitLocalnetAddress | undefined)[]> => {
   try {
-    logger.info("Starting initLocalnet", { chains, port });
+    logger.debug("Starting initLocalnet", { chain: "localnet", chains, port });
 
     const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
     provider.pollingInterval = 100;
@@ -57,12 +57,12 @@ export const initLocalnet = async ({
       )
     ).connect(provider);
 
-    logger.info("Setting up ZetaChain contracts");
+    logger.debug("Setting up ZetaChain contracts", { chain: "localnet" });
     const zetachainContracts = await zetachainSetup(deployer, tss, provider);
-    logger.info("ZetaChain contracts setup complete");
+    logger.debug("ZetaChain contracts setup complete", { chain: "localnet" });
 
     // Run non-EVM chains in parallel (they don't share wallets)
-    logger.info("Setting up non-EVM chains");
+    logger.debug("Setting up non-EVM chains", { chain: "localnet" });
     const [solanaContracts, suiContracts, tonContracts] = await Promise.all([
       solanaSetup({
         deployer,
@@ -88,10 +88,10 @@ export const initLocalnet = async ({
         zetachainContracts,
       }),
     ]);
-    logger.info("Non-EVM chains setup complete");
+    logger.debug("Non-EVM chains setup complete", { chain: "localnet" });
 
     // Run EVM chains sequentially to avoid nonce conflicts
-    logger.info("Setting up Ethereum contracts");
+    logger.debug("Setting up Ethereum contracts", { chain: "localnet" });
     const ethereumContracts = await evmSetup({
       chainID: NetworkID.Ethereum,
       deployer,
@@ -101,12 +101,12 @@ export const initLocalnet = async ({
       tss,
       zetachainContracts,
     });
-    logger.info("Ethereum contracts setup complete");
+    logger.debug("Ethereum contracts setup complete", { chain: "localnet" });
 
     // Add a small delay to ensure nonce management works properly
     await delay(100);
 
-    logger.info("Setting up BNB contracts");
+    logger.debug("Setting up BNB contracts", { chain: "localnet" });
     const bnbContracts = await evmSetup({
       chainID: NetworkID.BNB,
       deployer,
@@ -116,7 +116,7 @@ export const initLocalnet = async ({
       tss,
       zetachainContracts,
     });
-    logger.info("BNB contracts setup complete");
+    logger.debug("BNB contracts setup complete", { chain: "localnet" });
 
     const contracts = {
       bnbContracts,
@@ -131,7 +131,7 @@ export const initLocalnet = async ({
       zetachainContracts,
     };
 
-    logger.info("Creating tokens");
+    logger.debug("Creating tokens", { chain: "localnet" });
     await Promise.all([
       createToken(contracts, "ETH", true, NetworkID.Ethereum, 18),
       createToken(contracts, "USDC", false, NetworkID.Ethereum, 18),
@@ -143,7 +143,6 @@ export const initLocalnet = async ({
       createToken(contracts, "USDC", false, NetworkID.Sui, 9),
       createToken(contracts, "TON", true, NetworkID.TON, 9),
     ]);
-
     logger.debug("Token creation complete", { chain: "localnet" });
 
     let res = [
@@ -245,12 +244,12 @@ export const initLocalnet = async ({
     }
 
     // Init registry
-    logger.info("Initializing registry");
+    logger.debug("Initializing registry", { chain: "localnet" });
     await initRegistry({ contracts, res });
-    logger.info("Registry initialization complete");
+    logger.debug("Registry initialization complete", { chain: "localnet" });
 
     // Now set up ALL event handlers after everything is initialized
-    logger.info("Setting up event handlers");
+    logger.debug("Setting up event handlers", { chain: "localnet" });
 
     // Set up ZetaChain event handlers
     zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
@@ -353,12 +352,12 @@ export const initLocalnet = async ({
       });
     });
 
-    logger.info("Event handlers setup complete");
+    logger.debug("Event handlers setup complete", { chain: "localnet" });
 
     // Now register gateway contracts after event handlers are ready
-    logger.info("Registering gateway contracts");
+    logger.debug("Registering gateway contracts", { chain: "localnet" });
     await registerGatewayContracts({ contracts, res });
-    logger.info("Gateway contracts registered");
+    logger.debug("Gateway contracts registered", { chain: "localnet" });
 
     return res;
   } catch (error) {

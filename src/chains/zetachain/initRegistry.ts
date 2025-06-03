@@ -20,7 +20,7 @@ export const initRegistry = async ({
   res: any[];
 }) => {
   try {
-    logger.info("Starting registry initialization");
+    logger.debug("Starting registry initialization", { chain: "localnet" });
     setRegistryInitComplete(false);
 
     const chainIdMap: Record<string, number> = {
@@ -56,14 +56,14 @@ export const initRegistry = async ({
     );
 
     try {
-      logger.info("Approving ZRC20 gas tokens");
+      logger.debug("Approving ZRC20 gas tokens", { chain: "localnet" });
       await approveAllZRC20GasTokens({
         chainIdMap,
         coreRegistry,
         deployer,
         foreignCoins,
       });
-      logger.info("ZRC20 gas tokens approval complete");
+      logger.debug("ZRC20 gas tokens approval complete", { chain: "localnet" });
     } catch (err: any) {
       logger.error(`Error approving ZRC20 gas tokens: ${err}`, {
         chain: NetworkID.ZetaChain,
@@ -80,7 +80,7 @@ export const initRegistry = async ({
       if (["solana", "sui", "ton"].includes(chain)) continue;
 
       try {
-        logger.info(`Registering ${chain} chain`);
+        logger.debug(`Registering ${chain} chain`, { chain: "localnet" });
         const targetRegistry = getTargetRegistry({
           bnbContracts,
           chain,
@@ -98,7 +98,9 @@ export const initRegistry = async ({
           coreRegistry,
           foreignCoins,
         });
-        logger.info(`${chain} chain registration complete`);
+        logger.debug(`${chain} chain registration complete`, {
+          chain: "localnet",
+        });
       } catch (err: any) {
         logger.error(`Error registering ${chain} chain: ${err}`, {
           chain: NetworkID.ZetaChain,
@@ -111,7 +113,9 @@ export const initRegistry = async ({
 
     for (const contract of contractsToRegister) {
       try {
-        logger.info(`Registering contract ${contract.type}`);
+        logger.debug(`Registering contract ${contract.type}`, {
+          chain: "localnet",
+        });
         await registerContract({ chainIdMap, contract, coreRegistry });
       } catch (err: any) {
         logger.error(`Error registering contract ${contract.type}: ${err}`, {
@@ -125,7 +129,9 @@ export const initRegistry = async ({
 
     // Mark registry initialization as complete
     setRegistryInitComplete(true);
-    logger.info("Registry initialization marked as complete");
+    logger.debug("Registry initialization marked as complete", {
+      chain: "localnet",
+    });
 
     // Don't process events here - they'll be processed after all initialization
   } catch (error) {
@@ -317,7 +323,7 @@ export const registerGatewayContracts = async ({
   res: any[];
 }) => {
   try {
-    logger.info("Registering gateway contracts");
+    logger.debug("Registering gateway contracts", { chain: "localnet" });
     setRegisteringGateways(true);
 
     const chainIdMap: Record<string, number> = {
@@ -346,7 +352,9 @@ export const registerGatewayContracts = async ({
 
     for (const contract of gatewayContracts) {
       try {
-        logger.info(`Registering gateway contract ${contract.type}`);
+        logger.debug(`Registering gateway contract ${contract.type}`, {
+          chain: "localnet",
+        });
         await registerContract({ chainIdMap, contract, coreRegistry });
       } catch (err: any) {
         logger.error(
@@ -361,7 +369,9 @@ export const registerGatewayContracts = async ({
       }
     }
 
-    logger.info("Gateway contracts registration complete");
+    logger.debug("Gateway contracts registration complete", {
+      chain: "localnet",
+    });
 
     // Wait a bit to ensure all registry-triggered events have been emitted
     await new Promise((resolve) => setTimeout(resolve, 2000));
