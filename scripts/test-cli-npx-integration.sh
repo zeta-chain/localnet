@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Strict mode: exit on errors, undefined variables, or pipeline failures
+set -euo pipefail
+IFS=$'\n\t'
+
 echo "🧪 Testing localnet changes with CLI integration..."
 
 # Remember starting directory
