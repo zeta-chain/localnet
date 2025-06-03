@@ -13,6 +13,7 @@ import * as util from "util";
 import { addBackgroundProcess } from "../../backgroundProcesses";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { sleep } from "../../utils";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
 import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
@@ -153,7 +154,7 @@ export const solanaSetup = async ({
       chain: NetworkID.Solana,
     });
 
-    await new Promise((r) => setTimeout(r, 1000));
+    await sleep(1000);
 
     await gatewayProgram.methods.initialize(tssAddress, chain_id_bn).rpc();
     logger.info("Initialized gateway program", { chain: NetworkID.Solana });

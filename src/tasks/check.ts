@@ -2,10 +2,12 @@ import ansis from "ansis";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 
+import { sleep } from "../utils";
+
 const LOCALNET_JSON_FILE = "./localnet.json";
 
 const localnetCheck = async (args: any) => {
-  await new Promise((resolve) => setTimeout(resolve, args.delay * 1000));
+  await sleep(args.delay * 1000);
 
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running (JSON file missing)."));

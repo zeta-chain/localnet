@@ -7,6 +7,7 @@ import { ethers, Log, LogDescription, Signer } from "ethers";
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
 import { logger } from "../logger";
+import { sleep } from "../utils";
 
 /**
  * Prepares and deploys Uniswap V3 contracts.
@@ -127,7 +128,7 @@ export const uniswapV3AddLiquidity = async (
     });
 
     // Wait for pool initialization
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await sleep(1000);
 
     logger.debug(
       `Adding liquidity to V3 pool: amount0=${amount0.toString()}, amount1=${amount1.toString()}, recipient=${await deployer.getAddress()}, token0=${token0}, token1=${token1}`,
@@ -152,7 +153,7 @@ export const uniswapV3AddLiquidity = async (
     });
 
     // Wait for position to be minted
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await sleep(1000);
 
     const liquidityInfo = await verifyV3Liquidity(
       pool,

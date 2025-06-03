@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { setRegistryInitComplete } from "../../types/registryState";
+import { sleep } from "../../utils";
 import { setRegisteringGateways } from "../../utils/registryUtils";
 
 const ZetaChainID = 31337;
@@ -374,7 +375,7 @@ export const registerGatewayContracts = async ({
     });
 
     // Wait a bit to ensure all registry-triggered events have been emitted
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await sleep(2000);
   } catch (error) {
     logger.error("Fatal error in registerGatewayContracts", {
       error: error instanceof Error ? error.message : String(error),

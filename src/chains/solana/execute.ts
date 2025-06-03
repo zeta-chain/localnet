@@ -10,6 +10,7 @@ import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { sleep } from "../../utils";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./constants";
 import Gateway_IDL from "./idl/gateway.json";
 
@@ -122,7 +123,7 @@ export const solanaExecute = async ({
         .rpc();
 
       // get tx details to check if connected program is called
-      await new Promise((r) => setTimeout(r, 2000));
+      await sleep(2000);
       const transaction = await connection.getTransaction(signature, {
         commitment: "confirmed",
       });
@@ -200,7 +201,7 @@ export const solanaExecute = async ({
         .rpc();
 
       // get tx details to check if connected program is called
-      await new Promise((r) => setTimeout(r, 2000));
+      await sleep(2000);
       const transaction = await connection.getTransaction(signature, {
         commitment: "confirmed",
       });
