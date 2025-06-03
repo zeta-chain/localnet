@@ -46,6 +46,10 @@ export const initRegistry = async ({
       (item: any) =>
         !item.type.includes("ZRC-20") &&
         !item.type.includes("gateway") &&
+        !item.type.includes("SPL-20") &&
+        item.chain !== "solana" &&
+        item.chain !== "sui" &&
+        item.chain !== "ton" &&
         item.chain &&
         item.address &&
         item.type
@@ -71,6 +75,9 @@ export const initRegistry = async ({
 
     for (const chain of chains) {
       if (chain === "zetachain") continue;
+
+      // Skip non-EVM chains that don't have registry contracts
+      if (["solana", "sui", "ton"].includes(chain)) continue;
 
       try {
         logger.info(`Registering ${chain} chain`);
@@ -328,7 +335,13 @@ export const registerGatewayContracts = async ({
 
     const gatewayContracts = addresses.filter(
       (item: any) =>
-        item.type.includes("gateway") && item.chain && item.address && item.type
+        item.type.includes("gateway") &&
+        item.chain !== "solana" && // Exclude Solana gateway
+        item.chain !== "sui" && // Exclude Sui gateway
+        item.chain !== "ton" && // Exclude TON gateway
+        item.chain &&
+        item.address &&
+        item.type
     );
 
     for (const contract of gatewayContracts) {

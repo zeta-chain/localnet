@@ -223,6 +223,27 @@ export const initLocalnet = async ({
         }),
     ];
 
+    // Add non-EVM chain addresses before registry initialization
+    if (suiContracts) {
+      res = [...res, ...suiContracts.addresses];
+    }
+
+    if (tonContracts) {
+      res = [...res, ...tonContracts.addresses];
+    }
+
+    if (solanaContracts) {
+      res = [
+        ...res,
+        ...solanaContracts.addresses,
+        {
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+          chain: "solana",
+          type: "tokenProgram",
+        },
+      ];
+    }
+
     // Init registry
     logger.info("Initializing registry");
     await initRegistry({ contracts, res });
@@ -338,26 +359,6 @@ export const initLocalnet = async ({
     logger.info("Registering gateway contracts");
     await registerGatewayContracts({ contracts, res });
     logger.info("Gateway contracts registered");
-
-    if (suiContracts) {
-      res = [...res, ...suiContracts.addresses];
-    }
-
-    if (tonContracts) {
-      res = [...res, ...tonContracts.addresses];
-    }
-
-    if (solanaContracts) {
-      res = [
-        ...res,
-        ...solanaContracts.addresses,
-        {
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-          chain: "solana",
-          type: "tokenProgram",
-        },
-      ];
-    }
 
     return res;
   } catch (error) {
