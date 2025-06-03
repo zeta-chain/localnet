@@ -16,7 +16,7 @@ export const evmCall = async ({
   foreignCoins,
   exitOnError = false,
 }: any) => {
-  if (isRegistryInitComplete()) {
+  if (isRegistryInitComplete() && !isRegisteringGatewaysActive()) {
     logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   }
 
