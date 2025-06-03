@@ -28,6 +28,11 @@ echo "✅ Created: $LOCALNET_TARBALL"
 # Step 2: Add new tarball as version in CLI package.json
 echo "2️⃣ Updating CLI package.json..."
 cd ../cli
+
+# Capture original localnet version for verification later
+ORIGINAL_LOCALNET_VERSION=$(grep -o '"@zetachain/localnet": "[^"]*"' package.json | cut -d'"' -f4)
+echo "  📝 Original localnet version: $ORIGINAL_LOCALNET_VERSION"
+
 cp package.json package.json.backup
 cp yarn.lock yarn.lock.backup
 echo "  🧹 Clearing yarn cache..."
@@ -102,10 +107,11 @@ echo "✅ Cleanup completed!"
 # Verify restoration
 echo "🔍 Verifying restoration..."
 echo "  Current directory: $(pwd)"
-if grep -q "11.0.3-rc1" package.json 2>/dev/null; then
-    echo "  ✅ package.json appears to be restored (contains 11.0.3-rc1)"
+if grep -q "$ORIGINAL_LOCALNET_VERSION" package.json 2>/dev/null; then
+    echo "  ✅ package.json appears to be restored (contains $ORIGINAL_LOCALNET_VERSION)"
 else
     echo "  ⚠️  package.json might not be properly restored"
+    echo "  Expected localnet version: $ORIGINAL_LOCALNET_VERSION"
     echo "  Current localnet version in package.json:"
     grep "@zetachain/localnet" package.json || echo "  No localnet dependency found"
 fi
