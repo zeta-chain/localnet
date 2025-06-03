@@ -24,7 +24,7 @@ export const evmDepositAndCall = async ({
 
   // Skip processing events during gateway registration
   if (isRegisteringGatewaysActive()) {
-    logger.info("Skipping event during gateway registration", {
+    logger.debug("Skipping event during gateway registration", {
       chain: chainID,
     });
     return;

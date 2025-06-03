@@ -29,7 +29,7 @@ export const zetachainCall = async ({
 
   // Skip processing events during gateway registration
   if (isRegisteringGatewaysActive()) {
-    logger.info("Skipping event during gateway registration", {
+    logger.debug("Skipping event during gateway registration", {
       chain: NetworkID.ZetaChain,
     });
     return;
