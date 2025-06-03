@@ -65,7 +65,7 @@ echo "5️⃣ Testing with npx..."
 echo "  🧹 Clearing npx cache..."
 rm -rf ~/.npm/_npx 2>/dev/null || true
 echo "  🧪 Running test..."
-echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init
+npx --yes ./$CLI_TARBALL localnet start --stop-after-init
 
 # Step 6: Cleanup
 echo "6️⃣ Cleaning up..."
