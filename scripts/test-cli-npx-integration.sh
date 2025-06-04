@@ -21,13 +21,13 @@ cleanup() {
     echo "🧹 Cleanup function triggered..."
     
     # Only proceed if we're in the CLI directory and have backups
-    if [[ -d "$WORKSPACE_ROOT/cli" ]]; then
-        cd "$WORKSPACE_ROOT/cli"
+    if [[ -d "${WORKSPACE_ROOT:-}/cli" ]]; then
+        cd "${WORKSPACE_ROOT:-}/cli"
         
         # Remove CLI tarball if it exists
-        if [[ -n "${CLI_TARBALL:-}" && -f "$CLI_TARBALL" ]]; then
-            echo "  🗑️  Removing CLI tarball: $CLI_TARBALL"
-            rm -f "$CLI_TARBALL"
+        if [[ -n "${CLI_TARBALL:-}" && -f "${CLI_TARBALL:-}" ]]; then
+            echo "  🗑️  Removing CLI tarball: ${CLI_TARBALL:-}"
+            rm -f "${CLI_TARBALL:-}"
         fi
         
         # Restore package.json if backup exists
@@ -57,39 +57,39 @@ cleanup() {
     fi
     
     # Remove localnet tarball if it exists
-    if [[ -n "${LOCALNET_TARBALL:-}" && -d "$WORKSPACE_ROOT/localnet" ]]; then
-        cd "$WORKSPACE_ROOT/localnet"
-        if [[ -f "$LOCALNET_TARBALL" ]]; then
-            echo "  🗑️  Removing localnet tarball: $LOCALNET_TARBALL"
-            rm -f "$LOCALNET_TARBALL"
+    if [[ -n "${LOCALNET_TARBALL:-}" && -d "${WORKSPACE_ROOT:-}/localnet" ]]; then
+        cd "${WORKSPACE_ROOT:-}/localnet"
+        if [[ -f "${LOCALNET_TARBALL:-}" ]]; then
+            echo "  🗑️  Removing localnet tarball: ${LOCALNET_TARBALL:-}"
+            rm -f "${LOCALNET_TARBALL:-}"
         fi
     fi
     
     # Clean localnet test files that might interfere
-    if [[ -d "$WORKSPACE_ROOT/localnet/test-ledger" ]]; then
+    if [[ -d "${WORKSPACE_ROOT:-}/localnet/test-ledger" ]]; then
         echo "  🧹 Cleaning localnet test files..."
-        rm -rf "$WORKSPACE_ROOT/localnet/test-ledger"
+        rm -rf "${WORKSPACE_ROOT:-}/localnet/test-ledger"
     fi
     
     # Remove CLI repo if we cloned it
-    if [[ "$CLI_REPO_CLONED" == "true" && -d "$WORKSPACE_ROOT/cli" ]]; then
+    if [[ "${CLI_REPO_CLONED:-false}" == "true" && -d "${WORKSPACE_ROOT:-}/cli" ]]; then
         echo "  🗑️  Removing cloned CLI repository..."
-        rm -rf "$WORKSPACE_ROOT/cli"
+        rm -rf "${WORKSPACE_ROOT:-}/cli"
         echo "  ✅ CLI repository cleaned up"
     fi
     
     # Return to original directory if it exists
-    if [[ -n "${ORIGINAL_DIR:-}" && -d "$ORIGINAL_DIR" ]]; then
-        cd "$ORIGINAL_DIR"
+    if [[ -n "${ORIGINAL_DIR:-}" && -d "${ORIGINAL_DIR:-}" ]]; then
+        cd "${ORIGINAL_DIR:-}"
         echo "  📍 Returned to original directory: $(pwd)"
     fi
     
     echo "🧹 Cleanup completed!"
     
     # Exit with the preserved exit code
-    if [[ $SCRIPT_EXIT_CODE -ne 0 ]]; then
-        echo "❌ Test failed with exit code: $SCRIPT_EXIT_CODE"
-        exit $SCRIPT_EXIT_CODE
+    if [[ ${SCRIPT_EXIT_CODE:-0} -ne 0 ]]; then
+        echo "❌ Test failed with exit code: ${SCRIPT_EXIT_CODE:-0}"
+        exit ${SCRIPT_EXIT_CODE:-1}
     fi
 }
 
