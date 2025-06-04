@@ -184,10 +184,25 @@ echo "  🧹 Removing node_modules to force fresh install..."
 rm -rf node_modules/@zetachain/localnet
 yarn install
 
+# Debug: Environment comparison before CLI build
+echo "  🔍 Environment debugging..."
+echo "  📋 Node.js version: $(node --version)"
+echo "  📋 npm version: $(npm --version)"
+echo "  📋 yarn version: $(yarn --version)"
+echo "  📋 TypeScript version: $(npx tsc --version)"
+echo "  📋 Platform: $(uname -a)"
+echo "  📋 Working directory: $(pwd)"
+echo "  📋 CLI tsconfig.json module settings:"
+grep -A 2 -B 2 '"module"' tsconfig.json
+echo "  📋 NODE_OPTIONS: ${NODE_OPTIONS:-'(none)'}"
+echo "  📋 TS_NODE environment: ${TS_NODE_PROJECT:-'(none)'}"
+
 # Step 4: Pack CLI (with cache clearing)
 echo "4️⃣ Packing CLI..."
 echo "  🧹 Clearing old CLI tarballs..."
 rm -f zetachain-*.tgz
+echo "  🔨 Building CLI with verbose TypeScript output..."
+npx tsc --listFiles --listEmittedFiles | head -10
 npm pack
 CLI_TARBALL=$(ls zetachain-*.tgz | tail -1)
 echo "✅ Created: $CLI_TARBALL"
