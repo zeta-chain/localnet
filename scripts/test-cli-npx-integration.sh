@@ -350,6 +350,7 @@ done
 if kill -0 $NPX_PID 2>/dev/null; then
     echo "❌ CLI npx integration test timed out after $TIMEOUT_SECONDS seconds"
     echo "🔍 This usually indicates localnet failed to start or is hanging"
+    echo "💡 If running in CI, try triggering another workflow run - timeouts can be caused by transient CI environment issues"
     # Kill the hanging process
     echo "🧹 Killing hanging npx process (PID: $NPX_PID)..."
     kill -TERM $NPX_PID 2>/dev/null || true
