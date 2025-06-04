@@ -92,10 +92,59 @@ echo "  🧹 Clearing build artifacts..."
 rm -rf dist/
 echo "  🔨 Force rebuilding..."
 yarn build
+
+# Verify build artifacts exist
+echo "  🔍 Verifying localnet build artifacts..."
+if [[ -d "dist/commands" ]]; then
+    echo "  ✅ localnet dist/commands/ directory exists"
+else
+    echo "  ❌ localnet dist/commands/ directory missing!"
+    echo "  📂 Contents of localnet dist/:"
+    ls -la dist/ || echo "  localnet dist/ doesn't exist at all!"
+    exit 1
+fi
+
+if [[ -f "dist/commands/index.js" ]]; then
+    echo "  ✅ localnet dist/commands/index.js exists"
+else
+    echo "  ❌ localnet dist/commands/index.js missing!"
+    echo "  📂 Contents of localnet dist/commands/:"
+    ls -la dist/commands/
+    exit 1
+fi
+
+# Verify package.json exports
+echo "  🔍 Verifying localnet package.json exports..."
+if grep -q '"./commands"' package.json; then
+    echo "  ✅ ./commands export found in localnet package.json"
+    echo "  📋 Localnet commands export definition:"
+    grep -A 3 '"./commands"' package.json
+else
+    echo "  ❌ No ./commands export found in localnet package.json!"
+    echo "  📋 Available exports in localnet package.json:"
+    grep -A 10 '"exports"' package.json || echo "  No exports section found!"
+    exit 1
+fi
+
 echo "  📦 Creating fresh tarball..."
 npm pack
 LOCALNET_TARBALL=$(ls zetachain-localnet-*.tgz | tail -1)
 echo "✅ Created: $LOCALNET_TARBALL"
+
+# Debug: Check what's actually in the tarball
+echo "  🔍 Debugging tarball contents..."
+echo "  📋 Files in tarball:"
+tar -tzf "$LOCALNET_TARBALL" | grep -E "(commands|index)" || echo "  ⚠️  No commands/index files found in tarball!"
+echo "  📋 Complete tarball structure:"
+tar -tzf "$LOCALNET_TARBALL" | head -20
+
+# Debug: Show the exact exports from package.json
+echo "  🔍 Current exports in package.json:"
+if command -v jq &> /dev/null; then
+    jq '.exports' package.json || grep -A 15 '"exports"' package.json
+else
+    grep -A 15 '"exports"' package.json
+fi
 
 # Step 2: Add new tarball as version in CLI package.json
 echo "2️⃣ Updating CLI package.json..."
