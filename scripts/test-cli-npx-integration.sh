@@ -122,8 +122,8 @@ if [[ ! -d "cli" ]]; then
     # Fix CLI tsconfig.json for proper module resolution
     echo "  🔧 Updating CLI tsconfig.json for proper module resolution..."
     cd cli
-    # Update tsconfig.json to use CommonJS with bundler resolution (understands exports)
-    sed -i.bak 's/"module": "Node16"/"module": "CommonJS"/' tsconfig.json
+    # Update tsconfig.json to use ES2015 with bundler resolution (understands exports)
+    sed -i.bak 's/"module": "Node16"/"module": "ES2015"/' tsconfig.json
     sed -i.bak 's/"moduleResolution": "node16"/"moduleResolution": "bundler"/' tsconfig.json
     rm -f tsconfig.json.bak
     echo "  ✅ CLI configuration updated"
