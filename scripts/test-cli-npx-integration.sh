@@ -111,7 +111,7 @@ echo "📍 Working from: $(pwd)"
 if [[ ! -d "cli" ]]; then
     echo "📥 CLI repository not found, cloning from GitHub..."
     echo "  🔗 Cloning https://github.com/zeta-chain/cli..."
-    if ! git clone https://github.com/zeta-chain/cli.git; then
+    if ! git clone --depth 1 https://github.com/zeta-chain/cli.git; then
         echo "❌ Failed to clone CLI repository"
         SCRIPT_EXIT_CODE=1
         exit 1
