@@ -327,16 +327,18 @@ echo "  🔍 Testing localnet package import directly..."
 cd "$WORKSPACE_ROOT/localnet"
 echo "  📋 Creating test import script..."
 cat > test-import.mjs << 'EOF'
-try {
-  console.log("Testing import of @zetachain/localnet/commands...");
-  const { localnetCommand } = await import("@zetachain/localnet/commands");
-  console.log("✅ Direct import successful!");
-  console.log("localnetCommand type:", typeof localnetCommand);
-  process.exit(0);
-} catch (error) {
-  console.error("❌ Direct import failed:", error);
-  process.exit(1);
-}
+(async () => {
+  try {
+    console.log("Testing import of @zetachain/localnet/commands...");
+    const { localnetCommand } = await import("@zetachain/localnet/commands");
+    console.log("✅ Direct import successful!");
+    console.log("localnetCommand type:", typeof localnetCommand);
+    process.exit(0);
+  } catch (error) {
+    console.error("❌ Direct import failed:", error);
+    process.exit(1);
+  }
+})();
 EOF
 
 echo "  🧪 Running direct import test..."
