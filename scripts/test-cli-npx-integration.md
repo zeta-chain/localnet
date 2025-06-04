@@ -53,7 +53,7 @@ Tests that localnet changes work correctly when consumed by the `cli` via **npx 
 ## Prerequisites
 
 - Node.js, npm, and yarn installed
-- Git access to https://github.com/zeta-chain/cli (for auto-cloning)
+- Git access to [zeta-chain/cli](https://github.com/zeta-chain/cli) (for auto-cloning)
 - Localnet changes committed to git (uncommitted changes won't be tested)
 - `jq` (optional, recommended for better JSON parsing - falls back to `grep` if not available)
 

@@ -44,6 +44,13 @@ cleanup() {
             echo "  ✅ yarn.lock restored"
         fi
         
+        # Restore tsconfig.json if backup exists (but not if we cloned the repo - it gets deleted entirely)
+        if [[ "${CLI_REPO_CLONED:-false}" == "false" && -f tsconfig.json.backup ]]; then
+            echo "  📦 Restoring CLI tsconfig.json..."
+            mv tsconfig.json.backup tsconfig.json
+            echo "  ✅ tsconfig.json restored"
+        fi
+        
         # Remove any temporary files
         rm -f package.json.tmp
         
@@ -126,19 +133,20 @@ if [[ ! -d "cli" ]]; then
     fi
     CLI_REPO_CLONED=true
     echo "  ✅ CLI repository cloned successfully"
-    
-    # Fix CLI tsconfig.json for proper module resolution
-    echo "  🔧 Updating CLI tsconfig.json for proper module resolution..."
-    cd cli
-    # Update tsconfig.json to use NodeNext with nodenext resolution (understands exports)
-    sed -i.bak 's/"module": "Node16"/"module": "NodeNext"/' tsconfig.json
-    sed -i.bak 's/"moduleResolution": "node16"/"moduleResolution": "nodenext"/' tsconfig.json
-    rm -f tsconfig.json.bak
-    echo "  ✅ CLI configuration updated"
-    cd ..
 else
     echo "✅ CLI repository found at: $(pwd)/cli"
 fi
+
+# Fix CLI tsconfig.json for proper module resolution
+echo "🔧 Updating CLI tsconfig.json for proper module resolution..."
+cd cli
+# Create backup of original tsconfig.json
+cp tsconfig.json tsconfig.json.backup
+# Update tsconfig.json to use NodeNext with nodenext resolution (understands exports)
+sed -i 's/"module": "Node16"/"module": "NodeNext"/' tsconfig.json
+sed -i 's/"moduleResolution": "node16"/"moduleResolution": "nodenext"/' tsconfig.json
+echo "✅ CLI configuration updated"
+cd ..
 
 # Step 1: Pack localnet (with cache clearing)
 echo "1️⃣ Packing localnet..."
