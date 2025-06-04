@@ -307,10 +307,9 @@ try {
   const { localnetCommand } = await import("@zetachain/localnet/commands");
   console.log("✅ Direct import successful!");
   console.log("localnetCommand type:", typeof localnetCommand);
+  process.exit(0);
 } catch (error) {
-  console.log("❌ Direct import failed:");
-  console.log(error.message);
-  console.log("Stack:", error.stack);
+  console.error("❌ Direct import failed:", error);
   process.exit(1);
 }
 EOF
