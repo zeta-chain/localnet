@@ -242,9 +242,12 @@ rm -rf package/
 if [[ "$TARBALL_EXPORTS" == "$SOURCE_EXPORTS" ]]; then
     echo "  ✅ Tarball exports match source"
 else
-    echo "  ⚠️  Tarball exports differ from source"
+    echo "  ❌ Tarball exports differ from source - package integrity compromised!"
     echo "  Source: $SOURCE_EXPORTS"
     echo "  Tarball: $TARBALL_EXPORTS"
+    echo "  This indicates a critical packaging issue that must be resolved."
+    SCRIPT_EXIT_CODE=1
+    exit 1
 fi
 
 # Step 2: Add new tarball as version in CLI package.json
