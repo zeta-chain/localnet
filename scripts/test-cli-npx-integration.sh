@@ -107,6 +107,7 @@ ORIGINAL_DIR=$(pwd)
 # Navigate to workspace root (parent of localnet/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+echo "Hi mom"
 
 # Register cleanup function to run on script exit (after workspace variables are set)
 trap cleanup EXIT
