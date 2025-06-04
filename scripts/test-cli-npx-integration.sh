@@ -193,36 +193,28 @@ echo "✅ Created: $LOCALNET_TARBALL"
 
 # Debug: Check what's actually in the tarball
 echo "  🔍 Debugging tarball contents..."
-echo "  📋 Files in tarball:"
-tar -tzf "$LOCALNET_TARBALL" | grep -E "(commands|index)" || echo "  ⚠️  No commands/index files found in tarball!"
-echo "  📋 Complete tarball structure:"
-tar -tzf "$LOCALNET_TARBALL" | head -20
+echo "  📋 Key files in tarball:"
+tar -tzf "$LOCALNET_TARBALL" | grep -E "(commands|index)" | head -10 || echo "  ⚠️  No commands/index files found in tarball!"
 
-# Debug: Compare package.json in tarball vs source
-echo "  🔍 Checking package.json in tarball vs source..."
-echo "  📋 Extracting package.json from tarball..."
+# Debug: Compare package.json in tarball vs source  
+echo "  🔍 Checking package.json exports consistency..."
 tar -xzf "$LOCALNET_TARBALL" package/package.json
-echo "  📋 Tarball exports:"
 if command -v jq &> /dev/null; then
-    jq '.exports' package/package.json || grep -A 15 '"exports"' package/package.json
+    TARBALL_EXPORTS=$(jq -c '.exports."./commands"' package/package.json 2>/dev/null || echo "null")
+    SOURCE_EXPORTS=$(jq -c '.exports."./commands"' package.json 2>/dev/null || echo "null")
 else
-    grep -A 15 '"exports"' package/package.json
-fi
-echo "  📋 Source exports:"
-if command -v jq &> /dev/null; then
-    jq '.exports' package.json || grep -A 15 '"exports"' package.json
-else
-    grep -A 15 '"exports"' package.json
+    TARBALL_EXPORTS=$(grep -A 3 '"./commands"' package/package.json | tr -d '\n' | tr -s ' ')
+    SOURCE_EXPORTS=$(grep -A 3 '"./commands"' package.json | tr -d '\n' | tr -s ' ')
 fi
 # Cleanup extracted file
 rm -rf package/
 
-# Debug: Show the exact exports from package.json
-echo "  🔍 Current exports in package.json:"
-if command -v jq &> /dev/null; then
-    jq '.exports' package.json || grep -A 15 '"exports"' package.json
+if [[ "$TARBALL_EXPORTS" == "$SOURCE_EXPORTS" ]]; then
+    echo "  ✅ Tarball exports match source"
 else
-    grep -A 15 '"exports"' package.json
+    echo "  ⚠️  Tarball exports differ from source"
+    echo "  Source: $SOURCE_EXPORTS"
+    echo "  Tarball: $TARBALL_EXPORTS"
 fi
 
 # Step 2: Add new tarball as version in CLI package.json
