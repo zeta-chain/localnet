@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Strict mode: exit on errors, undefined variables, or pipeline failures
 set -euo pipefail
@@ -140,7 +140,7 @@ echo "📍 Working from: $(pwd)"
 if [[ ! -d "cli" ]]; then
     echo "📥 CLI repository not found, cloning from GitHub..."
     echo "  🔗 Cloning https://github.com/zeta-chain/cli..."
-    if ! git clone --depth 1 https://github.com/zeta-chain/cli.git; then
+    if ! git clone --depth 1 --branch "${CLI_BRANCH:-main}" https://github.com/zeta-chain/cli.git; then
         echo "❌ Failed to clone CLI repository"
         SCRIPT_EXIT_CODE=1
         exit 1
@@ -157,8 +157,16 @@ cd cli
 # Create backup of original tsconfig.json
 cp tsconfig.json tsconfig.json.backup
 # Update tsconfig.json to use NodeNext with nodenext resolution (understands exports)
-sed -i 's/"module": "Node16"/"module": "NodeNext"/' tsconfig.json
-sed -i 's/"moduleResolution": "node16"/"moduleResolution": "nodenext"/' tsconfig.json
+# Handle cross-platform sed differences (GNU vs BSD)
+if sed --version >/dev/null 2>&1; then
+    # GNU sed (Linux)
+    sed -i 's/"module": "Node16"/"module": "NodeNext"/' tsconfig.json
+    sed -i 's/"moduleResolution": "node16"/"moduleResolution": "nodenext"/' tsconfig.json
+else
+    # BSD sed (macOS)
+    sed -i '' 's/"module": "Node16"/"module": "NodeNext"/' tsconfig.json
+    sed -i '' 's/"moduleResolution": "node16"/"moduleResolution": "nodenext"/' tsconfig.json
+fi
 echo "✅ CLI configuration updated"
 cd ..
 
@@ -259,7 +267,14 @@ cp yarn.lock yarn.lock.backup
 echo "  🧹 Clearing yarn cache..."
 yarn cache clean @zetachain/localnet 2>/dev/null || true
 TARBALL_PATH="../localnet/$LOCALNET_TARBALL"
-sed -i.tmp "s|\"@zetachain/localnet\": \"[^\"]*\"|\"@zetachain/localnet\": \"file:$TARBALL_PATH\"|" package.json
+# Use more targeted sed to only replace in dependencies section
+if sed --version >/dev/null 2>&1; then
+    # GNU sed (Linux)
+    sed -i.tmp '/"dependencies"/,/"devDependencies\|^[[:space:]]*}"/s|"@zetachain/localnet": "[^"]*"|"@zetachain/localnet": "file:'"$TARBALL_PATH"'"|' package.json
+else
+    # BSD sed (macOS)
+    sed -i '.tmp' '/"dependencies"/,/"devDependencies\|^[[:space:]]*}"/s|"@zetachain/localnet": "[^"]*"|"@zetachain/localnet": "file:'"$TARBALL_PATH"'"|' package.json
+fi
 rm package.json.tmp
 echo "✅ Updated package.json to use: $TARBALL_PATH"
 
@@ -362,7 +377,7 @@ echo "  🔍 Running with detailed error output..."
 echo "  ⏱️  Setting 120-second timeout for npx test..."
 
 # Run npx in background with isolated cache and capture its PID
-echo "y" | npm_config_cache="$TEMP_NPX_CACHE" npx ./$CLI_TARBALL localnet start --stop-after-init &
+echo "y" | npx --cache "$TEMP_NPX_CACHE" "./$CLI_TARBALL" localnet start --stop-after-init &
 NPX_PID=$!
 
 # Wait for the process with timeout
@@ -399,8 +414,8 @@ NPX_EXIT_CODE=$?
 # Check if the npx command failed
 if [[ $NPX_EXIT_CODE -ne 0 ]]; then
     echo "❌ CLI npx integration test failed with exit code: $NPX_EXIT_CODE"
-    SCRIPT_EXIT_CODE=1
-    exit 1
+    SCRIPT_EXIT_CODE=$NPX_EXIT_CODE
+    exit $NPX_EXIT_CODE
 fi
 
 echo "✅ Test completed successfully! Environment will be restored automatically." 
