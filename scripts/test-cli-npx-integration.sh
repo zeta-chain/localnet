@@ -265,12 +265,14 @@ echo "  📋 TS_NODE environment: ${TS_NODE_PROJECT:-'(none)'}"
 echo "4️⃣ Packing CLI..."
 echo "  🧹 Clearing old CLI tarballs..."
 rm -f zetachain-*.tgz
-echo "  🔨 Building CLI with verbose TypeScript output..."
-if ! npx tsc --listFiles --listEmittedFiles | head -10; then
+echo "  🔨 Building CLI..."
+if ! npx tsc; then
     echo "❌ CLI TypeScript compilation failed"
     SCRIPT_EXIT_CODE=1
     exit 1
 fi
+echo "  📋 TypeScript compilation verbose output (preview):"
+npx tsc --listFiles --listEmittedFiles | head -10 || true
 if ! npm pack; then
     echo "❌ Failed to create CLI tarball"
     SCRIPT_EXIT_CODE=1
