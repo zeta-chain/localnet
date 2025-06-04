@@ -196,7 +196,47 @@ echo "✅ Created: $CLI_TARBALL"
 echo "5️⃣ Testing with npx..."
 echo "  🧹 Clearing npx cache..."
 rm -rf ~/.npm/_npx 2>/dev/null || true
-echo "  🧪 Running test..."
+
+# Debug: Let's see what the CLI actually compiled to
+echo "  🔍 Checking CLI build output for import paths..."
+echo "  📋 CLI dist structure:"
+if [[ -d "dist" ]]; then
+    find dist -name "*.js" | head -10
+    echo "  📋 Checking for localnet imports in CLI dist:"
+    grep -r "@zetachain/localnet" dist/ | head -5 || echo "  No localnet imports found in CLI dist"
+    echo "  📋 Checking for direct dist/ imports in CLI dist:"
+    grep -r "dist/commands" dist/ | head -5 || echo "  No direct dist/commands imports found"
+else
+    echo "  ⚠️  CLI dist directory not found"
+fi
+
+# Debug: Test localnet package directly before running CLI
+echo "  🔍 Testing localnet package import directly..."
+cd "$WORKSPACE_ROOT/localnet"
+echo "  📋 Creating test import script..."
+cat > test-import.mjs << 'EOF'
+try {
+  console.log("Testing import of @zetachain/localnet/commands...");
+  const { localnetCommand } = await import("@zetachain/localnet/commands");
+  console.log("✅ Direct import successful!");
+  console.log("localnetCommand type:", typeof localnetCommand);
+} catch (error) {
+  console.log("❌ Direct import failed:");
+  console.log(error.message);
+  console.log("Stack:", error.stack);
+}
+EOF
+
+echo "  🧪 Running direct import test..."
+cd ../cli
+node ../localnet/test-import.mjs
+
+# Cleanup test file
+rm -f ../localnet/test-import.mjs
+
+echo "  🧪 Running CLI test with error details..."
+echo "  🔍 Running with detailed error output..."
+# Run with better error handling
 echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init
 
 echo "✅ Test completed successfully! Environment will be restored automatically." 
