@@ -20,6 +20,20 @@ cleanup() {
     echo ""
     echo "🧹 Cleanup function triggered..."
     
+    # Terminate background NPX process if it's running
+    if [[ -n "${NPX_PID:-}" ]]; then
+        echo "  🔄 Terminating background NPX process (PID: ${NPX_PID})..."
+        kill -TERM "$NPX_PID" 2>/dev/null || true
+        # Give it a moment to terminate gracefully
+        sleep 1
+        # Force kill if still running
+        if kill -0 "$NPX_PID" 2>/dev/null; then
+            echo "  💀 Force killing NPX process..."
+            kill -KILL "$NPX_PID" 2>/dev/null || true
+        fi
+        echo "  ✅ NPX process terminated"
+    fi
+    
     # Only proceed if we're in the CLI directory and have backups
     if [[ -d "${WORKSPACE_ROOT:-}/cli" ]]; then
         cd "${WORKSPACE_ROOT:-}/cli"
