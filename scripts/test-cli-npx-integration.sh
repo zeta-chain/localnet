@@ -78,6 +78,13 @@ cleanup() {
         echo "  ✅ CLI repository cleaned up"
     fi
     
+    # Clean up temporary NPX cache directory
+    if [[ -n "${TEMP_NPX_CACHE:-}" && -d "${TEMP_NPX_CACHE:-}" ]]; then
+        echo "  🗑️  Removing temporary NPX cache directory..."
+        rm -rf "${TEMP_NPX_CACHE:-}"
+        echo "  ✅ Temporary NPX cache cleaned up"
+    fi
+    
     # Return to original directory if it exists
     if [[ -n "${ORIGINAL_DIR:-}" && -d "${ORIGINAL_DIR:-}" ]]; then
         cd "${ORIGINAL_DIR:-}"
@@ -273,8 +280,9 @@ echo "✅ Created: $CLI_TARBALL"
 
 # Step 5: Test with npx (with cache clearing)
 echo "5️⃣ Testing with npx..."
-echo "  🧹 Clearing npx cache..."
-rm -rf ~/.npm/_npx 2>/dev/null || true
+echo "  🧹 Creating temporary NPX cache directory..."
+TEMP_NPX_CACHE=$(mktemp -d)
+echo "  📁 Using temporary NPX cache: $TEMP_NPX_CACHE"
 
 # Debug: Let's see what the CLI actually compiled to
 echo "  🔍 Checking CLI build output for import paths..."
@@ -324,8 +332,8 @@ echo "  🔍 Running with detailed error output..."
 # Cross-platform timeout implementation - works on both macOS and Linux
 echo "  ⏱️  Setting 120-second timeout for npx test..."
 
-# Run npx in background and capture its PID
-echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init &
+# Run npx in background with isolated cache and capture its PID
+echo "y" | npm_config_cache="$TEMP_NPX_CACHE" npx ./$CLI_TARBALL localnet start --stop-after-init &
 NPX_PID=$!
 
 # Wait for the process with timeout
