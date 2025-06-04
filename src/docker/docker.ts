@@ -3,6 +3,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
+import { sleep } from "../utils";
+
 export function getSocketPath(): string {
   const defaultSocket = "/var/run/docker.sock";
   if (fs.existsSync(defaultSocket)) {
@@ -78,7 +80,7 @@ export async function pullWithRetry(
       }
 
       console.log(`Retrying in ${delay / 1000} seconds...`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      await sleep(delay);
     }
   }
 }

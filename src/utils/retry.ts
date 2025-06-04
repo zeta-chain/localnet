@@ -1,3 +1,5 @@
+import { sleep } from "./sleep";
+
 export async function retry<T>(
   fn: () => Promise<T>,
   retries: number = 3,
@@ -21,7 +23,7 @@ export async function retry<T>(
       // ...
       if (attempt < retries - 1) {
         const delay = Math.pow(2, attempt) * 1000;
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await sleep(delay);
       }
     }
   }

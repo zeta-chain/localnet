@@ -10,6 +10,7 @@ import { HDNodeWallet, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import * as utils from "../../utils";
+import { sleep } from "../../utils";
 import { Deployer } from "./deployer";
 
 const oneTon = 10n ** 9n;
@@ -109,13 +110,13 @@ export async function observerInbounds(
       hash = tx.hash;
     } catch (e) {
       console.error("TON: error getting latest tx", e);
-      await sleep(1);
+      await sleep(1000);
       continue;
     }
 
     // noop
     if (oldLT == lt) {
-      await sleep(1);
+      await sleep(1000);
       continue;
     }
 
@@ -285,10 +286,6 @@ function hashToString(hash: Buffer | bigint): string {
   }
 
   return hash.toString("hex");
-}
-
-async function sleep(seconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
 function ecdsaSignCell(signer: NonceManager, cell: Cell): ton.Slice {

@@ -12,6 +12,7 @@ import { addBackgroundProcess } from "../../backgroundProcesses";
 import { cloneRepository } from "../../cloneRepository";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { sleep } from "../../utils";
 import { suiDeposit } from "./deposit";
 import { suiDepositAndCall } from "./depositAndCall";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -107,7 +108,7 @@ export const suiSetup = async ({
   logger.info(`Publisher address: ${publisherAddress}`, {
     chain: NetworkID.Sui,
   });
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await sleep(2000);
 
   const privateKeyBech32 = keypair.getSecretKey();
   logger.info(`Private Key (Bech32): ${privateKeyBech32}`, {
@@ -250,7 +251,7 @@ const waitForConfirmation = async (
       return status;
     }
     logger.info("Waiting for confirmation...", { chain: NetworkID.Sui });
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await sleep(1000);
   }
   throw new Error(`Timeout waiting for confirmation: ${digest}`);
 };
@@ -293,14 +294,12 @@ const pollEvents = async (context: any) => {
       }
 
       if (!hasNextPage) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, POLLING_INTERVAL_MS)
-        );
+        await sleep(POLLING_INTERVAL_MS);
       }
     } catch (err) {
       logger.error("Error polling deposit events:", String(err));
       logger.info(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
+      await sleep(POLLING_INTERVAL_MS);
     }
   }, POLLING_INTERVAL_MS);
 
