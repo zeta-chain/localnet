@@ -116,7 +116,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Register cleanup function to run on script exit (after workspace variables are set)
-trap cleanup EXIT
+trap cleanup EXIT SIGINT SIGTERM
 
 cd "$WORKSPACE_ROOT"
 
