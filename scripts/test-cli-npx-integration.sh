@@ -329,21 +329,46 @@ rm -f ../localnet/test-import.mjs
 
 echo "  🧪 Running CLI test with error details..."
 echo "  🔍 Running with detailed error output..."
-# Run with timeout to prevent hanging in CI - this is the main test
-echo "  ⏱️  Setting 60-second timeout for npx test..."
-if ! timeout 60s bash -c 'echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init'; then
-    exit_code=$?
-    if [[ $exit_code -eq 124 ]]; then
-        echo "❌ CLI npx integration test timed out after 60 seconds"
-        echo "🔍 This usually indicates localnet failed to start or is hanging"
-        # Try to kill any hanging processes
-        echo "🧹 Attempting to kill any hanging anvil/localnet processes..."
-        pkill -f "anvil" 2>/dev/null || true
-        pkill -f "localnet" 2>/dev/null || true
-        sleep 2
-    else
-        echo "❌ CLI npx integration test failed with exit code: $exit_code"
-    fi
+# Cross-platform timeout implementation - works on both macOS and Linux
+echo "  ⏱️  Setting 120-second timeout for npx test..."
+
+# Run npx in background and capture its PID
+echo "y" | npx ./$CLI_TARBALL localnet start --stop-after-init &
+NPX_PID=$!
+
+# Wait for the process with timeout
+TIMEOUT_SECONDS=120
+ELAPSED=0
+while kill -0 $NPX_PID 2>/dev/null && [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
+    sleep 1
+    ELAPSED=$((ELAPSED + 1))
+done
+
+# Check if process is still running (timed out)
+if kill -0 $NPX_PID 2>/dev/null; then
+    echo "❌ CLI npx integration test timed out after $TIMEOUT_SECONDS seconds"
+    echo "🔍 This usually indicates localnet failed to start or is hanging"
+    # Kill the hanging process
+    echo "🧹 Killing hanging npx process (PID: $NPX_PID)..."
+    kill -TERM $NPX_PID 2>/dev/null || true
+    sleep 2
+    # Force kill if still running
+    kill -KILL $NPX_PID 2>/dev/null || true
+    # Try to kill any hanging anvil/localnet processes
+    echo "🧹 Attempting to kill any hanging anvil/localnet processes..."
+    pkill -f "anvil" 2>/dev/null || true
+    pkill -f "localnet" 2>/dev/null || true
+    SCRIPT_EXIT_CODE=1
+    exit 1
+fi
+
+# Wait for the process to complete and get its exit code
+wait $NPX_PID
+NPX_EXIT_CODE=$?
+
+# Check if the npx command failed
+if [[ $NPX_EXIT_CODE -ne 0 ]]; then
+    echo "❌ CLI npx integration test failed with exit code: $NPX_EXIT_CODE"
     SCRIPT_EXIT_CODE=1
     exit 1
 fi
