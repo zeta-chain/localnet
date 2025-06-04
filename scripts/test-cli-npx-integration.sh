@@ -138,6 +138,25 @@ tar -tzf "$LOCALNET_TARBALL" | grep -E "(commands|index)" || echo "  ⚠️  No 
 echo "  📋 Complete tarball structure:"
 tar -tzf "$LOCALNET_TARBALL" | head -20
 
+# Debug: Compare package.json in tarball vs source
+echo "  🔍 Checking package.json in tarball vs source..."
+echo "  📋 Extracting package.json from tarball..."
+tar -xzf "$LOCALNET_TARBALL" package/package.json
+echo "  📋 Tarball exports:"
+if command -v jq &> /dev/null; then
+    jq '.exports' package/package.json || grep -A 15 '"exports"' package/package.json
+else
+    grep -A 15 '"exports"' package/package.json
+fi
+echo "  📋 Source exports:"
+if command -v jq &> /dev/null; then
+    jq '.exports' package.json || grep -A 15 '"exports"' package.json
+else
+    grep -A 15 '"exports"' package.json
+fi
+# Cleanup extracted file
+rm -rf package/
+
 # Debug: Show the exact exports from package.json
 echo "  🔍 Current exports in package.json:"
 if command -v jq &> /dev/null; then
