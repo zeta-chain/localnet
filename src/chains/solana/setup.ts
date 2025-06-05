@@ -211,8 +211,8 @@ export const solanaSetup = async ({
       },
     ],
     env: {
-      defaultSolanaUser: defaultSolanaUserKeypair,
       defaultLocalnetUser: defaultLocalnetUserKeypair,
+      defaultSolanaUser: defaultSolanaUserKeypair,
       gatewayProgram,
     },
   };
