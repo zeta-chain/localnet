@@ -29,7 +29,6 @@
     "src/tasks",
     "src/commands",
     "src/docker",
-    "src/types",
-    "src/utils",
+    "src/utils"
   ]
 }
