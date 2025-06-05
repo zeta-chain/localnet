@@ -111,6 +111,13 @@ export const solanaSetup = async ({
     }
   );
 
+  logger.info(
+    `Public Key from default mnemonic: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`,
+    {
+      chain: NetworkID.Solana,
+    }
+  );
+
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
 
   try {
@@ -204,6 +211,7 @@ export const solanaSetup = async ({
       },
     ],
     env: {
+      defaultLocalnetUser: defaultLocalnetUserKeypair,
       defaultSolanaUser: defaultSolanaUserKeypair,
       gatewayProgram,
     },
