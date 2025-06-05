@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
 import { evmCall } from "./chains/evm/call";
@@ -15,15 +16,19 @@ import {
 import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
-import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
+import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
+import { ForeignCoin } from "./types/foreignCoins";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 
-const foreignCoins: any[] = [];
+const foreignCoins: ForeignCoin[] = [];
 
 // A hack to make BigInt serializable
-(BigInt as any).prototype["toJSON"] = function () {
+(BigInt as unknown as { prototype: { toJSON: () => string } }).prototype[
+  "toJSON"
+] = function (): string {
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
   return this.toString();
 };
 
@@ -42,14 +47,14 @@ export const initLocalnet = async ({
     const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
     provider.pollingInterval = 100;
 
-    let deployer = new NonceManager(
+    const deployer = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
         `m/44'/60'/0'/0/0`
       )
     ).connect(provider);
 
-    let tss = new NonceManager(
+    const tss = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
         `m/44'/60'/0'/0/1`
@@ -141,17 +146,22 @@ export const initLocalnet = async ({
     ]);
     logger.debug("Token creation complete", { chain: "localnet" });
 
+    const zetachainContractsEntries = Object.entries(zetachainContracts) as [
+      string,
+      ethers.Contract
+    ][];
+
     let res = [
-      ...Object.entries(zetachainContracts)
+      ...zetachainContractsEntries
         .filter(([, value]) => value.target !== undefined)
         .map(([key, value]) => {
           return {
-            address: value.target,
+            address: String(value.target),
             chain: "zetachain",
             type: key,
           };
         }),
-      ...Object.entries(foreignCoins).map(([key, value]) => {
+      ...Object.entries(foreignCoins).map(([, value]) => {
         return {
           address: value.zrc20_contract_address,
           chain: "zetachain",
@@ -177,7 +187,7 @@ export const initLocalnet = async ({
         })
         .filter(Boolean),
       ...Object.entries(foreignCoins)
-        .map(([key, value]) => {
+        .map(([, value]) => {
           if (value.foreign_chain_id === NetworkID.Solana && value.asset) {
             return {
               address: value.asset,
@@ -194,24 +204,24 @@ export const initLocalnet = async ({
       },
       ...Object.entries(ethereumContracts)
         .filter(
-          ([key, value]) =>
+          ([, value]) =>
             typeof value !== "function" && value?.target !== undefined
         )
-        .map(([key, value]: [string, any]) => {
+        .map(([key, value]) => {
           return {
-            address: value.target,
+            address: String(value.target),
             chain: "ethereum",
             type: key,
           };
         }),
       ...Object.entries(bnbContracts)
         .filter(
-          ([key, value]) =>
+          ([, value]) =>
             typeof value !== "function" && value?.target !== undefined
         )
-        .map(([key, value]: [string, any]) => {
+        .map(([key, value]) => {
           return {
-            address: value.target,
+            address: String(value.target),
             chain: "bnb",
             type: key,
           };
@@ -248,21 +258,41 @@ export const initLocalnet = async ({
     logger.debug("Setting up event handlers", { chain: "localnet" });
 
     // Set up ZetaChain event handlers
-    zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
-      zetachainCall({ args, contracts, exitOnError })
+    zetachainContracts.gatewayZEVM.on(
+      "Called",
+      (...args: unknown[]) =>
+        void zetachainCall({ args, contracts, exitOnError }).catch(
+          (error: unknown) => {
+            logger.error("Error in Called event handler", { error });
+          }
+        )
     );
 
-    zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
-      zetachainWithdraw({ args, contracts, exitOnError })
+    zetachainContracts.gatewayZEVM.on(
+      "Withdrawn",
+      (...args: unknown[]) =>
+        void zetachainWithdraw({ args, contracts, exitOnError }).catch(
+          (error: unknown) => {
+            logger.error("Error in Withdrawn event handler", { error });
+          }
+        )
     );
 
-    zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
-      zetachainWithdrawAndCall({ args, contracts, exitOnError })
+    zetachainContracts.gatewayZEVM.on(
+      "WithdrawnAndCalled",
+      (...args: unknown[]) =>
+        void zetachainWithdrawAndCall({ args, contracts, exitOnError }).catch(
+          (error: unknown) => {
+            logger.error("Error in WithdrawnAndCalled event handler", {
+              error,
+            });
+          }
+        )
     );
 
     // Set up EVM event handlers
-    ethereumContracts.gatewayEVM.on("Called", async (...args: any[]) => {
-      await evmCall({
+    ethereumContracts.gatewayEVM.on("Called", (...args: unknown[]) => {
+      void evmCall({
         args,
         chainID: NetworkID.Ethereum,
         deployer,
@@ -273,8 +303,8 @@ export const initLocalnet = async ({
       });
     });
 
-    ethereumContracts.gatewayEVM.on("Deposited", async (...args: any[]) => {
-      await evmDeposit({
+    ethereumContracts.gatewayEVM.on("Deposited", (...args: unknown[]) => {
+      void evmDeposit({
         args,
         chainID: NetworkID.Ethereum,
         custody: ethereumContracts.custody,
@@ -290,8 +320,8 @@ export const initLocalnet = async ({
 
     ethereumContracts.gatewayEVM.on(
       "DepositedAndCalled",
-      async (...args: any[]) => {
-        await evmDepositAndCall({
+      (...args: unknown[]) => {
+        void evmDepositAndCall({
           args,
           chainID: NetworkID.Ethereum,
           custody: ethereumContracts.custody,
@@ -306,8 +336,8 @@ export const initLocalnet = async ({
       }
     );
 
-    bnbContracts.gatewayEVM.on("Called", async (...args: any[]) => {
-      await evmCall({
+    bnbContracts.gatewayEVM.on("Called", (...args: unknown[]) => {
+      void evmCall({
         args,
         chainID: NetworkID.BNB,
         deployer,
@@ -318,8 +348,8 @@ export const initLocalnet = async ({
       });
     });
 
-    bnbContracts.gatewayEVM.on("Deposited", async (...args: any[]) => {
-      await evmDeposit({
+    bnbContracts.gatewayEVM.on("Deposited", (...args: unknown[]) => {
+      void evmDeposit({
         args,
         chainID: NetworkID.BNB,
         custody: bnbContracts.custody,
@@ -333,8 +363,8 @@ export const initLocalnet = async ({
       });
     });
 
-    bnbContracts.gatewayEVM.on("DepositedAndCalled", async (...args: any[]) => {
-      await evmDepositAndCall({
+    bnbContracts.gatewayEVM.on("DepositedAndCalled", (...args: unknown[]) => {
+      void evmDepositAndCall({
         args,
         chainID: NetworkID.BNB,
         custody: bnbContracts.custody,

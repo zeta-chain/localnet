@@ -8,12 +8,11 @@ import { ethers, Signer } from "ethers";
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
-import { prepareUniswapV3 } from "../../tokens/uniswapV3";
 
 export const zetachainSetup = async (
   deployer: Signer,
   tss: Signer,
-  provider: any
+  provider: ethers.JsonRpcProvider
 ) => {
   const [, , deployerAddress] = await Promise.all([
     provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]),
@@ -56,7 +55,7 @@ export const zetachainSetup = async (
     deployer
   );
 
-  const systemContract: any = await systemContractFactory.deploy(
+  const systemContract = await systemContractFactory.deploy(
     wzeta.target,
     uniswapFactoryInstanceAddress,
     uniswapRouterInstanceAddress,
@@ -79,11 +78,11 @@ export const zetachainSetup = async (
     [wzeta.target, deployerAddress]
   );
 
-  const proxyZEVM = (await proxyFactory.deploy(
+  const proxyZEVM = await proxyFactory.deploy(
     gatewayZEVMImpl.target,
     gatewayZEVMInitData,
     deployOpts
-  )) as any;
+  );
 
   const gatewayZEVM = new ethers.Contract(
     proxyZEVM.target,
@@ -107,11 +106,11 @@ export const zetachainSetup = async (
     [deployerAddress, deployerAddress, gatewayZEVM.target]
   );
 
-  const proxyCoreRegistry = (await proxyFactory.deploy(
+  const proxyCoreRegistry = await proxyFactory.deploy(
     coreRegistryImpl.target,
     coreRegistryInitData,
     deployOpts
-  )) as any;
+  );
 
   const coreRegistry = new ethers.Contract(
     proxyCoreRegistry.target,
@@ -119,22 +118,35 @@ export const zetachainSetup = async (
     deployer
   );
 
+  const wzetaFungibleModuleSigner = new ethers.Contract(
+    wzeta.target,
+    WETH9.abi,
+    fungibleModuleSigner
+  );
+  const wzetaDeployer = new ethers.Contract(wzeta.target, WETH9.abi, deployer);
+
   // Execute transactions sequentially to avoid nonce conflicts
-  await (wzeta as any)
-    .connect(fungibleModuleSigner)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
+  await wzetaFungibleModuleSigner.deposit({
+    ...deployOpts,
+    value: ethers.parseEther("10"),
+  });
 
-  await (wzeta as any)
-    .connect(fungibleModuleSigner)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
+  await wzetaFungibleModuleSigner.approve(
+    gatewayZEVM.target,
+    ethers.parseEther("10"),
+    deployOpts
+  );
 
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
+  await wzetaDeployer.deposit({
+    ...deployOpts,
+    value: ethers.parseEther("10"),
+  });
 
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
+  await wzetaDeployer.approve(
+    gatewayZEVM.target,
+    ethers.parseEther("10"),
+    deployOpts
+  );
 
   return {
     coreRegistry,
