@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { task } from "hardhat/config";
 
-const solanaBalance = async (args: any) => {
+const solanaBalance = async (args: { tokenMint: string; wallet: string }) => {
   const connection = new anchor.web3.Connection("http://localhost:8899");
 
   const walletPublicKey = new PublicKey(args.wallet);
@@ -19,9 +19,14 @@ const solanaBalance = async (args: any) => {
   }
 
   const tokenAccount = tokenAccounts.value[0].account;
-  const tokenAmount = tokenAccount.data.parsed.info.tokenAmount;
+  const tokenAccountParsedData = tokenAccount.data.parsed as {
+    info: {
+      tokenAmount: { uiAmount: number };
+    };
+  };
+  const tokenAmount = tokenAccountParsedData.info.tokenAmount;
 
-  console.log(`Token balance: ${tokenAmount.uiAmount} `);
+  console.log(`Token balance: ${tokenAmount?.uiAmount} `);
 };
 
 export const solanaBalanceTask = task(

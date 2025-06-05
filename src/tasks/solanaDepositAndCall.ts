@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Wallet } from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
 import { AbiCoder, ethers } from "ethers";
 import * as fs from "fs";
@@ -16,7 +17,9 @@ export const getDefaultKeypair = (): Keypair | null => {
   );
 
   if (fs.existsSync(keyPath)) {
-    const keypairData = JSON.parse(fs.readFileSync(keyPath, "utf-8"));
+    const keypairData = JSON.parse(
+      fs.readFileSync(keyPath, "utf-8")
+    ) as Uint8Array;
     return Keypair.fromSecretKey(new Uint8Array(keypairData));
   }
 
@@ -37,19 +40,32 @@ export const getKeypair = async (mnemonic?: string): Promise<Keypair> => {
   return Keypair.generate();
 };
 
-const solanaDepositAndCall = async (args: any) => {
+const solanaDepositAndCall = async (args: {
+  amount: string;
+  from: string;
+  mint: string;
+  mnemonic: string;
+  receiver: string;
+  to: string;
+  tokenProgram: string;
+  types: string;
+  values: string[];
+}) => {
   const gatewayPath = require.resolve(
     "@zetachain/localnet/solana/idl/gateway.json"
   );
-  const Gateway_IDL = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
+  const Gateway_IDL = JSON.parse(
+    fs.readFileSync(gatewayPath, "utf-8")
+  ) as anchor.Idl;
 
-  const valuesArray = args.values.map((value: any, index: any) => {
-    const type = JSON.parse(args.types)[index];
+  const valuesArray = args.values.map((value: string, index: number) => {
+    const types = JSON.parse(args.types) as string[];
+    const type = types[index];
 
     if (type === "bool") {
       try {
-        return JSON.parse(value.toLowerCase());
-      } catch (e) {
+        return JSON.parse(value.toLowerCase()) as boolean;
+      } catch (e: unknown) {
         throw new Error(`Invalid boolean value: ${value}`);
       }
     } else if (type.startsWith("uint") || type.startsWith("int")) {
@@ -60,7 +76,7 @@ const solanaDepositAndCall = async (args: any) => {
   });
 
   const encodedParameters = AbiCoder.defaultAbiCoder().encode(
-    JSON.parse(args.types),
+    JSON.parse(args.types) as string[],
     valuesArray
   );
 
@@ -69,14 +85,11 @@ const solanaDepositAndCall = async (args: any) => {
 
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection("http://localhost:8899"),
-    new anchor.Wallet(keypair),
+    new Wallet(keypair),
     {}
   );
 
-  const gatewayProgram = new anchor.Program(
-    Gateway_IDL as anchor.Idl,
-    provider
-  );
+  const gatewayProgram = new anchor.Program(Gateway_IDL, provider);
 
   const receiverBytes = ethers.getBytes(args.receiver);
 

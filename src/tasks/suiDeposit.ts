@@ -9,13 +9,20 @@ import {
   getLocalnetConfig,
 } from "./utils/sui";
 
-const suiDeposit = async (args: any) => {
+const suiDeposit = async (args: {
+  amount: string;
+  coinType: string;
+  gateway: string;
+  mnemonic: string;
+  module: string;
+  receiver: string;
+}) => {
   const { mnemonic, gateway, module, receiver, amount, coinType } = args;
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
   const localnetConfig = getLocalnetConfig();
-  const gatewayObjectId = gateway || localnetConfig.gatewayObjectId;
-  const packageId = module || localnetConfig.packageId;
+  const gatewayObjectId = (gateway || localnetConfig.gatewayObjectId) as string;
+  const packageId = (module || localnetConfig.packageId) as string;
 
   if (!gatewayObjectId || !packageId) {
     throw new Error(
