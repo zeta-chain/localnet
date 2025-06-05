@@ -1,4 +1,4 @@
-import ansis from "ansis";
+import ansis, { Ansis } from "ansis";
 import winston from "winston";
 
 import { NetworkID } from "./constants";
@@ -16,7 +16,7 @@ export const loggerLevels = [
 
 export type LoggerLevel = (typeof loggerLevels)[number];
 
-export const chains: Record<string, { color: any; name: string }> = {
+export const chains: Record<string, { color: Ansis; name: string }> = {
   [NetworkID.Sui]: { color: ansis.blue, name: "Sui" },
   [NetworkID.TON]: { color: ansis.blueBright, name: "TON" },
   [NetworkID.Ethereum]: { color: ansis.cyan, name: "Ethereum" },
@@ -32,9 +32,10 @@ const chainFormat = winston.format.printf(({ level, message, chain }) => {
       message
     )}`;
   }
-  const chainDetails = chains[chain as string];
+  const chainDetails = chains[chain as keyof typeof chains];
   const color = chainDetails?.color || ansis.black;
-  const chainName = chainDetails?.name || `Unknown Chain (${chain})`;
+  const chainName =
+    chainDetails?.name || `Unknown Chain (${(chain || "") as string})`;
   const messageColor = level === "error" ? ansis.red : color;
   return `${color(`[${ansis.bold(chainName)}]`)} ${messageColor(message)}`;
 });
