@@ -1,4 +1,4 @@
-export function tonFormatCoin(coins: bigint): string {
+export const tonFormatCoin = (coins: bigint): string => {
   const divisor = 1_000_000_000n;
   const tons = coins / divisor;
   const fractional = coins % divisor;
@@ -12,9 +12,9 @@ export function tonFormatCoin(coins: bigint): string {
   fractionalStr = trimRight(fractionalStr, "0") || "0";
 
   return `${tons.toString()}.${fractionalStr}`;
-}
+};
 
-function trimRight(str: string, cutset: string): string {
+const trimRight = (str: string, cutset: string): string => {
   if (str.length === 0 || cutset.length === 0) {
     return str;
   }
@@ -25,4 +25,4 @@ function trimRight(str: string, cutset: string): string {
   }
 
   return str.slice(0, end);
-}
+};

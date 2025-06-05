@@ -1,9 +1,9 @@
 let isRegisteringGateways = false;
 
-export function setRegisteringGateways(value: boolean) {
+export const setRegisteringGateways = (value: boolean) => {
   isRegisteringGateways = value;
-}
+};
 
-export function isRegisteringGatewaysActive(): boolean {
+export const isRegisteringGatewaysActive = (): boolean => {
   return isRegisteringGateways;
-}
+};
