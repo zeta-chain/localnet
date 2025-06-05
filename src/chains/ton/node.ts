@@ -7,7 +7,7 @@ import { logger } from "../../logger";
 import * as utils from "../../utils";
 import * as cfg from "./config";
 
-export async function startNode(): Promise<void> {
+export const startNode = async (): Promise<void> => {
   // Skip container creation if ENV_SKIP_CONTAINER is set to true
   // (speeds up localnet development)
   const skipContainerStep = !!process.env[cfg.ENV_SKIP_CONTAINER];
@@ -27,9 +27,9 @@ export async function startNode(): Promise<void> {
     });
     throw error;
   }
-}
+};
 
-async function startContainer(dockerImage: string): Promise<Container> {
+const startContainer = async (dockerImage: string): Promise<Container> => {
   const socketPath = dockerTools.getSocketPath();
   const docker = new Docker({ socketPath });
 
@@ -58,13 +58,13 @@ async function startContainer(dockerImage: string): Promise<Container> {
   );
 
   return container;
-}
+};
 
 // Lite-server & RPC processes take some time to start
-export async function waitForNodeWithRPC(
+export const waitForNodeWithRPC = async (
   healthCheckURL: string,
   rpcClient: ton.TonClient
-): Promise<void> {
+): Promise<void> => {
   const start = Date.now();
   const since = (ts: number) => ((Date.now() - ts) / 1000).toFixed(2);
 
@@ -72,7 +72,7 @@ export async function waitForNodeWithRPC(
 
   // 1. Ensure TON & lite-server are ready
   const healthCheck = async () => {
-    const res = await utils.getJSON(healthCheckURL);
+    const res = await utils.getJSON<{ status: string }>(healthCheckURL);
     if (res.status !== "OK") {
       throw new Error(JSON.stringify(res));
     }
@@ -128,4 +128,4 @@ export async function waitForNodeWithRPC(
   logger.info(`TON RPC is ready in ${since(startRPC)}s`, {
     chain: NetworkID.TON,
   });
-}
+};

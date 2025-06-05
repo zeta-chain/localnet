@@ -21,12 +21,12 @@ export const getJSONWithRetry = async (
   return retry(request, retries, onFailure);
 };
 
-export const getJSON = async (url: string): Promise<unknown> => {
+export const getJSON = async <T>(url: string): Promise<T> => {
   const props = {
     headers: { "Content-Type": "application/json" },
     method: "GET",
   };
 
   const response = await fetch(url, props);
-  return response.json();
+  return response.json() as T;
 };
