@@ -20,6 +20,7 @@ module.exports = {
   ],
   ignorePatterns: [
     "/*.js", // Ignore only .js files in the root directory
+    "hardhat.config.ts", // Ignore hardhat config as it has different TS requirements
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
