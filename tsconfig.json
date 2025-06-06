@@ -25,10 +25,11 @@
   },
   "include": [
     "src/chains",
-    "src/types",
-    "src/tasks",
     "src/commands",
     "src/docker",
+    "src/tasks",
+    "src/tokens",
+    "src/types",
     "src/utils"
   ]
 }
