@@ -203,11 +203,12 @@ export const initLocalnet = async ({
       ...Object.entries(ethereumContracts)
         .filter(
           ([, value]) =>
-            typeof value !== "function" && value?.target !== undefined
+            typeof value !== "function" &&
+            (value as { target: unknown }).target !== undefined
         )
         .map(([key, value]) => {
           return {
-            address: String(value.target),
+            address: String((value as { target: unknown }).target),
             chain: "ethereum",
             type: key,
           };
@@ -215,11 +216,12 @@ export const initLocalnet = async ({
       ...Object.entries(bnbContracts)
         .filter(
           ([, value]) =>
-            typeof value !== "function" && value?.target !== undefined
+            typeof value !== "function" &&
+            (value as { target: unknown }).target !== undefined
         )
         .map(([key, value]) => {
           return {
-            address: String(value.target),
+            address: String((value as { target: unknown }).target),
             chain: "bnb",
             type: key,
           };

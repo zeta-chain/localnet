@@ -5,7 +5,7 @@ import path from "path";
 
 import { sleep } from "../utils";
 
-export function getSocketPath(): string {
+export const getSocketPath = (): string => {
   const defaultSocket = "/var/run/docker.sock";
   if (fs.existsSync(defaultSocket)) {
     return defaultSocket;
@@ -24,48 +24,58 @@ export function getSocketPath(): string {
   throw new Error(
     "No Docker socket found. Please ensure Docker Desktop, Colima, or Lima is running."
   );
-}
+};
 
-export async function removeExistingContainer(
+export const removeExistingContainer = async (
   docker: Docker,
   containerName: string
-): Promise<void> {
+): Promise<void> => {
   try {
     const container = docker.getContainer(containerName);
     await container.remove({ force: true });
     console.log(`Removed existing container: ${containerName}`);
-  } catch (err: any) {
-    if (err.statusCode !== 404) {
+  } catch (err: unknown) {
+    if (err instanceof Error && "statusCode" in err && err.statusCode !== 404) {
       console.error("Error removing container:", err);
     }
   }
-}
+};
 
-export async function pullWithRetry(
+export const pullWithRetry = async (
   image: string,
   docker: Docker,
   maxRetries = 3,
   delay = 5000
-): Promise<void> {
+): Promise<void> => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await new Promise<void>((resolve, reject) => {
-        docker.pull(image, (err: any, stream: any) => {
+        void docker.pull(image, (err: unknown, stream: unknown) => {
           if (err) {
-            return reject(err);
+            return reject(err instanceof Error ? err : new Error(String(err)));
           }
 
-          const onFinished = (err: any) => {
-            if (err) return reject(err);
+          const onFinished = (err: unknown) => {
+            if (err)
+              return reject(
+                err instanceof Error ? err : new Error(String(err))
+              );
             console.log("Image pulled successfully!");
             resolve();
           };
 
-          const onProgress = (event: any) => {
+          const onProgress = (event: {
+            progress?: string;
+            status?: string;
+          }) => {
             console.log(event.status, event.progress || "");
           };
 
-          docker.modem.followProgress(stream, onFinished, onProgress);
+          docker.modem.followProgress(
+            stream as NodeJS.ReadableStream,
+            onFinished,
+            onProgress
+          );
         });
       });
 
@@ -75,7 +85,7 @@ export async function pullWithRetry(
       console.error(`Attempt ${attempt}/${maxRetries} failed:`, error);
       if (attempt === maxRetries) {
         throw new Error(
-          `Failed to pull image after ${maxRetries} attempts: ${error}`
+          `Failed to pull image after ${maxRetries} attempts: ${String(error)}`
         );
       }
 
@@ -83,4 +93,4 @@ export async function pullWithRetry(
       await sleep(delay);
     }
   }
-}
+};

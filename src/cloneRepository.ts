@@ -1,5 +1,5 @@
 import fs from "fs-extra";
-import simpleGit from "simple-git";
+import { simpleGit } from "simple-git";
 
 import { logger } from "./logger";
 
@@ -7,7 +7,7 @@ export const cloneRepository = async (
   repoUrl: string,
   tempDir: string,
   branchName: string,
-  options: any
+  options: { cache: boolean }
 ) => {
   const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 

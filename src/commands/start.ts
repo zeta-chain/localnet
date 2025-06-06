@@ -1,7 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
-import { ChildProcess, execSync } from "child_process";
-import { spawn } from "child_process";
+import { ChildProcess, execSync, spawn } from "child_process";
 import { Command, Option } from "commander";
 import Docker from "dockerode";
 import fs from "fs";
@@ -105,8 +104,8 @@ const startLocalnet = async (options: {
       input: process.stdin,
       output: process.stdout,
     });
-    readlineInterface.on("close", async () => {
-      await cleanup();
+    readlineInterface.on("close", () => {
+      cleanup();
       process.exit(0);
     });
     readlineInterface.on("error", (err) => {
@@ -236,10 +235,10 @@ const startLocalnet = async (options: {
       "utf-8"
     );
   } catch (error: unknown) {
-    logger.error(`Error initializing localnet: ${error}`, {
+    logger.error(`Error initializing localnet: ${String(error)}`, {
       chain: "localnet",
     });
-    cleanup();
+    void cleanup();
     process.exit(1);
   }
 
@@ -247,7 +246,7 @@ const startLocalnet = async (options: {
     logger.info("Localnet successfully initialized. Stopping...", {
       chain: "localnet",
     });
-    await cleanup();
+    cleanup();
     process.exit(0);
   }
 
@@ -278,12 +277,14 @@ const waitForTonContainerToStop = async () => {
         chain: "localnet",
       });
     } catch (stopError) {
-      logger.error(`Error stopping container: ${stopError}`, {
+      logger.error(`Error stopping container: ${String(stopError)}`, {
         chain: "localnet",
       });
     }
   } catch (error) {
-    logger.error(`Error accessing Docker: ${error}`, { chain: "localnet" });
+    logger.error(`Error accessing Docker: ${String(error)}`, {
+      chain: "localnet",
+    });
     // Container might not exist or already be stopped
     logger.info(ansis.yellow("TON container not found or already stopped."), {
       chain: "localnet",
@@ -291,7 +292,7 @@ const waitForTonContainerToStop = async () => {
   }
 };
 
-const cleanup = async () => {
+const cleanup = () => {
   logger.info("Shutting down processes and cleaning up...", {
     chain: "localnet",
   });
@@ -307,7 +308,9 @@ const cleanup = async () => {
 
   if (fs.existsSync(PROCESS_FILE)) {
     try {
-      const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
+      const processData = JSON.parse(
+        fs.readFileSync(PROCESS_FILE, "utf-8")
+      ) as { processes: ProcessInfo[] };
       if (processData && processData.processes) {
         for (const proc of processData.processes) {
           try {
@@ -319,7 +322,9 @@ const cleanup = async () => {
           } catch (error) {
             logger.info(
               ansis.yellow(
-                `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
+                `Failed to kill process ${proc.pid} (${proc.command}): ${String(
+                  error
+                )}`
               ),
               { chain: "localnet" }
             );
@@ -328,7 +333,7 @@ const cleanup = async () => {
       }
       fs.unlinkSync(PROCESS_FILE);
     } catch (error) {
-      logger.error(`Error cleaning up processes: ${error}`, {
+      logger.error(`Error cleaning up processes: ${String(error)}`, {
         chain: "localnet",
       });
     }
@@ -342,9 +347,12 @@ const cleanup = async () => {
     try {
       fs.unlinkSync(ANVIL_CONFIG);
     } catch (error) {
-      logger.info(ansis.yellow(`Failed to remove anvil.json: ${error}`), {
-        chain: "localnet",
-      });
+      logger.info(
+        ansis.yellow(`Failed to remove anvil.json: ${String(error)}`),
+        {
+          chain: "localnet",
+        }
+      );
     }
   }
 };
@@ -381,19 +389,29 @@ export const startCommand = new Command("start")
       .choices(AVAILABLE_CHAINS)
       .default([])
   )
-  .action(async (options) => {
-    try {
-      await startLocalnet({
-        anvil: options.anvil,
-        chains: options.chains,
-        exitOnError: options.exitOnError,
-        forceKill: options.forceKill,
-        port: parseInt(options.port),
-        stopAfterInit: options.stopAfterInit,
-        verbosity: options.verbosity,
-      });
-    } catch (error) {
-      console.error(`Error: ${error}`);
-      process.exit(1);
+  .action(
+    async (options: {
+      anvil: string;
+      chains: string[];
+      exitOnError: boolean;
+      forceKill: boolean;
+      port: string;
+      stopAfterInit: boolean;
+      verbosity: LoggerLevel;
+    }) => {
+      try {
+        await startLocalnet({
+          anvil: options.anvil,
+          chains: options.chains,
+          exitOnError: options.exitOnError,
+          forceKill: options.forceKill,
+          port: parseInt(options.port),
+          stopAfterInit: options.stopAfterInit,
+          verbosity: options.verbosity,
+        });
+      } catch (error) {
+        console.error(`Error: ${String(error)}`);
+        process.exit(1);
+      }
     }
-  });
+  );
