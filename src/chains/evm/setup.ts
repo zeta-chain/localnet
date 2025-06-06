@@ -7,19 +7,20 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import { ethers } from "ethers";
 
 import { deployOpts } from "../../deployOpts";
-import { evmCall } from "./call";
-import { evmDeposit } from "./deposit";
-import { evmDepositAndCall } from "./depositAndCall";
 
 export const evmSetup = async ({
   deployer,
   tss,
-  chainID,
   zetachainContracts,
-  exitOnError,
-  foreignCoins,
-  provider,
-}: any) => {
+}: {
+  deployer: ethers.NonceManager;
+  tss: ethers.NonceManager;
+  zetachainContracts: {
+    coreRegistry: {
+      target: string | ethers.Addressable;
+    };
+  };
+}) => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -69,7 +70,7 @@ export const evmSetup = async ({
     gatewayEVMImpl.target,
     gatewayEVMInitData,
     deployOpts
-  )) as any;
+  )) as ethers.Contract;
 
   const gatewayEVM = new ethers.Contract(
     proxyEVM.target,
@@ -86,7 +87,7 @@ export const evmSetup = async ({
       deployerAddress,
       deployerAddress,
       gatewayEVM.target,
-      zetachainContracts.coreRegistry.target,
+      String(zetachainContracts.coreRegistry.target),
     ]
   );
 
@@ -94,7 +95,7 @@ export const evmSetup = async ({
     registryImpl.target,
     registryInitData,
     deployOpts
-  )) as any;
+  )) as ethers.Contract;
 
   const registry = new ethers.Contract(
     proxyRegistry.target,
@@ -149,13 +150,15 @@ export const evmSetup = async ({
     deployOpts
   );
 
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setCustody(custodyImpl.target, deployOpts);
+  const gatewayEvmDeployer = new ethers.Contract(
+    gatewayEVM.target,
+    GatewayEVM.abi,
+    deployer
+  );
 
-  await (gatewayEVM as any)
-    .connect(deployer)
-    .setConnector(zetaConnectorImpl.target, deployOpts);
+  await gatewayEvmDeployer.setCustody(custodyImpl.target, deployOpts);
+
+  await gatewayEvmDeployer.setConnector(zetaConnectorImpl.target, deployOpts);
 
   // Don't set up any event handlers here - they will be set up after ALL initialization
 

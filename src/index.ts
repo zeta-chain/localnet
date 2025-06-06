@@ -97,11 +97,7 @@ export const initLocalnet = async ({
     // Run EVM chains sequentially to avoid nonce conflicts
     logger.debug("Setting up Ethereum contracts", { chain: "localnet" });
     const ethereumContracts = await evmSetup({
-      chainID: NetworkID.Ethereum,
       deployer,
-      exitOnError,
-      foreignCoins,
-      provider,
       tss,
       zetachainContracts,
     });
@@ -109,11 +105,7 @@ export const initLocalnet = async ({
 
     logger.debug("Setting up BNB contracts", { chain: "localnet" });
     const bnbContracts = await evmSetup({
-      chainID: NetworkID.BNB,
       deployer,
-      exitOnError,
-      foreignCoins,
-      provider,
       tss,
       zetachainContracts,
     });
