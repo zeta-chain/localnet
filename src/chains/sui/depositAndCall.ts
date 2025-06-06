@@ -90,7 +90,7 @@ export const suiDepositAndCall = async ({
     const revertAmount = BigInt(event.amount) - BigInt(revertGasFee);
     if (revertAmount > 0) {
       await suiWithdraw({
-        amount: revertAmount,
+        amount: String(revertAmount),
         client,
         gatewayObjectId,
         keypair,

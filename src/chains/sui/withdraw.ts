@@ -1,3 +1,5 @@
+import { SuiClient } from "@mysten/sui/dist/cjs/client";
+import { Keypair } from "@mysten/sui/dist/cjs/cryptography";
 import { Transaction } from "@mysten/sui/transactions";
 import { ethers } from "ethers";
 
@@ -12,7 +14,15 @@ export const suiWithdraw = async ({
   packageId,
   gatewayObjectId,
   withdrawCapObjectId,
-}: any) => {
+}: {
+  amount: string;
+  client: SuiClient;
+  gatewayObjectId: string;
+  keypair: Keypair;
+  packageId: string;
+  sender: string;
+  withdrawCapObjectId: string;
+}) => {
   const nonce = await fetchGatewayNonce(client, gatewayObjectId);
 
   const tx = new Transaction();
@@ -62,25 +72,28 @@ export const suiWithdraw = async ({
       { chain: NetworkID.Sui }
     );
   } catch (e) {
-    logger.error(`Failed to withdraw: ${e}`, { chain: NetworkID.Sui });
+    logger.error(`Failed to withdraw: ${String(e)}`, { chain: NetworkID.Sui });
     throw e;
   }
 };
 
-const fetchGatewayNonce = async (client: any, gatewayId: string) => {
+const fetchGatewayNonce = async (
+  client: SuiClient,
+  gatewayId: string
+): Promise<string> => {
   const resp = await client.getObject({
     id: gatewayId,
     options: { showContent: true },
   });
 
   if (resp.data?.content?.dataType !== "moveObject") {
-    logger.error(`Failed to fetch gateway nonce: ${resp}`, {
+    logger.error(`Failed to fetch gateway nonce: ${JSON.stringify(resp)}`, {
       chain: NetworkID.Sui,
     });
     throw new Error("Not a valid Move object");
   }
 
-  const fields = (resp.data.content as any).fields;
+  const fields = resp.data.content.fields as { nonce: string };
   const nonceValue = fields.nonce;
 
   logger.info(`Gateway nonce: ${nonceValue}`, { chain: NetworkID.Sui });

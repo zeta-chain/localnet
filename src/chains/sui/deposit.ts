@@ -1,4 +1,5 @@
 import { SuiClient } from "@mysten/sui/dist/cjs/client";
+import { Keypair } from "@mysten/sui/dist/cjs/cryptography";
 import { ethers, JsonRpcProvider, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -22,11 +23,11 @@ interface SuiDepositParams {
   deployer: NonceManager;
   event: SuiDepositEvent;
   foreignCoins: ForeignCoin[];
-  gatewayObjectId: unknown;
-  keypair: unknown;
-  packageId: unknown;
+  gatewayObjectId: string;
+  keypair: Keypair;
+  packageId: string;
   provider: JsonRpcProvider;
-  withdrawCapObjectId: unknown;
+  withdrawCapObjectId: string;
   zetachainContracts: ZetachainContracts;
 }
 
@@ -89,9 +90,8 @@ export const suiDeposit = async ({
     const revertAmount = BigInt(event.amount) - BigInt(revertGasFee);
     if (revertAmount > 0) {
       await suiWithdraw({
-        amount: revertAmount,
+        amount: revertAmount.toString(),
         client,
-        coinType: event.coin_type,
         gatewayObjectId,
         keypair,
         packageId,

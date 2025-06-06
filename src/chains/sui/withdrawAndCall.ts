@@ -1,3 +1,5 @@
+import { SuiClient } from "@mysten/sui/dist/cjs/client";
+import { Keypair } from "@mysten/sui/dist/cjs/cryptography";
 import { Transaction } from "@mysten/sui/transactions";
 import { AbiCoder, ethers } from "ethers";
 
@@ -13,7 +15,16 @@ export const suiWithdrawAndCall = async ({
   packageId,
   gatewayObjectId,
   withdrawCapObjectId,
-}: any) => {
+}: {
+  amount: string;
+  client: SuiClient;
+  gatewayObjectId: string;
+  keypair: Keypair;
+  message: Buffer;
+  packageId: string;
+  targetModule: string;
+  withdrawCapObjectId: string;
+}) => {
   try {
     const nonce = await fetchGatewayNonce(client, gatewayObjectId);
     const tx = new Transaction();
@@ -43,7 +54,7 @@ export const suiWithdrawAndCall = async ({
     const decodedMessage = AbiCoder.defaultAbiCoder().decode(
       ["tuple(string[] typeArguments, bytes32[] objects, bytes data)"],
       message
-    )[0];
+    )[0] as unknown as { 0: string[]; 1: string[]; 2: string };
     const additionalTypeArguments = decodedMessage[0];
     const objects = decodedMessage[1];
     const data = decodedMessage[2];
@@ -54,7 +65,7 @@ export const suiWithdrawAndCall = async ({
     const onCallTypeArguments = [coinType, ...additionalTypeArguments];
     const onCallArguments = [
       coins,
-      ...objects.map((obj: any) => tx.object(ethers.hexlify(obj))),
+      ...objects.map((obj: string) => tx.object(ethers.hexlify(obj))),
       tx.pure.vector("u8", ethers.getBytes(data)),
     ];
 
@@ -67,7 +78,7 @@ export const suiWithdrawAndCall = async ({
     tx.setGasBudget(100000000);
 
     // send the transaction and wait for it
-    const result = await await client.signAndExecuteTransaction({
+    const result = await client.signAndExecuteTransaction({
       signer: keypair,
       transaction: tx,
     });
@@ -98,12 +109,17 @@ export const suiWithdrawAndCall = async ({
       { chain: NetworkID.Sui }
     );
   } catch (e) {
-    logger.error(`Failed to withdraw and call: ${e}`, { chain: NetworkID.Sui });
+    logger.error(`Failed to withdraw and call: ${String(e)}`, {
+      chain: NetworkID.Sui,
+    });
     throw e;
   }
 };
 
-const fetchGatewayNonce = async (client: any, gatewayId: string) => {
+const fetchGatewayNonce = async (
+  client: SuiClient,
+  gatewayId: string
+): Promise<string> => {
   const resp = await client.getObject({
     id: gatewayId,
     options: { showContent: true },
@@ -113,7 +129,7 @@ const fetchGatewayNonce = async (client: any, gatewayId: string) => {
     throw new Error("Not a valid Move object");
   }
 
-  const fields = (resp.data.content as any).fields;
+  const fields = resp.data.content.fields as { nonce: string };
   const nonceValue = fields.nonce;
 
   logger.info(`Gateway nonce: ${nonceValue}`, { chain: NetworkID.Sui });
