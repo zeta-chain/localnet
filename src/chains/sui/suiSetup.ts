@@ -4,6 +4,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { mnemonicToSeedSync } from "bip39";
 import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
+import { JsonRpcProvider, NonceManager } from "ethers";
 import * as fs from "fs";
 import os from "os";
 import path from "path";
@@ -12,10 +13,36 @@ import { addBackgroundProcess } from "../../backgroundProcesses";
 import { cloneRepository } from "../../cloneRepository";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
+import { ForeignCoin } from "../../types/foreignCoins";
 import { sleep } from "../../utils";
-import { suiDeposit } from "./deposit";
+import { suiDeposit, SuiDepositEvent } from "./deposit";
 import { suiDepositAndCall } from "./depositAndCall";
 import { isSuiAvailable } from "./isSuiAvailable";
+
+interface SuiObjectChange {
+  objectId?: string;
+  objectType?: string;
+  packageId?: string;
+  type: "published" | "created";
+}
+
+interface SuiPublishResult {
+  digest: string;
+  objectChanges?: SuiObjectChange[];
+}
+
+interface SuiPollEventsContext {
+  client: SuiClient;
+  deployer: NonceManager;
+  foreignCoins: ForeignCoin[];
+  gatewayObjectId: string;
+  keypair: Ed25519Keypair;
+  packageId: string;
+  provider: JsonRpcProvider;
+  withdrawCapObjectId: string;
+  zetachainContracts: ZetachainContracts;
+}
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
@@ -41,15 +68,22 @@ const generateAccount = (mnemonic: string) => {
   return { keypair, mnemonic };
 };
 
+interface SuiSetupParams {
+  deployer: NonceManager;
+  foreignCoins: ForeignCoin[];
+  provider: JsonRpcProvider;
+  skip: boolean;
+  zetachainContracts: ZetachainContracts;
+}
+
 export const suiSetup = async ({
   deployer,
   foreignCoins,
-  fungibleModuleSigner,
   zetachainContracts,
   provider,
   skip,
-}: any) => {
-  if (skip || !(await isSuiAvailable())) {
+}: SuiSetupParams) => {
+  if (skip || !isSuiAvailable()) {
     return;
   }
 
@@ -87,7 +121,9 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    throw new Error(`Failed to switch to localnet environment: ${error}`);
+    throw new Error(
+      `Failed to switch to localnet environment: ${String(error)}`
+    );
   }
 
   logger.info("Building Move contracts...", { chain: NetworkID.Sui });
@@ -97,7 +133,7 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    throw new Error(`Move contract build failed: ${error}`);
+    throw new Error(`Move contract build failed: ${String(error)}`);
   }
 
   const user = generateAccount(MNEMONIC);
@@ -125,7 +161,7 @@ export const suiSetup = async ({
       stdio: "ignore",
     });
   } catch (error) {
-    throw new Error("Failed to import ephemeral key: " + error);
+    throw new Error("Failed to import ephemeral key: " + String(error));
   }
 
   await Promise.all([
@@ -141,21 +177,21 @@ export const suiSetup = async ({
       `sui client publish --gas-budget ${GAS_BUDGET} --json`,
       { cwd: PROTOCOL_CONTRACTS_REPO, encoding: "utf-8", stdio: "pipe" }
     );
-    publishResult = JSON.parse(result);
+    publishResult = JSON.parse(result) as SuiPublishResult;
     // Only log essential information from the publish result
     logger.info("Package published successfully", { chain: NetworkID.Sui });
     logger.info(
       `Package ID: ${
         publishResult.objectChanges?.find(
-          (change: any) => change.type === "published"
-        )?.packageId
+          (change) => change.type === "published"
+        )?.packageId || "unknown"
       }`,
       {
         chain: NetworkID.Sui,
       }
     );
   } catch (error) {
-    throw new Error("Move contract deployment failed: " + error);
+    throw new Error("Move contract deployment failed: " + String(error));
   }
 
   const client = new SuiClient({ url: new URL(NODE_RPC).toString() });
@@ -163,36 +199,46 @@ export const suiSetup = async ({
   await waitForConfirmation(client, publishResult.digest);
 
   const publishedModule = publishResult.objectChanges?.find(
-    (change: any) => change.type === "published"
+    (change: SuiObjectChange) => change.type === "published"
   );
 
   const gatewayObject = publishResult.objectChanges?.find(
-    (change: any) =>
+    (change: SuiObjectChange) =>
       change.type === "created" &&
-      change.objectType.includes("gateway::Gateway")
+      change.objectType?.includes("gateway::Gateway")
   );
   const withdrawCapObject = publishResult.objectChanges?.find(
-    (change: any) =>
+    (change: SuiObjectChange) =>
       change.type === "created" &&
-      change.objectType.includes("gateway::WithdrawCap")
+      change.objectType?.includes("gateway::WithdrawCap")
   );
 
   const whitelistCapObject = publishResult.objectChanges?.find(
-    (change: any) =>
+    (change: SuiObjectChange) =>
       change.type === "created" &&
-      change.objectType.includes("gateway::WhitelistCap")
+      change.objectType?.includes("gateway::WhitelistCap")
   );
 
-  const packageId = (publishedModule as any).packageId;
-  const gatewayObjectId = (gatewayObject as any).objectId;
-  const withdrawCapObjectId = (withdrawCapObject as any).objectId;
-  const whitelistCapObjectId = (whitelistCapObject as any).objectId;
+  const packageId = publishedModule?.packageId;
+  const gatewayObjectId = gatewayObject?.objectId;
+  const withdrawCapObjectId = withdrawCapObject?.objectId;
+  const whitelistCapObjectId = whitelistCapObject?.objectId;
 
-  pollEvents({
+  if (
+    !packageId ||
+    !gatewayObjectId ||
+    !withdrawCapObjectId ||
+    !whitelistCapObjectId
+  ) {
+    throw new Error(
+      "Failed to extract required object IDs from publish result"
+    );
+  }
+
+  void pollEvents({
     client,
     deployer,
     foreignCoins,
-    fungibleModuleSigner,
     gatewayObjectId,
     keypair,
     packageId,
@@ -257,56 +303,58 @@ const waitForConfirmation = async (
 };
 
 // Helper to poll deposit events
-const pollEvents = async (context: any) => {
+const pollEvents = (context: SuiPollEventsContext) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
   const DEPOSIT_EVENT = `${context.packageId}::gateway::DepositEvent`;
   const DEPOSIT_AND_CALL_EVENT = `${context.packageId}::gateway::DepositAndCallEvent`;
 
-  const pollInterval = setInterval(async () => {
-    try {
-      const { data, hasNextPage, nextCursor }: any =
-        await context.client.queryEvents({
-          cursor: currentCursor || null,
-          limit: 50,
-          order: "ascending",
-          query: {
-            MoveEventModule: {
-              module: "gateway",
-              package: context.packageId,
+  const pollInterval = setInterval(() => {
+    void (async () => {
+      try {
+        const { data, hasNextPage, nextCursor } =
+          await context.client.queryEvents({
+            cursor: currentCursor || null,
+            limit: 50,
+            order: "ascending",
+            query: {
+              MoveEventModule: {
+                module: "gateway",
+                package: context.packageId,
+              },
             },
-          },
-        });
+          });
 
-      if (data.length > 0) {
-        for (const eventData of data) {
-          const event = eventData.parsedJson;
-          if (eventData.type === DEPOSIT_EVENT) {
-            suiDeposit({ event, ...context });
-          } else if (eventData.type === DEPOSIT_AND_CALL_EVENT) {
-            suiDepositAndCall({ event, ...context });
+        if (data.length > 0) {
+          for (const eventData of data) {
+            const event = eventData.parsedJson as SuiDepositEvent;
+            if (eventData.type === DEPOSIT_EVENT) {
+              void suiDeposit({ event, ...context });
+            } else if (eventData.type === DEPOSIT_AND_CALL_EVENT) {
+              void suiDepositAndCall({ event, ...context });
+            }
+          }
+
+          if (nextCursor) {
+            currentCursor = nextCursor;
           }
         }
 
-        if (nextCursor) {
-          currentCursor = nextCursor;
+        if (!hasNextPage) {
+          await sleep(POLLING_INTERVAL_MS);
         }
-      }
-
-      if (!hasNextPage) {
+      } catch (err) {
+        logger.error("Error polling deposit events:", String(err));
+        logger.info(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
         await sleep(POLLING_INTERVAL_MS);
       }
-    } catch (err) {
-      logger.error("Error polling deposit events:", String(err));
-      logger.info(`Retrying in ${POLLING_INTERVAL_MS}ms...`);
-      await sleep(POLLING_INTERVAL_MS);
-    }
+    })();
   }, POLLING_INTERVAL_MS);
 
   addBackgroundProcess(pollInterval);
 };
 
-const runSudoCommand = (command: any, args: any) => {
+const runSudoCommand = (command: string, args: string[]) => {
   logger.info(`Requesting sudo access to run: ${command} ${args.join(" ")}`);
   const result = spawnSync("sudo", [command, ...args], { stdio: "inherit" });
 

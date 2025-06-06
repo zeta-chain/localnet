@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
+import { DepositAndCallArgs } from "../../types/events";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
@@ -10,8 +11,8 @@ import { zetachainOnAbort } from "../zetachain/onAbort";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import { evmOnRevert } from "./onRevert";
 
-interface EvmDepositAndCallArgs {
-  args: unknown[];
+interface EvmDepositAndCallParams {
+  args: DepositAndCallArgs;
   chainID: string;
   custody: {
     target: string | ethers.Addressable;
@@ -38,7 +39,7 @@ export const evmDepositAndCall = async ({
   provider,
   tss,
   zetachainContracts,
-}: EvmDepositAndCallArgs) => {
+}: EvmDepositAndCallParams) => {
   logger.info("Gateway: DepositedAndCalled event emitted", { chain: chainID });
 
   // Skip processing events during gateway registration
@@ -95,12 +96,12 @@ export const evmDepositAndCall = async ({
         chainID,
         deployer,
         foreignCoins,
-        gasLimit,
+        gasLimit: BigInt(gasLimit),
         provider,
         zetachainContracts,
       }
     );
-    const revertAmount = amount - revertGasFee;
+    const revertAmount = amount - BigInt(revertGasFee);
     if (revertAmount > 0) {
       return await evmOnRevert({
         amount: revertAmount,

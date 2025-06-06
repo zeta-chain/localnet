@@ -2,8 +2,19 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
+import { DepositAndCallArgs } from "../../types/events";
+import { ForeignCoin } from "../../types/foreignCoins";
 
 const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];
+
+interface ZetachainDepositAndCallParams {
+  args: DepositAndCallArgs;
+  chainID: string;
+  foreignCoins: ForeignCoin[];
+  provider: ethers.JsonRpcProvider;
+  zetachainContracts: ZetachainContracts;
+}
 
 export const zetachainDepositAndCall = async ({
   provider,
@@ -11,7 +22,7 @@ export const zetachainDepositAndCall = async ({
   args,
   foreignCoins,
   chainID,
-}: any) => {
+}: ZetachainDepositAndCallParams) => {
   const [sender, receiver, amount, asset, message] = args;
   let foreignCoin;
   // Check for both ZeroAddress and the full SUI path
@@ -21,7 +32,7 @@ export const zetachainDepositAndCall = async ({
       "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
   ) {
     foreignCoin = foreignCoins.find(
-      (coin: any) =>
+      (coin) =>
         ((coin.coin_type === "Gas" || coin.coin_type === "SUI") &&
           coin.foreign_chain_id === chainID) ||
         (chainID === NetworkID.Sui && coin.symbol === "SUI")
@@ -30,11 +41,11 @@ export const zetachainDepositAndCall = async ({
     // For non-gas Sui tokens, match the full coin type path
     if (chainID === NetworkID.Sui) {
       foreignCoin = foreignCoins.find(
-        (coin: any) => coin.foreign_chain_id === chainID && coin.asset === asset
+        (coin) => coin.foreign_chain_id === chainID && coin.asset === asset
       );
     } else {
       foreignCoin = foreignCoins.find(
-        (coin: any) =>
+        (coin) =>
           coin.foreign_chain_id === chainID && coin.asset === asset.toString()
       );
     }
@@ -51,7 +62,7 @@ export const zetachainDepositAndCall = async ({
 
   const context = {
     chainID,
-    sender: sender,
+    sender,
     senderEVM: nonEVM.includes(chainID) ? ethers.ZeroAddress : sender,
   };
 
@@ -72,7 +83,7 @@ export const zetachainDepositAndCall = async ({
     address: receiver,
     fromBlock: "latest",
   });
-  logs.forEach((data: any) => {
+  logs.forEach((data) => {
     logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
       chain: NetworkID.ZetaChain,
     });

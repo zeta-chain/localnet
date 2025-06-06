@@ -19,6 +19,7 @@ import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
 import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
+import { DepositAndCallArgs } from "./types/events";
 import { ForeignCoin } from "./types/foreignCoins";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 
@@ -312,7 +313,7 @@ export const initLocalnet = async ({
 
     ethereumContracts.gatewayEVM.on(
       "DepositedAndCalled",
-      (...args: unknown[]) => {
+      (...args: DepositAndCallArgs) => {
         void evmDepositAndCall({
           args,
           chainID: NetworkID.Ethereum,
@@ -355,20 +356,23 @@ export const initLocalnet = async ({
       });
     });
 
-    bnbContracts.gatewayEVM.on("DepositedAndCalled", (...args: unknown[]) => {
-      void evmDepositAndCall({
-        args,
-        chainID: NetworkID.BNB,
-        custody: bnbContracts.custody,
-        deployer,
-        exitOnError: false,
-        foreignCoins,
-        gatewayEVM: bnbContracts.gatewayEVM,
-        provider,
-        tss,
-        zetachainContracts,
-      });
-    });
+    bnbContracts.gatewayEVM.on(
+      "DepositedAndCalled",
+      (...args: DepositAndCallArgs) => {
+        void evmDepositAndCall({
+          args,
+          chainID: NetworkID.BNB,
+          custody: bnbContracts.custody,
+          deployer,
+          exitOnError: false,
+          foreignCoins,
+          gatewayEVM: bnbContracts.gatewayEVM,
+          provider,
+          tss,
+          zetachainContracts,
+        });
+      }
+    );
 
     logger.debug("Event handlers setup complete", { chain: "localnet" });
 

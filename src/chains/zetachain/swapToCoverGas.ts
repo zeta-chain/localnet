@@ -6,43 +6,21 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import {
   UniswapV2Router02Contract,
+  ZetachainContracts,
   ZRC20Contract,
 } from "../../types/contracts";
 import { ForeignCoin } from "../../types/foreignCoins";
-import { SetupOptions } from "../ton/setup";
 
-interface ZetachainSwapToCoverGasArgs extends SetupOptions {
+interface ZetachainSwapToCoverGasArgs {
   amount: bigint;
   asset: string;
   chainID: string;
+  deployer: ethers.NonceManager;
   foreignCoins: ForeignCoin[];
   gasLimit: bigint;
   provider: ethers.JsonRpcProvider;
+  zetachainContracts: ZetachainContracts;
 }
-
-// interface ZetachainSwapToCoverGasArgs {
-//   amount: bigint;
-//   asset: string;
-//   chainID: string;
-//   deployer: ethers.NonceManager;
-//   foreignCoins: ForeignCoin[];
-//   gasLimit: bigint;
-//   provider: ethers.JsonRpcProvider;
-//   zetachainContracts: {
-//     coreRegistry: {
-//       target: string | ethers.Addressable;
-//     };
-//     fungibleModuleSigner: {
-//       getAddress: () => Promise<string>;
-//     };
-//     uniswapRouterInstance: {
-//       target: string | ethers.Addressable;
-//     };
-//     wzeta: {
-//       target: string | ethers.Addressable;
-//     };
-//   };
-// }
 
 interface ZetachainSwapToCoverGasReturnType {
   isGas: boolean;
