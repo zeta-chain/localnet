@@ -5,6 +5,7 @@ import { ethers, JsonRpcProvider, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
+import { DepositAndCallArgs } from "../../types/events";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -60,7 +61,13 @@ export const suiDepositAndCall = async ({
       new Uint8Array(event.payload.split("").map((char) => char.charCodeAt(0)))
     );
     await zetachainDepositAndCall({
-      args: [event.sender, event.receiver, event.amount, asset, message],
+      args: [
+        event.sender,
+        event.receiver,
+        BigInt(event.amount),
+        asset,
+        message,
+      ] as unknown as DepositAndCallArgs,
       chainID,
       foreignCoins,
       provider,

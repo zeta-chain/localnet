@@ -8,7 +8,7 @@ import { ethers, Signer } from "ethers";
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
-import { ZetachainContracts } from "../../types/contracts";
+import { GatewayZEVMContract, ZetachainContracts } from "../../types/contracts";
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -89,7 +89,7 @@ export const zetachainSetup = async (
     proxyZEVM.target,
     GatewayZEVM.abi,
     deployer
-  );
+  ) as GatewayZEVMContract;
 
   const coreRegistryFactory = new ethers.ContractFactory(
     CoreRegistry.abi,

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
+import { DepositAndCallArgs } from "../../types/events";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -60,7 +61,7 @@ export const solanaDepositAndCall = async ({
       return;
     }
     await zetachainDepositAndCall({
-      args,
+      args: args as unknown as DepositAndCallArgs,
       chainID,
       foreignCoins,
       provider,

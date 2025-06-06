@@ -28,7 +28,7 @@ type DeployedContract = ethers.BaseContract & {
 export interface ZetachainContracts {
   coreRegistry: ethers.Contract;
   fungibleModuleSigner: ethers.JsonRpcSigner;
-  gatewayZEVM: ethers.Contract;
+  gatewayZEVM: GatewayZEVMContract;
   systemContract: DeployedContract;
   tss: ethers.Signer;
   uniswapFactoryInstance: DeployedContract;
@@ -51,5 +51,20 @@ export type UniswapV2Router02Contract = ethers.Contract & {
     path: string[],
     to: string,
     deadline: number
+  ) => Promise<ContractTransactionResponse>;
+};
+
+export type GatewayZEVMContract = ethers.Contract & {
+  depositAndCall: (
+    context: {
+      chainID: string;
+      sender: string;
+      senderEVM: string;
+    },
+    zrc20: string,
+    amount: ethers.BigNumberish,
+    receiver: string,
+    message: string,
+    options?: TxOptions
   ) => Promise<ContractTransactionResponse>;
 };

@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { ZetachainContracts } from "../../types/contracts";
+import { GatewayZEVMContract, ZetachainContracts } from "../../types/contracts";
 import { DepositAndCallArgs } from "../../types/events";
 import { ForeignCoin } from "../../types/foreignCoins";
 
@@ -73,19 +73,35 @@ export const zetachainDepositAndCall = async ({
     { chain: NetworkID.ZetaChain }
   );
 
-  const tx = await zetachainContracts.gatewayZEVM
-    .connect(zetachainContracts.fungibleModuleSigner)
-    .depositAndCall(context, zrc20, amount, receiver, message, {
-      gasLimit: 1_500_000,
+  try {
+    const connectedContract = zetachainContracts.gatewayZEVM.connect(
+      zetachainContracts.fungibleModuleSigner
+    ) as GatewayZEVMContract;
+    const tx = await connectedContract.depositAndCall(
+      context,
+      zrc20,
+      amount,
+      receiver,
+      message,
+      {
+        gasLimit: 1_500_000,
+      }
+    );
+    await tx.wait();
+
+    const logs = await provider.getLogs({
+      address: receiver,
+      fromBlock: "latest",
     });
-  await tx.wait();
-  const logs = await provider.getLogs({
-    address: receiver,
-    fromBlock: "latest",
-  });
-  logs.forEach((data) => {
-    logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
+    logs.forEach((data) => {
+      logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
+        chain: NetworkID.ZetaChain,
+      });
+    });
+  } catch (error) {
+    logger.error(`Error executing depositAndCall: ${String(error)}`, {
       chain: NetworkID.ZetaChain,
     });
-  });
+    throw error;
+  }
 };
