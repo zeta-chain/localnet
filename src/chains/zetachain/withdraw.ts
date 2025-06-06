@@ -109,22 +109,22 @@ export const zetachainWithdraw = async ({
         ? contracts.ethereumContracts
         : contracts.bnbContracts;
 
-    // if the token is ERC20 token
-    if (coinType === 2n) {
-      return await evmCustodyWithdraw({
-        args,
-        evmContracts,
-        foreignCoins,
-        tss,
-      });
-    }
-
     // if the token is ZETA token
     if (isZeta) {
       return await connectorWithdraw({
         args,
         chainID,
         evmContracts,
+        tss,
+      });
+    }
+
+    // if the token is ERC20 token
+    if (coinType === 2n) {
+      return await evmCustodyWithdraw({
+        args,
+        evmContracts,
+        foreignCoins,
         tss,
       });
     }

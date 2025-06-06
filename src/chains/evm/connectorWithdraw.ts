@@ -15,7 +15,7 @@ export const connectorWithdraw = async ({
 }) => {
   const isNative = chainID === NetworkID.Ethereum;
   try {
-    const [sender, , receiver, , amount, , , , , revertOptions] = args;
+    const [sender, , receiver, , amount, , , , ,] = args;
     const connector = evmContracts.zetaConnector;
 
     if (!isNative) {
@@ -29,6 +29,7 @@ export const connectorWithdraw = async ({
       const tx = await connector
         .connect(tss)
         .withdraw(receiver, amount, internalSendHash);
+
       await tx.wait();
     } else {
       const tx = await connector.connect(tss).withdraw(receiver, amount);

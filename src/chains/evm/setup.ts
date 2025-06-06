@@ -186,6 +186,17 @@ export const evmSetup = async ({
       tssAddress,
       zetaConnector.target
     );
+  } else {
+    const zetaEthContract = new ethers.Contract(
+      testEVMZeta.target,
+      TestERC20.abi,
+      tss
+    );
+
+    await zetaEthContract.mint(
+      zetaConnector.target,
+      ethers.parseEther("1000000")
+    );
   }
 
   // Execute these sequentially to avoid nonce conflicts
