@@ -7,7 +7,11 @@ import * as ZetaConnectorNonNative from "@zetachain/protocol-contracts/abi/ZetaC
 import { ethers } from "ethers";
 
 import { deployOpts } from "../../deployOpts";
-import { ZetachainContracts } from "../../types/contracts";
+import {
+  EVMContracts,
+  TargetRegistryContract,
+  ZetachainContracts,
+} from "../../types/contracts";
 
 export const evmSetup = async ({
   deployer,
@@ -17,7 +21,7 @@ export const evmSetup = async ({
   deployer: ethers.NonceManager;
   tss: ethers.NonceManager;
   zetachainContracts: ZetachainContracts;
-}) => {
+}): Promise<EVMContracts> => {
   const testERC20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
@@ -98,7 +102,7 @@ export const evmSetup = async ({
     proxyRegistry.target,
     Registry.abi,
     deployer
-  );
+  ) as TargetRegistryContract;
 
   const zetaConnectorFactory = new ethers.ContractFactory(
     ZetaConnectorNonNative.abi,

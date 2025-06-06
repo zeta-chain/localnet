@@ -2,6 +2,7 @@ import * as TestERC20 from "@zetachain/protocol-contracts/abi/TestERC20.sol/Test
 import { ethers } from "ethers";
 
 import { deployOpts } from "../deployOpts";
+import { contractCall } from "../utils/contracts";
 
 /**
  * Creates and deploys an ERC20 token on an EVM-compatible chain.
@@ -20,49 +21,47 @@ import { deployOpts } from "../deployOpts";
  * 4. Whitelists the token in the custody contract
  */
 export const createEVMToken = async (
-  deployer: any,
-  custody: any,
-  symbol: any,
-  tss: any
+  deployer: ethers.NonceManager,
+  custody: ethers.Contract,
+  symbol: string,
+  tss: ethers.NonceManager
 ) => {
   const erc20Factory = new ethers.ContractFactory(
     TestERC20.abi,
     TestERC20.bytecode,
     deployer
   );
-  const erc20 = await erc20Factory.deploy(symbol, symbol, deployOpts);
+  const erc20 = await erc20Factory
+    .connect(deployer)
+    .deploy(symbol, symbol, deployOpts);
   await erc20.waitForDeployment();
-  const erc20Decimals = await (erc20 as any).connect(deployer).decimals();
+  const erc20Decimals = await contractCall(erc20, "decimals")();
 
   // Execute transactions sequentially to avoid nonce conflicts
-  await (erc20 as any)
-    .connect(deployer)
-    .approve(custody.target, ethers.MaxUint256, deployOpts);
+  await contractCall(erc20, "approve")(
+    custody.target,
+    ethers.MaxUint256,
+    deployOpts
+  );
 
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      custody.target,
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
+  await contractCall(erc20, "mint")(
+    custody.target,
+    ethers.parseUnits("1000000", erc20Decimals as string),
+    deployOpts
+  );
 
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      tss.getAddress(),
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
+  await contractCall(erc20, "mint")(
+    tss.getAddress(),
+    ethers.parseUnits("1000000", erc20Decimals as string),
+    deployOpts
+  );
 
-  await (erc20 as any)
-    .connect(deployer)
-    .mint(
-      await deployer.getAddress(),
-      ethers.parseUnits("1000000", erc20Decimals),
-      deployOpts
-    );
+  await contractCall(erc20, "mint")(
+    await deployer.getAddress(),
+    ethers.parseUnits("1000000", erc20Decimals as string),
+    deployOpts
+  );
 
-  await (custody as any).connect(tss).whitelist(erc20.target, deployOpts);
+  await contractCall(custody, "whitelist")(erc20.target, deployOpts);
   return erc20.target;
 };

@@ -1,3 +1,6 @@
+import * as anchor from "@coral-xyz/anchor";
+import { SuiClient } from "@mysten/sui/dist/cjs/client";
+import { Ed25519Keypair } from "@mysten/sui/dist/cjs/keypairs/ed25519";
 import { ContractTransactionResponse, ethers } from "ethers";
 
 import { ForeignCoin } from "./foreignCoins";
@@ -56,8 +59,45 @@ type DeployedContract = ethers.BaseContract & {
   deploymentTransaction(): ethers.ContractTransactionResponse;
 };
 
+export type CoreRegistryContract = ethers.Contract & {
+  changeChainStatus: (
+    chainId: ethers.BigNumberish,
+    gasZRC20: string,
+    registryBytes: ethers.BytesLike,
+    active: boolean,
+    txOptions?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+  getAllChains: () => Promise<
+    Array<{
+      active: boolean;
+      chainId: string;
+      gasZRC20: string;
+      registry: string;
+    }>
+  >;
+  registerContract: (
+    chainId: ethers.BigNumberish,
+    contractType: string,
+    addressBytes: ethers.BytesLike,
+    txOptions?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+};
+
+export type TargetRegistryContract = ethers.Contract & {
+  bootstrapChains: (
+    chains: Array<{
+      active: boolean;
+      chainId: bigint;
+      gasZRC20: string;
+      registry: string;
+    }>,
+    emptyArray: unknown[],
+    txOptions?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+};
+
 export interface ZetachainContracts {
-  coreRegistry: ethers.Contract;
+  coreRegistry: CoreRegistryContract;
   fungibleModuleSigner: ethers.JsonRpcSigner;
   gatewayZEVM: GatewayZEVMContract;
   systemContract: SystemContract;
@@ -70,7 +110,7 @@ export interface ZetachainContracts {
 export interface EVMContracts {
   custody: ethers.Contract;
   gatewayEVM: ethers.Contract;
-  registry: ethers.Contract;
+  registry: TargetRegistryContract;
   testEVMZeta: DeployedContract;
   zetaConnector: ethers.Contract;
 }
@@ -82,8 +122,8 @@ export interface SolanaContracts {
     type: string;
   }>;
   env: {
-    defaultSolanaUser: unknown; // Solana Keypair type
-    gatewayProgram: unknown; // Anchor Program type
+    defaultSolanaUser: anchor.web3.Keypair;
+    gatewayProgram: anchor.Program<anchor.Idl>;
   };
 }
 
@@ -93,6 +133,14 @@ export interface SuiContracts {
     chain: string;
     type: string;
   }>;
+  env: {
+    client: SuiClient;
+    gatewayObjectId: string;
+    keypair: Ed25519Keypair;
+    packageId: string;
+    whitelistCapObjectId: string;
+    withdrawCapObjectId: string;
+  };
 }
 
 export interface TonContracts {

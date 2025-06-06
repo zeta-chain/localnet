@@ -145,7 +145,11 @@ export const initLocalnet = async ({
       ethers.Contract
     ][];
 
-    let res = [
+    let res: {
+      address: string;
+      chain: string;
+      type: string;
+    }[] = [
       ...zetachainContractsEntries
         .filter(([, value]) => value.target !== undefined)
         .map(([key, value]) => {
@@ -220,7 +224,7 @@ export const initLocalnet = async ({
             type: key,
           };
         }),
-    ];
+    ].filter((item) => item !== undefined);
 
     // Add non-EVM chain addresses before registry initialization
     if (suiContracts) {

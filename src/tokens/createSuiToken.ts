@@ -4,6 +4,7 @@ import * as fs from "fs";
 
 import { NetworkID } from "../constants";
 import { logger } from "../logger";
+import { LocalnetContracts } from "../types/contracts";
 
 const GAS_BUDGET = 5_000_000_000;
 
@@ -23,7 +24,10 @@ const GAS_BUDGET = 5_000_000_000;
  *
  * @throws Error if the token creation or whitelisting fails
  */
-export const createSuiToken = async (contracts: any, symbol: string) => {
+export const createSuiToken = async (
+  contracts: LocalnetContracts,
+  symbol: string
+) => {
   const { suiContracts } = contracts;
   if (!suiContracts) return;
 
@@ -36,7 +40,10 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
   } = suiContracts.env;
 
   const tokenPath = require.resolve("@zetachain/localnet/sui/token/token.json");
-  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+  const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8")) as {
+    dependencies: string[];
+    modules: number[][] | string[];
+  };
   const { modules, dependencies } = token;
 
   const publishTx = new Transaction();
@@ -70,23 +77,25 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
   }
 
   const publishedModule = publishResult.objectChanges?.find(
-    (change: any) => change.type === "published"
+    (change: { type: string }) => change.type === "published"
   );
 
   if (!publishedModule) {
     throw new Error("Failed to find published module in transaction results");
   }
 
-  const tokenPackageId = (publishedModule as any).packageId;
+  const tokenPackageId = (publishedModule as { packageId: string }).packageId;
   if (!tokenPackageId) {
     throw new Error("Failed to get token module ID");
   }
 
   // Find the treasury cap object from the publish transaction
   const treasuryCap = publishResult.objectChanges?.find(
-    (change: any) =>
-      change.type === "created" && change.objectType.includes("TreasuryCap")
-  );
+    (change) =>
+      change.type === "created" &&
+      "objectType" in change &&
+      change.objectType?.includes("TreasuryCap")
+  ) as { objectId: string; objectType: string; type: "created" } | undefined;
 
   if (!treasuryCap) {
     throw new Error("Failed to find treasury cap in transaction results");
@@ -130,7 +139,8 @@ export const createSuiToken = async (contracts: any, symbol: string) => {
 
   // Get the user address from contracts.suiContracts.addresses
   const userAddress = suiContracts.addresses.find(
-    (addr: any) => addr.chain === "sui" && addr.type === "userAddress"
+    (addr: { chain: string; type: string }) =>
+      addr.chain === "sui" && addr.type === "userAddress"
   )?.address;
 
   if (!userAddress) {

@@ -4,16 +4,11 @@ import { ethers } from "ethers";
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
 import { LocalnetContracts, ZRC20Contract } from "../types/contracts";
+import { contractCall } from "../utils/contracts";
 import { createEVMToken } from "./createEVMToken";
 import { createSolanaToken } from "./createSolanaToken";
 import { createSuiToken } from "./createSuiToken";
 import { uniswapV2AddLiquidity } from "./uniswapV2";
-
-// Simple typed access to contract methods
-const contractCall = (contract: ethers.BaseContract, method: string) =>
-  (contract as unknown as Record<string, unknown>)[method] as (
-    ...args: unknown[]
-  ) => Promise<unknown>;
 
 /**
  * Creates a token on the specified chain and sets up its ZRC20 representation.

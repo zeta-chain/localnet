@@ -9,6 +9,7 @@ import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import {
+  CoreRegistryContract,
   GatewayZEVMContract,
   SystemContract,
   ZetachainContracts,
@@ -122,7 +123,7 @@ export const zetachainSetup = async (
     proxyCoreRegistry.target,
     CoreRegistry.abi,
     deployer
-  );
+  ) as CoreRegistryContract;
 
   const wzetaFungibleModuleSigner = new ethers.Contract(
     wzeta.target,

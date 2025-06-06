@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
@@ -9,6 +9,7 @@ import { LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import { ed25519KeyPairTSS as tssKeypair } from "../chains/solana/constants";
 import { NetworkID } from "../constants";
 import { logger } from "../logger";
+import { SolanaContracts } from "../types/contracts";
 
 /**
  * Creates and deploys an SPL token on Solana.
@@ -27,7 +28,10 @@ import { logger } from "../logger";
  * 3. Mints tokens to the TSS, user, and gateway accounts
  * 4. Whitelists the token in the gateway program
  */
-export const createSolanaToken = async (env: any, decimals: number) => {
+export const createSolanaToken = async (
+  env: SolanaContracts["env"],
+  decimals: number
+) => {
   const mint = await createMint(
     env.gatewayProgram.provider.connection,
     tssKeypair,
@@ -103,16 +107,20 @@ export const createSolanaToken = async (env: any, decimals: number) => {
 };
 
 const whitelistSPLToken = async (
-  gatewayProgram: any,
+  gatewayProgram: anchor.Program<anchor.Idl>,
   mintPublicKey: PublicKey,
-  authorityKeypair: any
+  authorityKeypair: anchor.web3.Keypair
 ) => {
   const [gatewayPDA] = await PublicKey.findProgramAddress(
     [Buffer.from("meta", "utf-8")],
     gatewayProgram.programId
   );
 
-  const pdaAccountData = await gatewayProgram.account.pda.fetch(gatewayPDA);
+  const pdaAccountData = await (
+    gatewayProgram.account as unknown as {
+      pda: { fetch: (pda: PublicKey) => Promise<{ authority: PublicKey }> };
+    }
+  ).pda.fetch(gatewayPDA);
   logger.info(`Gateway PDA Authority: ${pdaAccountData.authority.toBase58()}`, {
     chain: NetworkID.Solana,
   });
@@ -136,7 +144,7 @@ const whitelistSPLToken = async (
   );
 
   await gatewayProgram.methods
-    .whitelistSplMint(new Uint8Array(64).fill(0), 0, [], new BN(0))
+    .whitelistSplMint(new Uint8Array(64).fill(0), 0, [], new anchor.BN(0))
     .accounts({
       authority: authorityKeypair.publicKey,
       pda: gatewayPDA,
