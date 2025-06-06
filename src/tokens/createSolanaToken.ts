@@ -47,28 +47,38 @@ export const createSolanaToken = async (
     GATEWAY_PROGRAM_ID
   );
 
-  const [gatewayTokenAccount, tssTokenAccount, userTokenAccount] =
-    await Promise.all([
-      getOrCreateAssociatedTokenAccount(
-        env.gatewayProgram.provider.connection,
-        tssKeypair,
-        mint,
-        gatewayPDA,
-        true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
-      ),
-      getOrCreateAssociatedTokenAccount(
-        env.gatewayProgram.provider.connection,
-        tssKeypair,
-        mint,
-        tssKeypair.publicKey
-      ),
-      getOrCreateAssociatedTokenAccount(
-        env.gatewayProgram.provider.connection,
-        env.defaultSolanaUser,
-        mint,
-        env.defaultSolanaUser.publicKey
-      ),
-    ]);
+  const [
+    gatewayTokenAccount,
+    tssTokenAccount,
+    userTokenAccount,
+    localnetTokenAccount,
+  ] = await Promise.all([
+    getOrCreateAssociatedTokenAccount(
+      env.gatewayProgram.provider.connection,
+      tssKeypair,
+      mint,
+      gatewayPDA,
+      true // allowOwnerOffCurve = true, because gatewayPDA is a program-derived address
+    ),
+    getOrCreateAssociatedTokenAccount(
+      env.gatewayProgram.provider.connection,
+      tssKeypair,
+      mint,
+      tssKeypair.publicKey
+    ),
+    getOrCreateAssociatedTokenAccount(
+      env.gatewayProgram.provider.connection,
+      env.defaultSolanaUser,
+      mint,
+      env.defaultSolanaUser.publicKey
+    ),
+    getOrCreateAssociatedTokenAccount(
+      env.gatewayProgram.provider.connection,
+      env.defaultLocalnetUser,
+      mint,
+      env.defaultLocalnetUser.publicKey
+    ),
+  ]);
 
   await Promise.all([
     mintTo(
@@ -93,6 +103,14 @@ export const createSolanaToken = async (
       tssKeypair,
       mint,
       gatewayTokenAccount.address,
+      tssKeypair.publicKey,
+      100 * LAMPORTS_PER_SOL
+    ),
+    mintTo(
+      env.gatewayProgram.provider.connection,
+      tssKeypair,
+      mint,
+      localnetTokenAccount.address,
       tssKeypair.publicKey,
       100 * LAMPORTS_PER_SOL
     ),
