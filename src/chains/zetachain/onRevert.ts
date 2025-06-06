@@ -1,8 +1,10 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { ethers } from "ethers";
+import { Addressable, ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { RevertOptions } from "../../types/eventArgs";
+import { contractCall } from "../../utils/contracts";
 import { zetachainOnAbort } from "./onAbort";
 
 export const zetachainOnRevert = async ({
@@ -15,7 +17,17 @@ export const zetachainOnRevert = async ({
   provider,
   outgoing,
   fungibleModuleSigner,
-}: any) => {
+}: {
+  amount: string;
+  asset: string | Addressable;
+  chainID: (typeof NetworkID)[keyof typeof NetworkID];
+  fungibleModuleSigner: ethers.Signer;
+  gatewayZEVM: ethers.Contract;
+  outgoing: boolean;
+  provider: ethers.Provider;
+  revertOptions: RevertOptions;
+  sender: string;
+}) => {
   const [revertAddress, callOnRevert, abortAddress, revertMessage] =
     revertOptions;
   const revertContext = {
@@ -42,40 +54,44 @@ export const zetachainOnRevert = async ({
           )}`,
           { chain: NetworkID.ZetaChain }
         );
-        let tx;
+        let tx: ethers.ContractTransactionResponse;
         if (asset === ethers.ZeroAddress) {
-          tx = await gatewayZEVM
-            .connect(fungibleModuleSigner)
-            .executeRevert(revertAddress, revertContext, {
-              gasLimit: 1_500_000,
-            });
+          tx = (await contractCall(
+            gatewayZEVM.connect(fungibleModuleSigner),
+            "executeRevert"
+          )(revertAddress, revertContext, {
+            gasLimit: 1_500_000,
+          })) as ethers.ContractTransactionResponse;
         } else {
-          tx = await gatewayZEVM
-            .connect(fungibleModuleSigner)
-            .depositAndRevert(asset, amount, revertAddress, revertContext, {
-              gasLimit: 1_500_000,
-            });
+          tx = (await contractCall(
+            gatewayZEVM.connect(fungibleModuleSigner),
+            "depositAndRevert"
+          )(asset, amount, revertAddress, revertContext, {
+            gasLimit: 1_500_000,
+          })) as ethers.ContractTransactionResponse;
         }
         await tx.wait();
         const logs = await provider.getLogs({
           address: revertAddress,
           fromBlock: "latest",
         });
-        logs.forEach((data: any) => {
+        logs.forEach((data: ethers.Log) => {
           logger.info(`Event from onRevert: ${JSON.stringify(data)}`, {
             chain: NetworkID.ZetaChain,
           });
         });
       }
     } catch (err) {
-      const error = `onRevert failed: ${err}`;
+      const error = `onRevert failed: ${String(err)}`;
       logger.error(error, { chain: NetworkID.ZetaChain });
       await zetachainOnAbort({
         abortAddress,
-        amount,
+        amount: Number(amount),
         asset,
         chainID,
         fungibleModuleSigner,
+        gatewayZEVM,
+        outgoing,
         provider,
         revertMessage,
         sender,
@@ -90,17 +106,22 @@ export const zetachainOnRevert = async ({
         logger.info(`Transferring tokens to revertAddress ${revertAddress}`, {
           chain: NetworkID.ZetaChain,
         });
-        const transferTx = await assetContract.transfer(revertAddress, amount);
+        const transferTx = (await contractCall(assetContract, "transfer")(
+          revertAddress,
+          amount
+        )) as ethers.ContractTransactionResponse;
         await transferTx.wait();
       }
     } catch (err) {
       logger.error(
-        `Token transfer to revertAddress ${revertAddress} failed: ${err}`,
+        `Token transfer to revertAddress ${revertAddress} failed: ${String(
+          err
+        )}`,
         { chain: NetworkID.ZetaChain }
       );
       await zetachainOnAbort({
         abortAddress,
-        amount,
+        amount: Number(amount),
         asset,
         chainID,
         fungibleModuleSigner,

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
+import { DepositArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -56,8 +57,17 @@ export const solanaDeposit = async ({
       return;
     }
 
+    const depositArgs: DepositArgs = [
+      sender,
+      null, // unknown field
+      amount,
+      asset,
+      null, // unknown field
+      [ethers.ZeroAddress, false, ethers.ZeroAddress, "", amount], // revertOptions
+    ];
+
     await zetachainDeposit({
-      args,
+      args: depositArgs,
       chainID,
       foreignCoins,
       zetachainContracts,

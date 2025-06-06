@@ -5,6 +5,7 @@ import { ethers, JsonRpcProvider, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
+import { DepositArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -63,15 +64,19 @@ export const suiDeposit = async ({
     logger.info(`Gateway deposit event: ${JSON.stringify(event)}`, {
       chain: chainID,
     });
+    const depositArgs: DepositArgs = [
+      event.sender,
+      null, // unknown field
+      event.amount,
+      event.coin_type === "0x2::sui::SUI"
+        ? ethers.ZeroAddress
+        : event.coin_type,
+      null, // unknown field
+      [ethers.ZeroAddress, false, ethers.ZeroAddress, "", event.amount], // revertOptions
+    ];
+
     await zetachainDeposit({
-      args: [
-        null,
-        event.receiver,
-        event.amount,
-        event.coin_type === "0x2::sui::SUI"
-          ? ethers.ZeroAddress
-          : event.coin_type,
-      ],
+      args: depositArgs,
       chainID,
       foreignCoins,
       zetachainContracts,

@@ -130,7 +130,7 @@ export const evmDeposit = async ({
       const revertMessage = revertOptions[3];
       return await zetachainOnAbort({
         abortAddress,
-        amount,
+        amount: Number(amount),
         asset: zrc20,
         chainID,
         fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,

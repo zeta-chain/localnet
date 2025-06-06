@@ -20,7 +20,13 @@ import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { LocalnetContracts } from "./types/contracts";
-import { DepositAndCallArgs, DepositArgs } from "./types/eventArgs";
+import {
+  CallArgs,
+  DepositAndCallArgs,
+  DepositArgs,
+  WithdrawAndCallArgs,
+  WithdrawArgs,
+} from "./types/eventArgs";
 import { ForeignCoin } from "./types/foreignCoins";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 
@@ -260,7 +266,7 @@ export const initLocalnet = async ({
     // Set up ZetaChain event handlers
     zetachainContracts.gatewayZEVM.on(
       "Called",
-      (...args: unknown[]) =>
+      (...args: CallArgs) =>
         void zetachainCall({ args, contracts, exitOnError }).catch(
           (error: unknown) => {
             logger.error("Error in Called event handler", { error });
@@ -270,7 +276,7 @@ export const initLocalnet = async ({
 
     zetachainContracts.gatewayZEVM.on(
       "Withdrawn",
-      (...args: unknown[]) =>
+      (...args: WithdrawArgs) =>
         void zetachainWithdraw({ args, contracts, exitOnError }).catch(
           (error: unknown) => {
             logger.error("Error in Withdrawn event handler", { error });
@@ -280,7 +286,7 @@ export const initLocalnet = async ({
 
     zetachainContracts.gatewayZEVM.on(
       "WithdrawnAndCalled",
-      (...args: unknown[]) =>
+      (...args: WithdrawAndCallArgs) =>
         void zetachainWithdrawAndCall({ args, contracts, exitOnError }).catch(
           (error: unknown) => {
             logger.error("Error in WithdrawnAndCalled event handler", {

@@ -3,6 +3,7 @@ import { SuiClient } from "@mysten/sui/dist/cjs/client";
 import { Ed25519Keypair } from "@mysten/sui/dist/cjs/keypairs/ed25519";
 import { ContractTransactionResponse, ethers } from "ethers";
 
+import { TonEnv } from "../chains/ton";
 import { ForeignCoin } from "./foreignCoins";
 
 export interface TxOptions {
@@ -193,6 +194,7 @@ export interface TonContracts {
     chain: string;
     type: string;
   }>;
+  env: TonEnv;
 }
 
 export interface LocalnetContracts {

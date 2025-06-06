@@ -1,8 +1,9 @@
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
-import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { LocalnetContracts } from "../../types/contracts";
+import { CallArgs, CallArgsSchema } from "../../types/eventArgs";
 import { isRegistryInitComplete } from "../../types/registryState";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { evmExecute } from "../evm/execute";
@@ -13,8 +14,8 @@ export const zetachainCall = async ({
   contracts,
   exitOnError = false,
 }: {
-  args: any;
-  contracts: any;
+  args: CallArgs;
+  contracts: LocalnetContracts;
   exitOnError: boolean;
 }) => {
   const {
@@ -35,10 +36,19 @@ export const zetachainCall = async ({
     return;
   }
 
-  const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
-  const chainID = contracts.foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
-  )?.foreign_chain_id;
+  // Validate the args using the schema
+  const validatedArgs = CallArgsSchema.parse(args);
+  const [sender, zrc20, receiver, message, callOptions, revertOptions] =
+    validatedArgs;
+  const foreignCoin = contracts.foreignCoins.find(
+    (coin) => coin.zrc20_contract_address === zrc20
+  );
+
+  if (!foreignCoin) {
+    throw new Error(`Foreign coin not found for zrc20: ${zrc20}`);
+  }
+
+  const chainID = foreignCoin.foreign_chain_id;
 
   try {
     await evmExecute({
@@ -50,17 +60,17 @@ export const zetachainCall = async ({
       sender,
       zrc20,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (exitOnError) {
-      throw new Error(err);
+      throw new Error(String(err));
     }
-    logger.error(`Error executing a contract: ${err}`, { chain: chainID });
+    logger.error(`Error executing a contract: ${String(err)}`, {
+      chain: chainID,
+    });
     return await zetachainOnRevert({
-      amount: 0,
+      amount: "0",
       asset: ethers.ZeroAddress,
       chainID,
-      deployOpts,
-      err,
       fungibleModuleSigner,
       gatewayZEVM,
       outgoing: true,

@@ -6,7 +6,7 @@ import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
-import { DepositAndCallArgs } from "../../types/eventArgs";
+import { DepositAndCallArgs, DepositArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
@@ -36,7 +36,7 @@ export interface SetupOptions {
   zetachainContracts: ZetachainContracts;
 }
 
-export interface Env {
+export interface TonEnv {
   client: ton.TonClient;
   deployer: Deployer;
   gateway: OpenedContract<Gateway>;
@@ -117,7 +117,7 @@ const setupThrowable = async (opts: SetupOptions) => {
   );
   logger.info("Inbound observer setup complete", { chain: opts.chainID });
 
-  const env: Env = {
+  const env: TonEnv = {
     client: rpcClient,
     deployer,
     gateway,
@@ -160,11 +160,13 @@ const onInbound = (
   };
 
   const onDeposit = async (inbound: Inbound) => {
-    const args = [
+    const args: DepositArgs = [
       byteOrigin(inbound.sender),
-      inbound.recipient,
+      null, // unknown field
       inbound.amount,
       asset,
+      null, // unknown field
+      [ethers.ZeroAddress, false, ethers.ZeroAddress, "", inbound.amount], // revertOptions
     ];
 
     await zetachainDeposit({ args, ...opts });

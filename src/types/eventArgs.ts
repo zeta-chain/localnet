@@ -28,10 +28,7 @@ export const CallArgsSchema = z.tuple([
   z.string(), // zrc20
   z.string(), // receiver
   z.string(), // message
-  z.object({
-    gasLimit: z.union([z.string(), z.number(), z.bigint()]),
-    isArbitraryCall: z.boolean(),
-  }), // callOptions
+  CallOptionsSchema, // callOptions - using the tuple format
   RevertOptionsSchema, // revertOptions
 ]);
 
