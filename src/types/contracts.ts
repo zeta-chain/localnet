@@ -167,6 +167,7 @@ export interface SolanaContracts {
     type: string;
   }>;
   env: {
+    defaultLocalnetUser: anchor.web3.Keypair;
     defaultSolanaUser: anchor.web3.Keypair;
     gatewayProgram: anchor.Program<anchor.Idl>;
   };
