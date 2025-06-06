@@ -1,14 +1,19 @@
 import * as CoreRegistry from "@zetachain/protocol-contracts/abi/CoreRegistry.sol/CoreRegistry.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
-import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
+import * as SystemContractABI from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
-import { GatewayZEVMContract, ZetachainContracts } from "../../types/contracts";
+import {
+  GatewayZEVMContract,
+  SystemContract,
+  ZetachainContracts,
+  ZRC20Contract,
+} from "../../types/contracts";
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -29,7 +34,7 @@ export const zetachainSetup = async (
     WETH9.bytecode,
     deployer
   );
-  const wzeta = await weth9Factory.deploy(deployOpts);
+  const wzeta = (await weth9Factory.deploy(deployOpts)) as ZRC20Contract;
 
   // Setup both Uniswap V2 and V3
   const v2Setup = await prepareUniswapV2(deployer, wzeta);
@@ -51,8 +56,8 @@ export const zetachainSetup = async (
   );
 
   const systemContractFactory = new ethers.ContractFactory(
-    SystemContract.abi,
-    SystemContract.bytecode,
+    SystemContractABI.abi,
+    SystemContractABI.bytecode,
     deployer
   );
 
@@ -153,7 +158,7 @@ export const zetachainSetup = async (
     coreRegistry,
     fungibleModuleSigner,
     gatewayZEVM,
-    systemContract,
+    systemContract: systemContract as SystemContract,
     tss,
     uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,
     uniswapRouterInstance: v2Setup.uniswapRouterInstance,

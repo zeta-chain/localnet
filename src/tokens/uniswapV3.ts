@@ -2,11 +2,22 @@ import * as UniswapV3Factory from "@uniswap/v3-core/artifacts/contracts/UniswapV
 import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json";
 import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
-import { ethers, Log, LogDescription, Signer } from "ethers";
+import {
+  ContractTransactionResponse,
+  ethers,
+  Log,
+  LogDescription,
+  Signer,
+} from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
 import { logger } from "../logger";
+import {
+  UniswapV3FactoryContract,
+  UniswapV3PoolContract,
+  ZRC20Contract,
+} from "../types/contracts";
 import { sleep } from "../utils";
 
 /**
@@ -19,7 +30,10 @@ import { sleep } from "../utils";
  *   - swapRouterInstance: The deployed SwapRouter contract
  *   - uniswapV3FactoryInstance: The deployed UniswapV3Factory contract
  */
-export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
+export const prepareUniswapV3 = async (
+  deployer: Signer,
+  wzeta: ZRC20Contract
+) => {
   const uniswapV3Factory = new ethers.ContractFactory(
     UniswapV3Factory.abi,
     UniswapV3Factory.bytecode,
@@ -80,29 +94,25 @@ export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
  * 4. Verifies the liquidity position
  */
 export const uniswapV3AddLiquidity = async (
-  zrc20: any,
-  wzeta: any,
-  deployer: any,
-  zrc20Amount: any,
-  wzetaAmount: any,
-  uniswapV3Factory: any,
-  uniswapV3PositionManager: any
+  zrc20: ZRC20Contract,
+  wzeta: ZRC20Contract,
+  deployer: Signer,
+  zrc20Amount: bigint,
+  wzetaAmount: bigint,
+  uniswapV3Factory: ethers.Contract,
+  uniswapV3PositionManager: ethers.Contract
 ) => {
-  Promise.all([
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
+  await Promise.all([
+    (zrc20.connect(deployer) as ZRC20Contract).approve(
+      await uniswapV3PositionManager.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    ),
+    (wzeta.connect(deployer) as ZRC20Contract).approve(
+      await uniswapV3PositionManager.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    ),
   ]);
 
   // Create and add liquidity to Uniswap V3
@@ -113,8 +123,8 @@ export const uniswapV3AddLiquidity = async (
 
   const [token0, token1] =
     String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
-      ? [token0Address, token1Address]
-      : [token1Address, token0Address];
+      ? [String(token0Address), String(token1Address)]
+      : [String(token1Address), String(token0Address)];
 
   const [amount0, amount1] =
     String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
@@ -122,7 +132,11 @@ export const uniswapV3AddLiquidity = async (
       : [wzetaAmount, zrc20Amount];
 
   try {
-    const pool = await createUniswapV3Pool(uniswapV3Factory, token0, token1);
+    const pool = await createUniswapV3Pool(
+      uniswapV3Factory as UniswapV3FactoryContract,
+      String(token0),
+      String(token1)
+    );
     logger.debug(`Created Uniswap V3 pool: ${await pool.getAddress()}`, {
       chain: NetworkID.ZetaChain,
     });
@@ -138,17 +152,29 @@ export const uniswapV3AddLiquidity = async (
     );
 
     const { tx, tokenId } = await addLiquidityV3(
-      uniswapV3PositionManager,
-      token0,
-      token1,
+      String(token0),
+      String(token1),
       amount0,
       amount1,
       3000,
+      uniswapV3PositionManager as ethers.Contract & {
+        mint: (params: {
+          amount0Desired: bigint;
+          amount0Min: bigint;
+          amount1Desired: bigint;
+          amount1Min: bigint;
+          deadline: number;
+          fee: number;
+          recipient: string;
+          tickLower: number;
+          tickUpper: number;
+        }) => Promise<ContractTransactionResponse>;
+      },
       await deployer.getAddress()
     );
     const receipt = await tx.wait();
 
-    logger.debug(`Liquidity addition transaction: ${receipt.hash}`, {
+    logger.debug(`Liquidity addition transaction: ${receipt?.hash}`, {
       chain: NetworkID.ZetaChain,
     });
 
@@ -172,11 +198,16 @@ export const uniswapV3AddLiquidity = async (
         chain: NetworkID.ZetaChain,
       }
     );
-  } catch (error: any) {
-    logger.error(`Error adding liquidity to Uniswap V3: ${error.message}`, {
-      chain: NetworkID.ZetaChain,
-    });
-    if (error.message?.includes("LOK")) {
+  } catch (error: unknown) {
+    logger.error(
+      `Error adding liquidity to Uniswap V3: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      {
+        chain: NetworkID.ZetaChain,
+      }
+    );
+    if (error instanceof Error && error.message?.includes("LOK")) {
       logger.error(
         "Pool initialization error - pool may already be initialized",
         {
@@ -198,11 +229,11 @@ export const uniswapV3AddLiquidity = async (
  * @returns The deployed pool contract
  */
 export const createUniswapV3Pool = async (
-  uniswapV3FactoryInstance: any,
+  uniswapV3FactoryInstance: UniswapV3FactoryContract,
   token0: string,
   token1: string,
   fee: number = 3000 // Default fee tier 0.3%
-) => {
+): Promise<UniswapV3PoolContract> => {
   await uniswapV3FactoryInstance.createPool(token0, token1, fee);
   const poolAddress = await uniswapV3FactoryInstance.getPool(
     token0,
@@ -213,7 +244,7 @@ export const createUniswapV3Pool = async (
     poolAddress,
     UniswapV3Pool.abi,
     uniswapV3FactoryInstance.runner
-  );
+  ) as UniswapV3PoolContract;
 
   // Initialize the pool with a sqrt price of 1 (equal amounts of both tokens)
   // sqrtPriceX96 = sqrt(1) * 2^96
@@ -240,21 +271,33 @@ export const createUniswapV3Pool = async (
  *   - tx: The transaction object
  */
 export const addLiquidityV3 = async (
-  nonfungiblePositionManager: any,
   token0: string,
   token1: string,
   amount0: bigint,
   amount1: bigint,
   fee: number = 3000,
+  nonfungiblePositionManager: ethers.Contract & {
+    mint: (params: {
+      amount0Desired: bigint;
+      amount0Min: bigint;
+      amount1Desired: bigint;
+      amount1Min: bigint;
+      deadline: number;
+      fee: number;
+      recipient: string;
+      tickLower: number;
+      tickUpper: number;
+    }) => Promise<ContractTransactionResponse>;
+  },
   recipient: string,
   tickLower: number = -887220, // Example tick range for full range
   tickUpper: number = 887220 // Example tick range for full range
 ) => {
   const params = {
     amount0Desired: amount0,
-    amount0Min: 0,
+    amount0Min: 0n,
     amount1Desired: amount1,
-    amount1Min: 0,
+    amount1Min: 0n,
     deadline: Math.floor(Date.now() / 1000) + 60 * 20,
     fee,
     recipient,
@@ -269,7 +312,7 @@ export const addLiquidityV3 = async (
 
   const iface = nonfungiblePositionManager.interface;
 
-  const transferEvent = receipt.logs
+  const transferEvent = receipt?.logs
     .map((log: Log) => {
       try {
         return iface.parseLog({
@@ -284,8 +327,8 @@ export const addLiquidityV3 = async (
 
   if (!transferEvent) {
     console.error("Transaction receipt:", {
-      hash: receipt.hash,
-      logs: receipt.logs.map((log: Log) => ({
+      hash: receipt?.hash,
+      logs: receipt?.logs.map((log: Log) => ({
         address: log.address,
         data: log.data,
         topics: log.topics,
@@ -294,7 +337,7 @@ export const addLiquidityV3 = async (
     throw new Error("Could not find Transfer event in transaction receipt");
   }
 
-  const tokenId = transferEvent.args[2];
+  const tokenId = transferEvent?.args?.[2] as bigint;
   return { tokenId, tx };
 };
 
@@ -315,23 +358,21 @@ export const verifyV3Liquidity = async (
   pool: ethers.Contract,
   token0: string,
   token1: string,
-  positionManager: any,
+  positionManager: ethers.Contract,
   owner: string,
   tokenId: bigint
 ) => {
   try {
-    const [liquidity, slot0, poolToken0, poolToken1] = await Promise.all([
-      pool.liquidity(),
-      pool.slot0(),
-      pool.token0(),
-      pool.token1(),
-    ]);
+    const liquidity = (await pool.liquidity()) as bigint;
+    const slot0 = (await pool.slot0()) as unknown[];
+    const poolToken0 = (await pool.token0()) as string;
+    const poolToken1 = (await pool.token1()) as string;
 
     if (liquidity === 0n) {
       throw new Error("Pool has no liquidity");
     }
 
-    const position = await positionManager.positions(tokenId);
+    const position = (await positionManager.positions(tokenId)) as unknown[];
 
     logger.debug(
       `Position data: ${JSON.stringify({
@@ -360,12 +401,12 @@ export const verifyV3Liquidity = async (
       throw new Error(`Invalid position data for token ID ${tokenId}`);
     }
 
-    if (position[7] === 0n) {
+    if ((position[7] as bigint) === 0n) {
       throw new Error("Position has no liquidity");
     }
 
-    const positionToken0 = position[2];
-    const positionToken1 = position[3];
+    const positionToken0 = position[2] as string;
+    const positionToken1 = position[3] as string;
 
     if (
       poolToken0.toLowerCase() !== token0.toLowerCase() ||
@@ -385,7 +426,7 @@ export const verifyV3Liquidity = async (
       );
     }
 
-    const positionOwner = await positionManager.ownerOf(tokenId);
+    const positionOwner = (await positionManager.ownerOf(tokenId)) as string;
 
     if (positionOwner.toLowerCase() !== owner.toLowerCase()) {
       throw new Error(
@@ -394,20 +435,20 @@ export const verifyV3Liquidity = async (
     }
 
     return {
-      currentSqrtPrice: slot0[0].toString(),
-      currentTick: slot0[1],
+      currentSqrtPrice: (slot0[0] as bigint).toString(),
+      currentTick: slot0[1] as number,
       owner: positionOwner,
       poolLiquidity: liquidity.toString(),
       poolToken0,
       poolToken1,
-      positionLiquidity: position[7].toString(),
+      positionLiquidity: (position[7] as bigint).toString(),
       positionToken0,
       positionToken1,
-      tickLower: position[5].toString(),
-      tickUpper: position[6].toString(),
+      tickLower: (position[5] as number).toString(),
+      tickUpper: (position[6] as number).toString(),
       tokenId: tokenId.toString(),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(
       `Verification error details: ${
         error instanceof Error ? error.message : String(error)

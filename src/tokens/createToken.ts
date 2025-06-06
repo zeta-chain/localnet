@@ -3,11 +3,17 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
+import { LocalnetContracts, ZRC20Contract } from "../types/contracts";
 import { createEVMToken } from "./createEVMToken";
 import { createSolanaToken } from "./createSolanaToken";
 import { createSuiToken } from "./createSuiToken";
 import { uniswapV2AddLiquidity } from "./uniswapV2";
-import { uniswapV3AddLiquidity } from "./uniswapV3";
+
+// Simple typed access to contract methods
+const contractCall = (contract: ethers.BaseContract, method: string) =>
+  (contract as unknown as Record<string, unknown>)[method] as (
+    ...args: unknown[]
+  ) => Promise<unknown>;
 
 /**
  * Creates a token on the specified chain and sets up its ZRC20 representation.
@@ -29,7 +35,7 @@ import { uniswapV3AddLiquidity } from "./uniswapV3";
  * 5. Records the token information in the foreignCoins array
  */
 export const createToken = async (
-  contracts: any,
+  contracts: LocalnetContracts,
   symbol: string,
   isGasToken: boolean,
   chainID: string,
@@ -58,7 +64,7 @@ export const createToken = async (
     ZRC20.bytecode,
     deployer
   );
-  const zrc20 = await zrc20Factory
+  const zrc20Deployed = await zrc20Factory
     .connect(fungibleModuleSigner)
     .deploy(
       `ZRC-20 ${symbol} on ${chainID}`,
@@ -71,39 +77,49 @@ export const createToken = async (
       gatewayZEVM.target,
       deployOpts
     );
-  await zrc20.waitForDeployment();
+  await zrc20Deployed.waitForDeployment();
 
-  let asset;
+  // Cast to typed contract
+  const zrc20 = zrc20Deployed as unknown as ZRC20Contract;
+
+  let asset: string | undefined;
 
   if (isGasToken) {
-    (systemContract as any)
-      .connect(fungibleModuleSigner)
-      .setGasCoinZRC20(chainID, zrc20.target);
-    (systemContract as any)
-      .connect(fungibleModuleSigner)
-      .setGasPrice(chainID, 1);
+    await contractCall(
+      systemContract.connect(fungibleModuleSigner),
+      "setGasCoinZRC20"
+    )(chainID, zrc20.target);
+    await contractCall(
+      systemContract.connect(fungibleModuleSigner),
+      "setGasPrice"
+    )(chainID, 1);
     asset = "";
   } else {
     switch (chainID) {
       case NetworkID.Ethereum: {
-        asset = await createEVMToken(
+        const evmAsset = await createEVMToken(
           deployer,
           contracts.ethereumContracts.custody,
           symbol,
           tss
         );
+        asset = typeof evmAsset === "string" ? evmAsset : String(evmAsset);
         break;
       }
       case NetworkID.BNB: {
-        asset = await createEVMToken(
+        const evmAsset = await createEVMToken(
           deployer,
           contracts.bnbContracts.custody,
           symbol,
           tss
         );
+        asset = typeof evmAsset === "string" ? evmAsset : String(evmAsset);
         break;
       }
       case NetworkID.Solana: {
+        if (!contracts.solanaContracts) {
+          throw new Error("Solana contracts not available");
+        }
         const [assetAddr, gateway, user] = await createSolanaToken(
           contracts.solanaContracts.env,
           decimals
@@ -152,39 +168,47 @@ export const createToken = async (
   }
 
   foreignCoins.push({
-    asset,
+    asset: asset ?? "",
     coin_type,
-    decimals: decimals,
+    decimals,
     foreign_chain_id: chainID,
-    gas_limit: null,
-    liquidity_cap: null,
+    gas_limit: "",
+    liquidity_cap: "",
     name: `ZRC-20 ${symbol} on ${chainID}`,
-    paused: null,
+    paused: false,
     symbol: `${symbol}`,
-    zrc20_contract_address: zrc20.target,
+    zrc20_contract_address: String(zrc20.target),
   });
 
-  const zrc20Amount = ethers.parseUnits("100", await (zrc20 as any).decimals());
-  const wzetaAmount = ethers.parseUnits("100", await (wzeta as any).decimals());
+  const zrc20Amount = ethers.parseUnits(
+    "100",
+    Number(await contractCall(zrc20, "decimals")())
+  );
+  const wzetaAmount = ethers.parseUnits(
+    "100",
+    Number(await contractCall(wzeta, "decimals")())
+  );
 
   // Execute transactions sequentially to avoid nonce conflicts
-  await (zrc20 as any).deposit(
+  await zrc20.deposit(
     await deployer.getAddress(),
     ethers.parseEther("1000"),
     deployOpts
   );
 
-  await (zrc20 as any)
-    .connect(deployer)
-    .transfer(
-      fungibleModuleSigner.getAddress(),
-      ethers.parseUnits("100", await (zrc20 as any).decimals()),
-      deployOpts
-    );
+  await contractCall(zrc20.connect(deployer), "transfer")(
+    fungibleModuleSigner.getAddress(),
+    ethers.parseUnits("100", Number(await contractCall(zrc20, "decimals")())),
+    deployOpts
+  );
 
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ value: ethers.parseEther("1000"), ...deployOpts });
+  await contractCall(
+    wzeta.connect(deployer),
+    "deposit"
+  )({
+    value: ethers.parseEther("1000"),
+    ...deployOpts,
+  });
 
   await uniswapV2AddLiquidity(
     uniswapRouterInstance,

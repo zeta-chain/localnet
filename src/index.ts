@@ -19,6 +19,7 @@ import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
 import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
+import { LocalnetContracts } from "./types/contracts";
 import { DepositAndCallArgs } from "./types/events";
 import { ForeignCoin } from "./types/foreignCoins";
 import { InitLocalnetAddress } from "./types/zodSchemas";
@@ -112,7 +113,7 @@ export const initLocalnet = async ({
     });
     logger.debug("BNB contracts setup complete", { chain: "localnet" });
 
-    const contracts = {
+    const contracts: LocalnetContracts = {
       bnbContracts,
       deployer,
       ethereumContracts,
