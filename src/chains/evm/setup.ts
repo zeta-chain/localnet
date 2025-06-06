@@ -188,62 +188,23 @@ export const evmSetup = async ({
     );
   }
 
-  await Promise.all([
-    custody.initialize(
-      gatewayEVM.target,
-      tssAddress,
-      deployerAddress,
-      deployOpts
-    ),
-    (gatewayEVM as any)
-      .connect(deployer)
-      .setCustody(custodyImpl.target, deployOpts),
-    (gatewayEVM as any)
-      .connect(deployer)
-      .setConnector(zetaConnector.target, deployOpts),
-  ]);
+  // Execute these sequentially to avoid nonce conflicts
+  await custody.initialize(
+    gatewayEVM.target,
+    tssAddress,
+    deployerAddress,
+    deployOpts
+  );
 
-  gatewayEVM.on("Called", async (...args: Array<any>) => {
-    evmCall({
-      args,
-      chainID,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      provider,
-      zetachainContracts,
-    });
-  });
+  await (gatewayEVM as any)
+    .connect(deployer)
+    .setCustody(custodyImpl.target, deployOpts);
 
-  gatewayEVM.on("Deposited", async (...args: Array<any>) => {
-    evmDeposit({
-      args,
-      chainID,
-      custody,
-      deployer,
-      exitOnError,
-      foreignCoins,
-      gatewayEVM,
-      provider,
-      tss,
-      zetachainContracts,
-    });
-  });
+  await (gatewayEVM as any)
+    .connect(deployer)
+    .setConnector(zetaConnector.target, deployOpts);
 
-  gatewayEVM.on("DepositedAndCalled", async (...args: Array<any>) => {
-    evmDepositAndCall({
-      args,
-      chainID,
-      custody,
-      deployer,
-      exitOnError: false,
-      foreignCoins,
-      gatewayEVM,
-      provider,
-      tss,
-      zetachainContracts,
-    });
-  });
+  // Don't set up any event handlers here - they will be set up after ALL initialization
 
   return {
     custody,

@@ -119,20 +119,22 @@ export const zetachainSetup = async (
     deployer
   );
 
-  await Promise.all([
-    (wzeta as any)
-      .connect(fungibleModuleSigner)
-      .deposit({ ...deployOpts, value: ethers.parseEther("10") }),
-    (wzeta as any)
-      .connect(fungibleModuleSigner)
-      .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts),
-    (wzeta as any)
-      .connect(deployer)
-      .deposit({ ...deployOpts, value: ethers.parseEther("10") }),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts),
-  ]);
+  // Execute transactions sequentially to avoid nonce conflicts
+  await (wzeta as any)
+    .connect(fungibleModuleSigner)
+    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
+
+  await (wzeta as any)
+    .connect(fungibleModuleSigner)
+    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
+
+  await (wzeta as any)
+    .connect(deployer)
+    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
+
+  await (wzeta as any)
+    .connect(deployer)
+    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
 
   return {
     coreRegistry,

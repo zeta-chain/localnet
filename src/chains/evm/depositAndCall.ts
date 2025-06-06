@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -20,6 +21,15 @@ export const evmDepositAndCall = async ({
   custody,
 }: any) => {
   logger.info("Gateway: DepositedAndCalled event emitted", { chain: chainID });
+
+  // Skip processing events during gateway registration
+  if (isRegisteringGatewaysActive()) {
+    logger.debug("Skipping event during gateway registration", {
+      chain: chainID,
+    });
+    return;
+  }
+
   const [sender, , amount, asset, , revertOptions] = args;
 
   let foreignCoin;

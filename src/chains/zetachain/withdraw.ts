@@ -5,6 +5,7 @@ import { ethers, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { connectorWithdraw } from "../evm/connectorWithdraw";
 import { evmCustodyWithdraw } from "../evm/custodyWithdraw";
 import { evmTSSTransfer } from "../evm/tssTransfer";
@@ -37,6 +38,14 @@ export const zetachainWithdraw = async ({
     chainID = foreignCoins.find(
       (coin: any) => coin.zrc20_contract_address === zrc20
     )?.foreign_chain_id;
+  }
+
+  // Skip processing events during gateway registration
+  if (isRegisteringGatewaysActive()) {
+    logger.debug("Skipping event during gateway registration", {
+      chain: NetworkID.ZetaChain,
+    });
+    return;
   }
 
   let asset =

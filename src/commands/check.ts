@@ -2,10 +2,12 @@ import ansis from "ansis";
 import { Command } from "commander";
 import fs from "fs";
 
+import { sleep } from "../utils";
+
 const LOCALNET_JSON_FILE = "./localnet.json";
 
 const localnetCheck = async (options: { delay: number }) => {
-  await new Promise((resolve) => setTimeout(resolve, options.delay * 1000));
+  await sleep(options.delay * 1000);
 
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running (JSON file missing)."));
