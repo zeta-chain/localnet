@@ -13,6 +13,7 @@ import * as util from "util";
 import { addBackgroundProcess } from "../../backgroundProcesses";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { sleep } from "../../utils";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
@@ -95,11 +96,7 @@ export const solanaSetup = async ({
   foreignCoins: ForeignCoin[];
   provider: ethers.JsonRpcProvider;
   skip: boolean;
-  zetachainContracts: {
-    coreRegistry: {
-      target: string | ethers.Addressable;
-    };
-  };
+  zetachainContracts: ZetachainContracts;
 }) => {
   if (skip || !isSolanaAvailable()) {
     return;

@@ -4,36 +4,88 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import {
+  UniswapV2Router02Contract,
+  ZRC20Contract,
+} from "../../types/contracts";
+import { ForeignCoin } from "../../types/foreignCoins";
+import { SetupOptions } from "../ton/setup";
+
+interface ZetachainSwapToCoverGasArgs extends SetupOptions {
+  amount: bigint;
+  asset: string;
+  chainID: string;
+  foreignCoins: ForeignCoin[];
+  gasLimit: bigint;
+  provider: ethers.JsonRpcProvider;
+}
+
+// interface ZetachainSwapToCoverGasArgs {
+//   amount: bigint;
+//   asset: string;
+//   chainID: string;
+//   deployer: ethers.NonceManager;
+//   foreignCoins: ForeignCoin[];
+//   gasLimit: bigint;
+//   provider: ethers.JsonRpcProvider;
+//   zetachainContracts: {
+//     coreRegistry: {
+//       target: string | ethers.Addressable;
+//     };
+//     fungibleModuleSigner: {
+//       getAddress: () => Promise<string>;
+//     };
+//     uniswapRouterInstance: {
+//       target: string | ethers.Addressable;
+//     };
+//     wzeta: {
+//       target: string | ethers.Addressable;
+//     };
+//   };
+// }
+
+interface ZetachainSwapToCoverGasReturnType {
+  isGas: boolean;
+  revertGasFee: ethers.BigNumberish;
+  token: string | null;
+  zrc20?: string;
+}
 
 export const zetachainSwapToCoverGas = async ({
-  foreignCoins,
   amount,
   asset,
   chainID,
   deployer,
+  foreignCoins,
+  gasLimit,
   provider,
   zetachainContracts,
-  gasLimit,
-}: any) => {
+}: ZetachainSwapToCoverGasArgs): Promise<ZetachainSwapToCoverGasReturnType> => {
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
-      (coin: any) =>
+      (coin: ForeignCoin) =>
         coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
   } else {
-    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
+    foreignCoin = foreignCoins.find(
+      (coin: ForeignCoin) => coin.asset === asset
+    );
   }
 
   if (!foreignCoin) {
     logger.error(`Foreign coin not found for asset: ${asset}`, {
       chain: NetworkID.ZetaChain,
     });
-    return { isGas: false, revertGasFee: 0, token: null };
+    return { isGas: false, revertGasFee: 0n, token: null };
   }
 
   const zrc20 = foreignCoin.zrc20_contract_address;
-  const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+  const zrc20Contract = new ethers.Contract(
+    zrc20,
+    ZRC20.abi,
+    deployer
+  ) as ZRC20Contract;
   const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
     gasLimit
   );
@@ -41,9 +93,10 @@ export const zetachainSwapToCoverGas = async ({
   let isGas = true;
   let token = null;
   if (zrc20 !== gasZRC20) {
-    token = foreignCoins.find(
-      (coin: any) => coin.zrc20_contract_address === zrc20
-    )?.asset;
+    token =
+      foreignCoins.find(
+        (coin: ForeignCoin) => coin.zrc20_contract_address === zrc20
+      )?.asset || null;
     isGas = false;
     revertGasFee = await swapToCoverGas(
       deployer,
@@ -54,25 +107,25 @@ export const zetachainSwapToCoverGas = async ({
       await zetachainContracts.fungibleModuleSigner.getAddress(),
       zrc20Contract,
       provider,
-      zetachainContracts.wzeta.target,
-      zetachainContracts.uniswapRouterInstance.target
+      zetachainContracts.wzeta.target as string,
+      zetachainContracts.uniswapRouterInstance.target as string
     );
   }
   return { isGas, revertGasFee, token, zrc20 };
 };
 
 export const swapToCoverGas = async (
-  deployer: any,
+  deployer: ethers.NonceManager,
   zrc20: string,
   gasZRC20: string,
-  gasFee: any,
-  amount: any,
-  fungibleModule: any,
-  zrc20Contract: any,
-  provider: any,
+  gasFee: ethers.BigNumberish,
+  amount: ethers.BigNumberish,
+  fungibleModule: string,
+  zrc20Contract: ZRC20Contract,
+  provider: ethers.JsonRpcProvider,
   wzeta: string,
   router: string
-) => {
+): Promise<bigint> => {
   /**
    * Retrieves the amounts for swapping tokens using UniswapV2.
    * @param {"in" | "out"} direction - The direction of the swap ("in" or "out").
@@ -85,22 +138,22 @@ export const swapToCoverGas = async (
    */
   const getAmounts = async (
     direction: "in" | "out",
-    provider: any,
-    amount: any,
+    provider: ethers.JsonRpcProvider,
+    amount: ethers.BigNumberish,
     tokenA: string,
     tokenB: string,
-    routerAddress: any,
-    routerABI: any
-  ) => {
+    routerAddress: string,
+    routerABI: ethers.Interface
+  ): Promise<bigint[]> => {
     if (!routerAddress) {
       throw new Error("Cannot get uniswapV2Router02 address");
     }
 
     const uniswapRouter = new ethers.Contract(
       routerAddress,
-      routerABI.abi,
+      routerABI,
       provider
-    );
+    ) as UniswapV2Router02Contract;
 
     const path = [tokenA, tokenB];
 
@@ -115,7 +168,7 @@ export const swapToCoverGas = async (
     router,
     UniswapV2Router02.abi,
     deployer
-  );
+  ) as UniswapV2Router02Contract;
   deployer.reset();
   const approvalTx = await zrc20Contract.approve(router, amount);
   await approvalTx.wait();
@@ -136,7 +189,7 @@ export const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logger.error(`Error performing swap on Uniswap: ${swapError}`, {
+    logger.error(`Error performing swap on Uniswap: ${String(swapError)}`, {
       chain: NetworkID.ZetaChain,
     });
   }
@@ -148,7 +201,7 @@ export const swapToCoverGas = async (
     wzeta,
     gasZRC20,
     router,
-    UniswapV2Router02
+    UniswapV2Router02.abi as unknown as ethers.Interface
   );
 
   const amountInZRC20 = await getAmounts(
@@ -158,8 +211,10 @@ export const swapToCoverGas = async (
     zrc20,
     wzeta,
     router,
-    UniswapV2Router02
+    UniswapV2Router02.abi as unknown as ethers.Interface
   );
 
-  return amountInZRC20[0];
+  const amountInZRC20BigInt = BigInt(amountInZRC20[0]);
+
+  return amountInZRC20BigInt;
 };

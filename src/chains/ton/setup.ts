@@ -5,6 +5,8 @@ import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway
 import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
+import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -18,19 +20,19 @@ import {
 } from "./gateway";
 import * as node from "./node";
 
-export function client(): ton.TonClient {
+export const client = (): ton.TonClient => {
   return new ton.TonClient({ endpoint: cfg.ENDPOINT_RPC });
-}
+};
 
 export interface SetupOptions {
   chainID: string;
-  deployer: any;
-  foreignCoins: any[];
+  deployer: ethers.NonceManager;
+  foreignCoins: ForeignCoin[];
 
-  provider: any;
+  provider: ethers.JsonRpcProvider;
   skip?: boolean;
   tss: NonceManager;
-  zetachainContracts: any;
+  zetachainContracts: ZetachainContracts;
 }
 
 export interface Env {
@@ -39,7 +41,7 @@ export interface Env {
   gateway: OpenedContract<Gateway>;
 }
 
-export async function setup(opts: SetupOptions) {
+export const setup = async (opts: SetupOptions) => {
   // noop
   if (opts.skip) {
     logger.info("TON setup skipped", { chain: opts.chainID });
@@ -57,16 +59,16 @@ export async function setup(opts: SetupOptions) {
     });
     throw error;
   }
-}
+};
 
 /**
  *  - Provision deployer-faucet
  *  - Provision Gateway
  *  - Setup observer-signer event-listener
  */
-async function setupThrowable(opts: SetupOptions) {
+const setupThrowable = async (opts: SetupOptions) => {
   logger.info("Creating TON RPC client", { chain: opts.chainID });
-  const rpcClient = await client();
+  const rpcClient = client();
   logger.info("TON RPC client created", { chain: opts.chainID });
 
   logger.info("Waiting for TON node", {
@@ -107,7 +109,11 @@ async function setupThrowable(opts: SetupOptions) {
 
   // Observe inbound transactions (async loop)
   logger.info("Setting up inbound observer", { chain: opts.chainID });
-  observerInbounds(rpcClient, gateway, onInbound(opts, rpcClient, gateway));
+  await observerInbounds(
+    rpcClient,
+    gateway,
+    onInbound(opts, rpcClient, gateway)
+  );
   logger.info("Inbound observer setup complete", { chain: opts.chainID });
 
   const env: Env = {
@@ -134,15 +140,15 @@ async function setupThrowable(opts: SetupOptions) {
 
   logger.info("TON setup complete", { chain: opts.chainID });
   return result;
-}
+};
 
 const revertGasLimit = 200_000;
 
-function onInbound(
+const onInbound = (
   opts: SetupOptions,
   client: ton.TonClient,
   gateway: OpenedContract<Gateway>
-) {
+) => {
   // gas coin
   const asset = ethers.ZeroAddress;
 
@@ -198,11 +204,11 @@ function onInbound(
       const { revertGasFee } = await zetachainSwapToCoverGas({
         amount: inbound.amount,
         asset,
-        gasLimit: revertGasLimit,
+        gasLimit: BigInt(revertGasLimit),
         ...opts,
       });
 
-      const revertAmount = inbound.amount - revertGasFee;
+      const revertAmount = inbound.amount - BigInt(revertGasFee);
       if (revertAmount <= 0n) {
         logger.error("Revert amount is not enough to make a revert back", {
           chain: opts.chainID,
@@ -220,4 +226,4 @@ function onInbound(
       );
     }
   };
-}
+};

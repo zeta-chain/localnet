@@ -2,24 +2,43 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
+import { ForeignCoin } from "../../types/foreignCoins";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import { evmOnRevert } from "./onRevert";
 
+interface EvmDepositAndCallArgs {
+  args: unknown[];
+  chainID: string;
+  custody: {
+    target: string | ethers.Addressable;
+  };
+  deployer: ethers.NonceManager;
+  exitOnError: boolean;
+  foreignCoins: ForeignCoin[];
+  gatewayEVM: {
+    target: string | ethers.Addressable;
+  };
+  provider: ethers.JsonRpcProvider;
+  tss: ethers.NonceManager;
+  zetachainContracts: ZetachainContracts;
+}
+
 export const evmDepositAndCall = async ({
   args,
-  exitOnError = false,
   chainID,
-  foreignCoins,
-  deployer,
-  provider,
-  zetachainContracts,
-  gatewayEVM,
-  tss,
   custody,
-}: any) => {
+  deployer,
+  exitOnError = false,
+  foreignCoins,
+  gatewayEVM,
+  provider,
+  tss,
+  zetachainContracts,
+}: EvmDepositAndCallArgs) => {
   logger.info("Gateway: DepositedAndCalled event emitted", { chain: chainID });
 
   // Skip processing events during gateway registration
@@ -35,11 +54,13 @@ export const evmDepositAndCall = async ({
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
-      (coin: any) =>
+      (coin: ForeignCoin) =>
         coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
   } else {
-    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
+    foreignCoin = foreignCoins.find(
+      (coin: ForeignCoin) => coin.asset === asset
+    );
   }
 
   if (!foreignCoin) {
@@ -57,11 +78,14 @@ export const evmDepositAndCall = async ({
       provider,
       zetachainContracts,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : String(err);
     if (exitOnError) {
-      throw new Error(err);
+      throw new Error(errMessage);
     }
-    logger.error(`onCall failed: ${err}`, { chain: NetworkID.ZetaChain });
+    logger.error(`onCall failed: ${errMessage}`, {
+      chain: NetworkID.ZetaChain,
+    });
     const gasLimit = revertOptions[4];
     // TODO: instead of swapping, get a quote from Uniswap to estimate if the amount is sufficient. Do the same for evmDeposit
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
@@ -100,15 +124,15 @@ export const evmDepositAndCall = async ({
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       return await zetachainOnAbort({
-        abortAddress: abortAddress,
-        amount: amount,
+        abortAddress,
+        amount,
         asset: zrc20,
         chainID,
         fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
         gatewayZEVM: zetachainContracts.gatewayZEVM,
         outgoing: false,
         provider,
-        revertMessage: revertMessage,
+        revertMessage,
         sender,
       });
     }

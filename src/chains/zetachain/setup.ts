@@ -8,12 +8,13 @@ import { ethers, Signer } from "ethers";
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
+import { ZetachainContracts } from "../../types/contracts";
 
 export const zetachainSetup = async (
   deployer: Signer,
   tss: Signer,
   provider: ethers.JsonRpcProvider
-) => {
+): Promise<ZetachainContracts> => {
   const [, , deployerAddress] = await Promise.all([
     provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]),
     provider.send("anvil_setBalance", [
