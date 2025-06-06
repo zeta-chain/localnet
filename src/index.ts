@@ -20,7 +20,7 @@ import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { LocalnetContracts } from "./types/contracts";
-import { DepositAndCallArgs } from "./types/events";
+import { DepositAndCallArgs, DepositArgs } from "./types/eventArgs";
 import { ForeignCoin } from "./types/foreignCoins";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 
@@ -303,7 +303,7 @@ export const initLocalnet = async ({
       });
     });
 
-    ethereumContracts.gatewayEVM.on("Deposited", (...args: unknown[]) => {
+    ethereumContracts.gatewayEVM.on("Deposited", (...args: DepositArgs) => {
       void evmDeposit({
         args,
         chainID: NetworkID.Ethereum,
@@ -348,7 +348,7 @@ export const initLocalnet = async ({
       });
     });
 
-    bnbContracts.gatewayEVM.on("Deposited", (...args: unknown[]) => {
+    bnbContracts.gatewayEVM.on("Deposited", (...args: DepositArgs) => {
       void evmDeposit({
         args,
         chainID: NetworkID.BNB,

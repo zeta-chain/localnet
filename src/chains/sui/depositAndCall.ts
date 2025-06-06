@@ -5,7 +5,7 @@ import { ethers, JsonRpcProvider, NonceManager } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
-import { DepositAndCallArgs } from "../../types/events";
+import { DepositAndCallArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";

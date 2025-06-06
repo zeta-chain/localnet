@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { GatewayZEVMContract, ZetachainContracts } from "../../types/contracts";
-import { DepositAndCallArgs } from "../../types/events";
+import { DepositAndCallArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 
 const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];

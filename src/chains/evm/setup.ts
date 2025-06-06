@@ -8,7 +8,9 @@ import { ethers } from "ethers";
 
 import { deployOpts } from "../../deployOpts";
 import {
+  CustodyContract,
   EVMContracts,
+  GatewayEVMContract,
   TargetRegistryContract,
   ZetachainContracts,
 } from "../../types/contracts";
@@ -77,7 +79,7 @@ export const evmSetup = async ({
     proxyEVM.target,
     GatewayEVM.abi,
     deployer
-  );
+  ) as GatewayEVMContract;
 
   const registryInterface = new ethers.Interface(Registry.abi);
   const registryInitFragment = registryInterface.getFunction("initialize");
@@ -131,7 +133,7 @@ export const evmSetup = async ({
     custodyImpl.target,
     Custody.abi,
     deployer
-  );
+  ) as CustodyContract;
 
   // Temporarily disable
   //

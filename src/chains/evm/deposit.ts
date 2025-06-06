@@ -4,6 +4,14 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import {
+  CustodyContract,
+  UniswapV2Router02Contract,
+  ZetachainContracts,
+  ZRC20Contract,
+} from "../../types/contracts";
+import { DepositArgs } from "../../types/eventArgs";
+import { ForeignCoin } from "../../types/foreignCoins";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainOnAbort } from "../zetachain/onAbort";
@@ -13,14 +21,25 @@ export const evmDeposit = async ({
   args,
   deployer,
   foreignCoins,
-  gatewayEVM,
   provider,
   custody,
   tss,
   zetachainContracts,
   chainID,
+  gatewayEVM,
   exitOnError = false,
-}: any) => {
+}: {
+  args: DepositArgs;
+  chainID: string;
+  custody: CustodyContract;
+  deployer: ethers.NonceManager;
+  exitOnError?: boolean;
+  foreignCoins: ForeignCoin[];
+  gatewayEVM: ethers.Contract;
+  provider: ethers.Provider;
+  tss: ethers.NonceManager;
+  zetachainContracts: ZetachainContracts;
+}) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
 
   // Skip processing events during gateway registration
@@ -34,9 +53,9 @@ export const evmDeposit = async ({
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
-    foreignCoin = foreignCoins.find((coin: any) => coin.coin_type === "Gas");
+    foreignCoin = foreignCoins.find((coin) => coin.coin_type === "Gas");
   } else {
-    foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
+    foreignCoin = foreignCoins.find((coin) => coin.asset === asset);
   }
 
   if (!foreignCoin) {
@@ -54,45 +73,50 @@ export const evmDeposit = async ({
       foreignCoins,
       zetachainContracts,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (exitOnError) {
-      throw new Error(err);
+      throw new Error(String(err));
     }
-    logger.error(`Error depositing: ${err}`, { chain: NetworkID.ZetaChain });
-    const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+    logger.error(`Error depositing: ${String(err)}`, {
+      chain: NetworkID.ZetaChain,
+    });
+    const zrc20Contract = new ethers.Contract(
+      zrc20,
+      ZRC20.abi,
+      deployer
+    ) as ZRC20Contract;
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
       revertOptions[4]
     );
-    let revertAmount;
     let revertGasFee = gasFee;
     let isGas = true;
-    let token = null;
+    let token: string | null = null;
     if (zrc20 !== gasZRC20) {
-      token = foreignCoins.find(
-        (coin: any) => coin.zrc20_contract_address === zrc20
-      )?.asset;
+      token =
+        foreignCoins.find((coin) => coin.zrc20_contract_address === zrc20)
+          ?.asset ?? null;
       isGas = false;
       revertGasFee = await swapToCoverGas(
-        deployer,
-        zrc20,
-        gasZRC20,
-        gasFee,
         amount,
+        deployer,
         await zetachainContracts.fungibleModuleSigner.getAddress(),
-        zrc20Contract,
+        gasFee,
+        gasZRC20,
         provider,
-        zetachainContracts.wzeta.target,
-        zetachainContracts.uniswapRouterInstance.target
+        String(zetachainContracts.uniswapRouterInstance.target),
+        String(zetachainContracts.wzeta.target),
+        zrc20,
+        zrc20Contract
       );
     }
-    revertAmount = amount - revertGasFee;
+    const revertAmount = Number(amount) - Number(revertGasFee);
     if (revertAmount > 0) {
       return await evmOnRevert({
-        amount: revertAmount,
+        amount: revertAmount.toString(),
         asset,
         chainID,
         custody,
-        err,
+        gatewayEVM,
         isGas,
         provider,
         revertOptions,
@@ -105,7 +129,7 @@ export const evmDeposit = async ({
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       return await zetachainOnAbort({
-        abortAddress: abortAddress,
+        abortAddress,
         amount,
         asset: zrc20,
         chainID,
@@ -113,7 +137,7 @@ export const evmDeposit = async ({
         gatewayZEVM: zetachainContracts.gatewayZEVM,
         outgoing: false,
         provider,
-        revertMessage: revertMessage,
+        revertMessage,
         sender,
       });
     }
@@ -121,16 +145,16 @@ export const evmDeposit = async ({
 };
 
 const swapToCoverGas = async (
-  deployer: any,
-  zrc20: string,
+  amount: ethers.BigNumberish,
+  deployer: ethers.NonceManager,
+  fungibleModule: string,
+  gasFee: ethers.BigNumberish,
   gasZRC20: string,
-  gasFee: any,
-  amount: any,
-  fungibleModule: any,
-  zrc20Contract: any,
-  provider: any,
+  provider: ethers.Provider,
+  router: string,
   wzeta: string,
-  router: string
+  zrc20: string,
+  zrc20Contract: ZRC20Contract
 ) => {
   /**
    * Retrieves the amounts for swapping tokens using UniswapV2.
@@ -144,12 +168,12 @@ const swapToCoverGas = async (
    */
   const getAmounts = async (
     direction: "in" | "out",
-    provider: any,
-    amount: any,
+    provider: ethers.Provider,
+    amount: ethers.BigNumberish,
     tokenA: string,
     tokenB: string,
-    routerAddress: any,
-    routerABI: any
+    routerAddress: string,
+    routerABI: { abi: ethers.InterfaceAbi }
   ) => {
     if (!routerAddress) {
       throw new Error("Cannot get uniswapV2Router02 address");
@@ -163,10 +187,11 @@ const swapToCoverGas = async (
 
     const path = [tokenA, tokenB];
 
-    const amounts =
+    const amounts = (
       direction === "in"
         ? await uniswapRouter.getAmountsIn(amount, path)
-        : await uniswapRouter.getAmountsOut(amount, path);
+        : await uniswapRouter.getAmountsOut(amount, path)
+    ) as ethers.BigNumberish[];
     return amounts;
   };
 
@@ -174,7 +199,7 @@ const swapToCoverGas = async (
     router,
     UniswapV2Router02.abi,
     deployer
-  );
+  ) as UniswapV2Router02Contract;
   deployer.reset();
   const approvalTx = await zrc20Contract.approve(router, amount);
   await approvalTx.wait();
@@ -195,7 +220,7 @@ const swapToCoverGas = async (
 
     await swapTx.wait();
   } catch (swapError) {
-    logger.error(`Error performing swap on Uniswap: ${swapError}`, {
+    logger.error(`Error performing swap on Uniswap: ${String(swapError)}`, {
       chain: NetworkID.ZetaChain,
     });
   }

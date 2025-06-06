@@ -2,8 +2,12 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { ZetachainContracts } from "../../types/contracts";
-import { DepositAndCallArgs } from "../../types/events";
+import {
+  CustodyContract,
+  GatewayEVMContract,
+  ZetachainContracts,
+} from "../../types/contracts";
+import { DepositAndCallArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
@@ -14,15 +18,11 @@ import { evmOnRevert } from "./onRevert";
 interface EvmDepositAndCallParams {
   args: DepositAndCallArgs;
   chainID: string;
-  custody: {
-    target: string | ethers.Addressable;
-  };
+  custody: CustodyContract;
   deployer: ethers.NonceManager;
   exitOnError: boolean;
   foreignCoins: ForeignCoin[];
-  gatewayEVM: {
-    target: string | ethers.Addressable;
-  };
+  gatewayEVM: GatewayEVMContract;
   provider: ethers.JsonRpcProvider;
   tss: ethers.NonceManager;
   zetachainContracts: ZetachainContracts;
@@ -91,7 +91,7 @@ export const evmDepositAndCall = async ({
     // TODO: instead of swapping, get a quote from Uniswap to estimate if the amount is sufficient. Do the same for evmDeposit
     const { revertGasFee, isGas, token, zrc20 } = await zetachainSwapToCoverGas(
       {
-        amount,
+        amount: BigInt(amount),
         asset,
         chainID,
         deployer,
@@ -101,14 +101,13 @@ export const evmDepositAndCall = async ({
         zetachainContracts,
       }
     );
-    const revertAmount = amount - BigInt(revertGasFee);
+    const revertAmount = BigInt(amount) - BigInt(revertGasFee);
     if (revertAmount > 0) {
       return await evmOnRevert({
-        amount: revertAmount,
+        amount: revertAmount.toString(),
         asset,
         chainID,
         custody,
-        err,
         gatewayEVM,
         isGas,
         provider,

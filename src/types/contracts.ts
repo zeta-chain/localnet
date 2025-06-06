@@ -107,9 +107,53 @@ export interface ZetachainContracts {
   wzeta: ZRC20Contract;
 }
 
+export type CustodyContract = ethers.Contract & {
+  withdraw: (
+    receiver: string,
+    asset: string,
+    amount: ethers.BigNumberish,
+    options?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+  withdrawAndCall: (
+    messageContext: { sender: string },
+    receiver: string,
+    asset: string,
+    amount: ethers.BigNumberish,
+    message: string,
+    options?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+  withdrawAndRevert: (
+    revertAddress: string,
+    token: string,
+    amount: ethers.BigNumberish,
+    data: string,
+    revertContext: {
+      amount: ethers.BigNumberish;
+      asset: string;
+      revertMessage: string;
+      sender: string;
+    },
+    options?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+};
+
+export type GatewayEVMContract = ethers.Contract & {
+  executeRevert: (
+    destination: string,
+    data: string,
+    revertContext: {
+      amount: ethers.BigNumberish;
+      asset: string;
+      revertMessage: string;
+      sender: string;
+    },
+    options?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+};
+
 export interface EVMContracts {
-  custody: ethers.Contract;
-  gatewayEVM: ethers.Contract;
+  custody: CustodyContract;
+  gatewayEVM: GatewayEVMContract;
   registry: TargetRegistryContract;
   testEVMZeta: DeployedContract;
   zetaConnector: ethers.Contract;
@@ -184,6 +228,18 @@ export type UniswapV2Router02Contract = ethers.Contract & {
 
 export type GatewayZEVMContract = ethers.Contract & {
   depositAndCall: (
+    context: {
+      chainID: string;
+      sender: string;
+      senderEVM: string;
+    },
+    zrc20: string,
+    amount: ethers.BigNumberish,
+    receiver: string,
+    message: string,
+    options?: TxOptions
+  ) => Promise<ContractTransactionResponse>;
+  execute: (
     context: {
       chainID: string;
       sender: string;

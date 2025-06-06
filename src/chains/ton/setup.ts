@@ -6,7 +6,7 @@ import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
-import { DepositAndCallArgs } from "../../types/events";
+import { DepositAndCallArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
