@@ -92,7 +92,7 @@ export type TargetRegistryContract = ethers.Contract & {
       gasZRC20: string;
       registry: string;
     }>,
-    emptyArray: unknown[],
+    additionalParams: unknown[],
     txOptions?: TxOptions
   ) => Promise<ContractTransactionResponse>;
 };
