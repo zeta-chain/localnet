@@ -14,7 +14,9 @@ const localnetCheck = async (options: { delay: number }) => {
     process.exit(1);
   }
 
-  const jsonData = JSON.parse(fs.readFileSync(LOCALNET_JSON_FILE, "utf-8"));
+  const jsonData = JSON.parse(fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")) as {
+    pid: string;
+  };
   const pid = jsonData.pid;
 
   try {
@@ -34,13 +36,13 @@ export const checkCommand = new Command("check")
     "Seconds to wait before checking localnet",
     "3"
   )
-  .action(async (options) => {
+  .action(async (options: { delay: string }) => {
     try {
       await localnetCheck({
         delay: parseInt(options.delay),
       });
     } catch (error) {
-      console.error(ansis.red(`Error: ${error}`));
+      console.error(ansis.red(`Error: ${String(error)}`));
       process.exit(1);
     }
   });

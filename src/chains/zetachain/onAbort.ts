@@ -1,8 +1,9 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { ethers } from "ethers";
+import { Addressable, ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { contractCall } from "../../utils/contracts";
 
 export const zetachainOnAbort = async ({
   fungibleModuleSigner,
@@ -15,7 +16,18 @@ export const zetachainOnAbort = async ({
   abortAddress,
   outgoing,
   gatewayZEVM,
-}: any) => {
+}: {
+  abortAddress: string;
+  amount: number;
+  asset: string | Addressable;
+  chainID: (typeof NetworkID)[keyof typeof NetworkID];
+  fungibleModuleSigner: ethers.Signer;
+  gatewayZEVM: ethers.Contract;
+  outgoing: boolean;
+  provider: ethers.Provider;
+  revertMessage: string;
+  sender: string;
+}) => {
   const assetContract = new ethers.Contract(
     asset,
     ZRC20.abi,
@@ -27,21 +39,29 @@ export const zetachainOnAbort = async ({
       logger.error(`abortAddress is zero`, { chain: NetworkID.ZetaChain });
       if (asset !== ethers.ZeroAddress && amount > 0) {
         logger.error(
-          `Transferring ${amount} of ${asset} tokens to sender ${sender}`,
+          `Transferring ${amount} of ${String(
+            asset
+          )} tokens to sender ${sender}`,
           { chain: NetworkID.ZetaChain }
         );
 
-        const transferTx = await assetContract.transfer(sender, amount);
+        const transferTx = (await contractCall(assetContract, "transfer")(
+          sender,
+          amount
+        )) as ethers.ContractTransactionResponse;
         await transferTx.wait();
       } else {
-        throw new Error(`Can't transfer ${amount} of ${asset} tokens`);
+        throw new Error(`Can't transfer ${amount} of ${String(asset)} tokens`);
       }
     } else {
       logger.info(`Transferring tokens to abortAddress ${abortAddress}`, {
         chain: NetworkID.ZetaChain,
       });
       if (asset !== ethers.ZeroAddress && amount > 0) {
-        const transferTx = await assetContract.transfer(abortAddress, amount);
+        const transferTx = (await contractCall(assetContract, "transfer")(
+          abortAddress,
+          amount
+        )) as ethers.ContractTransactionResponse;
         await transferTx.wait();
       }
       try {
@@ -59,26 +79,29 @@ export const zetachainOnAbort = async ({
           )}`,
           { chain: NetworkID.ZetaChain }
         );
-        const abortTx = await gatewayZEVM
-          .connect(fungibleModuleSigner)
-          .executeAbort(abortAddress, context, { gasLimit: 1_500_000 });
+        const abortTx = (await contractCall(
+          gatewayZEVM.connect(fungibleModuleSigner),
+          "executeAbort"
+        )(abortAddress, context, {
+          gasLimit: 1_500_000,
+        })) as ethers.ContractTransactionResponse;
         await abortTx.wait();
         const logs = await provider.getLogs({
           address: abortAddress,
           fromBlock: "latest",
         });
-        logs.forEach((data: any) => {
+        logs.forEach((data: ethers.Log) => {
           logger.info(`Event from onAbort: ${JSON.stringify(data)}`, {
             chain: NetworkID.ZetaChain,
           });
         });
       } catch (err) {
-        const error = `onAbort failed: ${err}`;
+        const error = `onAbort failed: ${String(err)}`;
         logger.error(error, { chain: NetworkID.ZetaChain });
       }
     }
   } catch (err) {
-    logger.error(`Abort processing failed: ${err}`, {
+    logger.error(`Abort processing failed: ${String(err)}`, {
       chain: NetworkID.ZetaChain,
     });
   }

@@ -1,28 +1,36 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Wallet } from "@coral-xyz/anchor";
 import { ethers } from "ethers";
 import * as fs from "fs";
 import { task } from "hardhat/config";
 
 import { getKeypair } from "./solanaDepositAndCall";
 
-const solanaDeposit = async (args: any) => {
+const solanaDeposit = async (args: {
+  amount: string;
+  from: string;
+  mint: string;
+  mnemonic: string;
+  receiver: string;
+  to: string;
+  tokenProgram: string;
+}) => {
   const gatewayPath = require.resolve(
     "@zetachain/localnet/solana/idl/gateway.json"
   );
-  const Gateway_IDL = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
+  const Gateway_IDL = JSON.parse(
+    fs.readFileSync(gatewayPath, "utf-8")
+  ) as anchor.Idl;
 
   const keypair = await getKeypair(args.mnemonic);
 
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection("http://localhost:8899"),
-    new anchor.Wallet(keypair),
+    new Wallet(keypair),
     {}
   );
 
-  const gatewayProgram = new anchor.Program(
-    Gateway_IDL as anchor.Idl,
-    provider
-  );
+  const gatewayProgram = new anchor.Program(Gateway_IDL, provider);
 
   const receiverBytes = ethers.getBytes(args.receiver);
 

@@ -10,23 +10,24 @@ import {
   getLocalnetConfig,
 } from "./utils/sui";
 
-const suiDepositAndCall = async (args: any) => {
-  const {
-    mnemonic,
-    gateway,
-    module,
-    receiver,
-    amount,
-    types,
-    values,
-    coinType,
-  } = args;
+const suiDepositAndCall = async (args: {
+  amount: string;
+  coinType: string;
+  gateway: string;
+  mnemonic: string;
+  module: string;
+  receiver: string;
+  types: string;
+  values: string[];
+}) => {
+  const { mnemonic, gateway, module, receiver, amount, values, coinType } =
+    args;
 
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
   const localnetConfig = getLocalnetConfig();
-  const gatewayObjectId = gateway || localnetConfig.gatewayObjectId;
-  const packageId = module || localnetConfig.packageId;
+  const gatewayObjectId = (gateway || localnetConfig.gatewayObjectId) as string;
+  const packageId = (module || localnetConfig.packageId) as string;
 
   if (!gatewayObjectId || !packageId) {
     throw new Error(
@@ -34,13 +35,14 @@ const suiDepositAndCall = async (args: any) => {
     );
   }
 
-  const valuesArray = values.map((value: any, index: any) => {
-    const type = JSON.parse(types)[index];
+  const valuesArray = values.map((value: string, index: number) => {
+    const types = JSON.parse(args.types) as string[];
+    const type = types[index];
 
     if (type === "bool") {
       try {
-        return JSON.parse(value.toLowerCase());
-      } catch (e) {
+        return JSON.parse(value.toLowerCase()) as boolean;
+      } catch (e: unknown) {
         throw new Error(`Invalid boolean value: ${value}`);
       }
     } else if (type.startsWith("uint") || type.startsWith("int")) {
@@ -53,7 +55,7 @@ const suiDepositAndCall = async (args: any) => {
   });
 
   const encodedParameters = AbiCoder.defaultAbiCoder().encode(
-    JSON.parse(types),
+    JSON.parse(args.types) as string[],
     valuesArray
   );
 

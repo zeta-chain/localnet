@@ -118,23 +118,22 @@ export class Deployer {
 }
 
 const FAUCET_WALLET_VERSION = "V3R2";
+type FaucetInfo = {
+  created: boolean;
+  mnemonic: string;
+  privateKey: string;
+  publicKey: string;
+  subWalletId: number;
+  walletRawAddress: string;
+  walletVersion: string;
+  workChain: number;
+};
 
-export async function deployerFromFaucetURL(
+export const deployerFromFaucetURL = async (
   faucetURL: string,
   client: ton.TonClient
-): Promise<Deployer> {
-  type FaucetInfo = {
-    created: boolean;
-    mnemonic: string;
-    privateKey: string;
-    publicKey: string;
-    subWalletId: number;
-    walletRawAddress: string;
-    walletVersion: string;
-    workChain: number;
-  };
-
-  const faucet = (await utils.getJSON(faucetURL)) as FaucetInfo;
+): Promise<Deployer> => {
+  const faucet = await utils.getJSON<FaucetInfo>(faucetURL);
   if (faucet.walletVersion !== FAUCET_WALLET_VERSION) {
     throw new Error(
       `Expected faucet to be ${FAUCET_WALLET_VERSION}, got ${faucet.walletVersion}`
@@ -164,4 +163,4 @@ export async function deployerFromFaucetURL(
   }
 
   return new Deployer(client, wallet, keyPair);
-}
+};

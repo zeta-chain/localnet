@@ -1,11 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Keypair } from "@solana/web3.js";
+import { Wallet } from "@coral-xyz/anchor";
+import { ConfirmedSignatureInfo, Keypair } from "@solana/web3.js";
 import * as bip39 from "bip39";
 import { exec } from "child_process";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 import * as fs from "fs";
-import { sha256 } from "js-sha256";
 import * as os from "os";
 import * as path from "path";
 import * as util from "util";
@@ -13,10 +13,15 @@ import * as util from "util";
 import { addBackgroundProcess } from "../../backgroundProcesses";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
+import { ForeignCoin } from "../../types/foreignCoins";
 import { sleep } from "../../utils";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
-import { solanaDeposit } from "./deposit";
-import { solanaDepositAndCall } from "./depositAndCall";
+import { solanaDeposit, SolanaDepositArgs } from "./deposit";
+import {
+  solanaDepositAndCall,
+  SolanaDepositAndCallArgs,
+} from "./depositAndCall";
 import Gateway_IDL from "./idl/gateway.json";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 
@@ -25,7 +30,9 @@ const execAsync = util.promisify(exec);
 const loadSolanaKeypair = async (): Promise<Keypair> => {
   const filePath = path.join(os.homedir(), ".config", "solana", "id.json");
   try {
-    const secretKey = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    const secretKey = JSON.parse(
+      fs.readFileSync(filePath, "utf-8")
+    ) as number[];
     return Keypair.fromSecretKey(Uint8Array.from(secretKey));
   } catch (error) {
     logger.info("id.json not found, generating new keypair...", {
@@ -37,7 +44,9 @@ const loadSolanaKeypair = async (): Promise<Keypair> => {
       `solana-keygen new --no-bip39-passphrase --outfile ${filePath}`
     );
 
-    const secretKey = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    const secretKey = JSON.parse(
+      fs.readFileSync(filePath, "utf-8")
+    ) as number[];
     return Keypair.fromSecretKey(Uint8Array.from(secretKey));
   }
 };
@@ -60,8 +69,8 @@ export const keypairFromMnemonic = async (
 };
 
 const airdrop = async (
-  connection: any,
-  keypair: any,
+  connection: anchor.AnchorProvider["connection"],
+  keypair: Keypair,
   amount = 20_000_000_000_000
 ) => {
   const latestBlockhash = await connection.getLatestBlockhash();
@@ -85,8 +94,14 @@ export const solanaSetup = async ({
   zetachainContracts,
   provider,
   skip,
-}: any) => {
-  if (skip || !(await isSolanaAvailable())) {
+}: {
+  deployer: ethers.NonceManager;
+  foreignCoins: ForeignCoin[];
+  provider: ethers.JsonRpcProvider;
+  skip: boolean;
+  zetachainContracts: ZetachainContracts;
+}) => {
+  if (skip || !isSolanaAvailable()) {
     return;
   }
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
@@ -149,7 +164,7 @@ export const solanaSetup = async ({
 
     const anchorProvider = new anchor.AnchorProvider(
       connection,
-      new anchor.Wallet(payer),
+      new Wallet(payer),
       {}
     );
     anchor.setProvider(anchorProvider);
@@ -192,11 +207,11 @@ export const solanaSetup = async ({
       provider,
       zetachainContracts,
     });
-  } catch (error: any) {
-    logger.error(`Error setting up Solana: ${error.message}`, {
+  } catch (error: unknown) {
+    logger.error(`Error setting up Solana: ${String(error)}`, {
       chain: NetworkID.Solana,
     });
-    if (error.logs) {
+    if (error instanceof Error && "logs" in error) {
       logger.error("Logs:", { chain: NetworkID.Solana, logs: error.logs });
     }
     throw error;
@@ -218,171 +233,187 @@ export const solanaSetup = async ({
   };
 };
 
-export const solanaMonitorTransactions = async ({
+export const solanaMonitorTransactions = ({
   deployer,
   foreignCoins,
   zetachainContracts,
   provider,
-}: any) => {
+}: {
+  deployer: ethers.NonceManager;
+  foreignCoins: ForeignCoin[];
+  provider: ethers.JsonRpcProvider;
+  zetachainContracts: ZetachainContracts;
+}): void => {
   const gatewayProgram = new anchor.Program(Gateway_IDL as anchor.Idl);
   const connection = gatewayProgram.provider.connection;
 
   let lastSignature: string;
 
-  const intervalId = setInterval(async () => {
-    let signatures;
-    try {
-      signatures = await connection.getSignaturesForAddress(
-        gatewayProgram.programId,
-        { limit: 10 },
-        "confirmed"
-      );
+  const intervalId = setInterval(() => {
+    void (async () => {
+      let signatures: ConfirmedSignatureInfo[] = [];
+      try {
+        signatures = await connection.getSignaturesForAddress(
+          gatewayProgram.programId,
+          { limit: 10 },
+          "confirmed"
+        );
 
-      if (signatures.length === 0) return;
+        if (signatures.length === 0) return;
 
-      const newSignatures: any[] = [];
+        const newSignatures: ConfirmedSignatureInfo[] = [];
 
-      for (const signatureInfo of signatures) {
-        if (signatureInfo.signature === lastSignature) {
-          break;
-        } else {
-          newSignatures.push(signatureInfo);
+        for (const signatureInfo of signatures) {
+          if (signatureInfo.signature === lastSignature) {
+            break;
+          } else {
+            newSignatures.push(signatureInfo);
+          }
         }
-      }
 
-      if (newSignatures.length === 0) return;
+        if (newSignatures.length === 0) return;
 
-      for (const signatureInfo of newSignatures.reverse()) {
-        try {
-          const transaction = await connection.getTransaction(
-            signatureInfo.signature,
-            { commitment: "confirmed" }
-          );
-          if (transaction) {
-            for (const instruction of transaction.transaction.message
-              .instructions) {
-              const programIdIndex =
-                (instruction as any).programIdIndex !== undefined
-                  ? (instruction as any).programIdIndex
-                  : (instruction as any).programId;
-              const programIdFromInstruction =
-                transaction.transaction.message.accountKeys[programIdIndex];
+        for (const signatureInfo of newSignatures.reverse()) {
+          try {
+            const transaction = await connection.getTransaction(
+              signatureInfo.signature,
+              { commitment: "confirmed" }
+            );
+            if (transaction) {
+              for (const instruction of transaction.transaction.message
+                .instructions) {
+                const programIdIndex =
+                  instruction.programIdIndex ??
+                  (
+                    instruction as anchor.web3.CompiledInstruction & {
+                      programId: anchor.web3.PublicKey;
+                    }
+                  ).programId;
+                const programIdFromInstruction =
+                  transaction.transaction.message.accountKeys[programIdIndex];
 
-              if (
-                programIdFromInstruction &&
-                programIdFromInstruction.equals(gatewayProgram.programId)
-              ) {
-                let coder = new anchor.BorshInstructionCoder(
-                  Gateway_IDL as anchor.Idl
-                );
-                let decodedInstruction: any = coder.decode(
-                  instruction.data,
-                  "base58"
-                );
-                if (decodedInstruction) {
-                  if (
-                    decodedInstruction.name === "deposit_and_call" ||
-                    decodedInstruction.name === "deposit" ||
-                    decodedInstruction.name === "deposit_spl_token" ||
-                    decodedInstruction.name === "deposit_spl_token_and_call"
-                  ) {
-                    const data = decodedInstruction.data as any;
-                    const amount = data.amount.toString();
-                    const receiver =
-                      "0x" +
-                      data.receiver
-                        .map((byte: any) => byte.toString(16).padStart(2, "0"))
-                        .join("");
-                    const sender = ethers.hexlify(
-                      ethers.toUtf8Bytes(
-                        transaction.transaction.message.accountKeys[0].toString()
-                      )
-                    );
-                    const asset = ethers.ZeroAddress;
-                    let args = [sender, receiver, amount, asset];
-                    if (decodedInstruction.name === "deposit_and_call") {
-                      const message = data.message.toString();
-                      args.push(message);
-                      solanaDepositAndCall({
-                        args,
-                        deployer,
-                        foreignCoins,
-                        provider,
-                        zetachainContracts,
-                      });
-                    } else if (decodedInstruction.name === "deposit") {
-                      solanaDeposit({
-                        args,
-                        deployer,
-                        foreignCoins,
-                        provider,
-                        zetachainContracts,
-                      });
-                    } else if (
-                      decodedInstruction.name === "deposit_spl_token"
-                    ) {
-                      const mintAccountIndex = 3;
-                      const splIndex =
-                        transaction.transaction.message.instructions[0]
-                          .accounts[mintAccountIndex];
-                      const asset =
-                        transaction.transaction.message.accountKeys[splIndex];
-                      args[3] = asset.toString();
-                      solanaDeposit({
-                        args,
-                        deployer,
-                        foreignCoins,
-                        provider,
-                        zetachainContracts,
-                      });
-                    } else if (
+                if (
+                  programIdFromInstruction &&
+                  programIdFromInstruction.equals(gatewayProgram.programId)
+                ) {
+                  const coder = new anchor.BorshInstructionCoder(
+                    Gateway_IDL as anchor.Idl
+                  );
+                  const decodedInstruction = coder.decode(
+                    instruction.data,
+                    "base58"
+                  );
+                  if (decodedInstruction) {
+                    if (
+                      decodedInstruction.name === "deposit_and_call" ||
+                      decodedInstruction.name === "deposit" ||
+                      decodedInstruction.name === "deposit_spl_token" ||
                       decodedInstruction.name === "deposit_spl_token_and_call"
                     ) {
-                      const message = data.message.toString();
-                      const splIndex =
-                        transaction.transaction.message.instructions[0]
-                          .accounts[3];
-                      const asset =
-                        transaction.transaction.message.accountKeys[splIndex];
-                      args[3] = asset.toString();
-                      args.push(message);
-                      solanaDepositAndCall({
-                        args,
-                        deployer,
-                        foreignCoins,
-                        provider,
-                        zetachainContracts,
-                      });
+                      const data = decodedInstruction.data as {
+                        amount: number;
+                        message: string;
+                        receiver: number[];
+                      };
+                      const amount = data.amount.toString();
+                      const receiver =
+                        "0x" +
+                        data.receiver
+                          .map((byte: number) =>
+                            byte.toString(16).padStart(2, "0")
+                          )
+                          .join("");
+                      const sender = ethers.hexlify(
+                        ethers.toUtf8Bytes(
+                          transaction.transaction.message.accountKeys[0].toString()
+                        )
+                      );
+                      const asset = ethers.ZeroAddress;
+                      const args = [sender, receiver, amount, asset];
+                      if (decodedInstruction.name === "deposit_and_call") {
+                        const message = data.message;
+                        args.push(message);
+                        void solanaDepositAndCall({
+                          args: args as SolanaDepositAndCallArgs,
+                          deployer,
+                          foreignCoins,
+                          provider,
+                          zetachainContracts,
+                        });
+                      } else if (decodedInstruction.name === "deposit") {
+                        void solanaDeposit({
+                          args: args as SolanaDepositArgs,
+                          deployer,
+                          foreignCoins,
+                          provider,
+                          zetachainContracts,
+                        });
+                      } else if (
+                        decodedInstruction.name === "deposit_spl_token"
+                      ) {
+                        const mintAccountIndex = 3;
+                        const splIndex =
+                          transaction.transaction.message.instructions[0]
+                            .accounts[mintAccountIndex];
+                        const asset =
+                          transaction.transaction.message.accountKeys[splIndex];
+                        args[3] = asset.toString();
+                        void solanaDeposit({
+                          args: args as SolanaDepositArgs,
+                          deployer,
+                          foreignCoins,
+                          provider,
+                          zetachainContracts,
+                        });
+                      } else if (
+                        decodedInstruction.name === "deposit_spl_token_and_call"
+                      ) {
+                        const message = data.message;
+                        const splIndex =
+                          transaction.transaction.message.instructions[0]
+                            .accounts[3];
+                        const asset =
+                          transaction.transaction.message.accountKeys[splIndex];
+                        args[3] = asset.toString();
+                        args.push(message);
+                        void solanaDepositAndCall({
+                          args: args as SolanaDepositAndCallArgs,
+                          deployer,
+                          foreignCoins,
+                          provider,
+                          zetachainContracts,
+                        });
+                      }
                     }
                   }
                 }
               }
             }
+          } catch (transactionError) {
+            logger.error(
+              `Error processing transaction ${signatureInfo.signature}:`,
+              { chain: NetworkID.Solana, error: transactionError }
+            );
+            logger.error("Transaction error details:", {
+              chain: NetworkID.Solana,
+              error: JSON.stringify(transactionError),
+            });
+            // Continue to the next transaction even if an error occurs
+            continue;
           }
-        } catch (transactionError) {
-          logger.error(
-            `Error processing transaction ${signatureInfo.signature}:`,
-            { chain: NetworkID.Solana, error: transactionError }
-          );
-          logger.error("Transaction error details:", {
-            chain: NetworkID.Solana,
-            error: JSON.stringify(transactionError),
-          });
-          // Continue to the next transaction even if an error occurs
-          continue;
+        }
+      } catch (error) {
+        logger.error("Error monitoring new transactions:", {
+          chain: NetworkID.Solana,
+          error: String(error),
+        });
+      } finally {
+        // Update lastSignature even if an error occurs
+        if (signatures && signatures.length > 0) {
+          lastSignature = signatures[0].signature;
         }
       }
-    } catch (error) {
-      logger.error("Error monitoring new transactions:", {
-        chain: NetworkID.Solana,
-        error: String(error),
-      });
-    } finally {
-      // Update lastSignature even if an error occurs
-      if (signatures && signatures.length > 0) {
-        lastSignature = signatures[0].signature;
-      }
-    }
+    })();
   }, 1000);
 
   addBackgroundProcess(intervalId);

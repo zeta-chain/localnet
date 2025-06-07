@@ -3,6 +3,11 @@ import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router0
 import { ethers, Signer } from "ethers";
 
 import { deployOpts } from "../deployOpts";
+import {
+  UniswapV2FactoryContract,
+  UniswapV2RouterContract,
+  ZRC20Contract,
+} from "../types/contracts";
 
 /**
  * Prepares and deploys Uniswap V2 contracts.
@@ -13,7 +18,13 @@ import { deployOpts } from "../deployOpts";
  *   - uniswapFactoryInstance: The deployed Uniswap V2 factory contract
  *   - uniswapRouterInstance: The deployed Uniswap V2 router contract
  */
-export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
+export const prepareUniswapV2 = async (
+  deployer: Signer,
+  wzeta: ZRC20Contract
+): Promise<{
+  uniswapFactoryInstance: UniswapV2FactoryContract;
+  uniswapRouterInstance: UniswapV2RouterContract;
+}> => {
   const uniswapFactory = new ethers.ContractFactory(
     UniswapV2Factory.abi,
     UniswapV2Factory.bytecode,
@@ -25,16 +36,16 @@ export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
     deployer
   );
 
-  const uniswapFactoryInstance = await uniswapFactory.deploy(
+  const uniswapFactoryInstance = (await uniswapFactory.deploy(
     await deployer.getAddress(),
     deployOpts
-  );
+  )) as UniswapV2FactoryContract;
 
-  const uniswapRouterInstance = await uniswapRouterFactory.deploy(
+  const uniswapRouterInstance = (await uniswapRouterFactory.deploy(
     await uniswapFactoryInstance.getAddress(),
     await wzeta.getAddress(),
     deployOpts
-  );
+  )) as UniswapV2RouterContract;
 
   return { uniswapFactoryInstance, uniswapRouterInstance };
 };
@@ -57,42 +68,34 @@ export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
  * 3. Adds liquidity to the pool with the specified amounts
  */
 export const uniswapV2AddLiquidity = async (
-  uniswapRouterInstance: any,
-  uniswapFactoryInstance: any,
-  zrc20: any,
-  wzeta: any,
-  deployer: any,
-  zrc20Amount: any,
-  wzetaAmount: any
+  uniswapRouterInstance: UniswapV2RouterContract,
+  uniswapFactoryInstance: UniswapV2FactoryContract,
+  zrc20: ZRC20Contract,
+  wzeta: ZRC20Contract,
+  deployer: Signer,
+  zrc20Amount: bigint,
+  wzetaAmount: bigint
 ) => {
-  Promise.all([
-    (uniswapFactoryInstance as any).createPair(
-      zrc20.target,
-      wzeta.target,
+  await Promise.all([
+    uniswapFactoryInstance.createPair(zrc20.target, wzeta.target, deployOpts),
+    (zrc20.connect(deployer) as ZRC20Contract).approve(
+      await uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
       deployOpts
     ),
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
+    (wzeta.connect(deployer) as ZRC20Contract).approve(
+      await uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    ),
   ]);
-  await (uniswapRouterInstance as any).addLiquidity(
+  await uniswapRouterInstance.addLiquidity(
     zrc20.target,
     wzeta.target,
     zrc20Amount,
     wzetaAmount,
-    ethers.parseUnits("90", await (zrc20 as any).decimals()),
-    ethers.parseUnits("90", await (wzeta as any).decimals()),
+    ethers.parseUnits("90", await zrc20.decimals()),
+    ethers.parseUnits("90", await wzeta.decimals()),
     await deployer.getAddress(),
     Math.floor(Date.now() / 1000) + 60 * 10,
     deployOpts
