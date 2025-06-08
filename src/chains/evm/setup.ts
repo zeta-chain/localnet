@@ -130,7 +130,6 @@ export const evmSetup = async ({
     [
       deployerAddress,
       deployerAddress,
-      deployerAddress,
       gatewayEVM.target,
       zetachainContracts.coreRegistry.target,
     ]
