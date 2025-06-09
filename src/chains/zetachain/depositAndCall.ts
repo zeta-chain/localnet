@@ -17,11 +17,11 @@ interface ZetachainDepositAndCallParams {
 }
 
 export const zetachainDepositAndCall = async ({
-  args,
-  chainID,
-  foreignCoins,
   provider,
   zetachainContracts,
+  args,
+  foreignCoins,
+  chainID,
 }: ZetachainDepositAndCallParams) => {
   const [sender, receiver, amount, asset, message] = args;
   let foreignCoin;
@@ -32,7 +32,7 @@ export const zetachainDepositAndCall = async ({
       "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
   ) {
     foreignCoin = foreignCoins.find(
-      (coin) =>
+      (coin: ForeignCoin) =>
         ((coin.coin_type === "Gas" || coin.coin_type === "SUI") &&
           coin.foreign_chain_id === chainID) ||
         (chainID === NetworkID.Sui && coin.symbol === "SUI")
@@ -41,11 +41,12 @@ export const zetachainDepositAndCall = async ({
     // For non-gas Sui tokens, match the full coin type path
     if (chainID === NetworkID.Sui) {
       foreignCoin = foreignCoins.find(
-        (coin) => coin.foreign_chain_id === chainID && coin.asset === asset
+        (coin: ForeignCoin) =>
+          coin.foreign_chain_id === chainID && coin.asset === asset
       );
     } else {
       foreignCoin = foreignCoins.find(
-        (coin) =>
+        (coin: ForeignCoin) =>
           coin.foreign_chain_id === chainID && coin.asset === asset.toString()
       );
     }
@@ -73,35 +74,21 @@ export const zetachainDepositAndCall = async ({
     { chain: NetworkID.ZetaChain }
   );
 
-  try {
-    const connectedContract = zetachainContracts.gatewayZEVM.connect(
+  const tx = await (
+    zetachainContracts.gatewayZEVM.connect(
       zetachainContracts.fungibleModuleSigner
-    ) as GatewayZEVMContract;
-    const tx = await connectedContract.depositAndCall(
-      context,
-      zrc20,
-      amount,
-      receiver,
-      message,
-      {
-        gasLimit: 1_500_000,
-      }
-    );
-    await tx.wait();
-
-    const logs = await provider.getLogs({
-      address: receiver,
-      fromBlock: "latest",
-    });
-    logs.forEach((data) => {
-      logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
-        chain: NetworkID.ZetaChain,
-      });
-    });
-  } catch (error) {
-    logger.error(`Error executing depositAndCall: ${String(error)}`, {
+    ) as GatewayZEVMContract
+  ).depositAndCall(context, zrc20, amount, receiver, message, {
+    gasLimit: 1_500_000,
+  });
+  await tx.wait();
+  const logs = await provider.getLogs({
+    address: receiver,
+    fromBlock: "latest",
+  });
+  logs.forEach((data) => {
+    logger.info(`Event from onCall: ${JSON.stringify(data)}`, {
       chain: NetworkID.ZetaChain,
     });
-    throw error;
-  }
+  });
 };
