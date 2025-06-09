@@ -5,6 +5,7 @@ import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
+import { connectorWithdrawAndCall } from "../evm/connectorWithdrawAndCall";
 import { evmCustodyWithdrawAndCall } from "../evm/custodyWithdrawAndCall";
 import { evmExecute } from "../evm/execute";
 import { solanaExecute } from "../solana/execute";
@@ -21,7 +22,7 @@ export const zetachainWithdrawAndCall = async ({
     deployer,
     tss,
     provider,
-    zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
+    zetachainContracts: { fungibleModuleSigner, gatewayZEVM, wzeta },
   } = contracts;
 
   logger.info("Gateway: 'WithdrawnAndCalled' event emitted", {
@@ -38,7 +39,7 @@ export const zetachainWithdrawAndCall = async ({
 
   const [
     sender,
-    ,
+    chainId,
     receiver,
     zrc20,
     amount,
@@ -49,19 +50,25 @@ export const zetachainWithdrawAndCall = async ({
     revertOptions,
   ] = args;
   const isArbitraryCall = callOptions[1];
+  const isZeta = zrc20 === wzeta.target;
+  let chainID = chainId.toString();
+  if (!isZeta) {
+    chainID = foreignCoins.find(
+      (coin: any) => coin.zrc20_contract_address === zrc20
+    )?.foreign_chain_id;
+  }
 
-  const chainID = foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
-  )?.foreign_chain_id;
-
-  const asset = foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
-  ).asset;
+  const asset =
+    foreignCoins.find((coin: any) => coin.zrc20_contract_address === zrc20)
+      ?.asset || (isZeta ? "ZETA" : null);
 
   try {
     (tss as NonceManager).reset();
-    const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
-    const coinType = await zrc20Contract.COIN_TYPE();
+    let coinType;
+    if (!isZeta) {
+      const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+      coinType = await zrc20Contract.COIN_TYPE();
+    }
     const isGasToken = coinType === 1n;
 
     switch (chainID) {
@@ -113,12 +120,23 @@ export const zetachainWithdrawAndCall = async ({
               ? contracts.ethereumContracts
               : contracts.bnbContracts;
 
-          await evmCustodyWithdrawAndCall({
-            args,
-            evmContracts,
-            foreignCoins,
-            tss,
-          });
+          if (isZeta) {
+            await connectorWithdrawAndCall({
+              args,
+              chainID,
+              evmContracts,
+              tss,
+            });
+          }
+
+          if (coinType === 2n) {
+            await evmCustodyWithdrawAndCall({
+              args,
+              evmContracts,
+              foreignCoins,
+              tss,
+            });
+          }
         }
       }
     }

@@ -4,6 +4,7 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
+import { zetachainDepositAndCallZeta } from "../zetachain/depositAndCallZeta";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import { evmOnRevert } from "./onRevert";
@@ -18,6 +19,7 @@ export const evmDepositAndCall = async ({
   zetachainContracts,
   gatewayEVM,
   tss,
+  wzeta,
   custody,
 }: any) => {
   logger.info("Gateway: DepositedAndCalled event emitted", { chain: chainID });
@@ -31,13 +33,14 @@ export const evmDepositAndCall = async ({
   }
 
   const [sender, , amount, asset, , revertOptions] = args;
-
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find(
       (coin: any) =>
         coin.coin_type === "Gas" && coin.foreign_chain_id === chainID
     );
+  } else if (asset === wzeta.target) {
+    foreignCoin = wzeta.target;
   } else {
     foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
   }
@@ -50,13 +53,21 @@ export const evmDepositAndCall = async ({
   }
 
   try {
-    await zetachainDepositAndCall({
-      args,
-      chainID,
-      foreignCoins,
-      provider,
-      zetachainContracts,
-    });
+    if (foreignCoin === wzeta.target) {
+      await zetachainDepositAndCallZeta({
+        args,
+        provider,
+        zetachainContracts,
+      });
+    } else {
+      await zetachainDepositAndCall({
+        args,
+        chainID,
+        foreignCoins,
+        provider,
+        zetachainContracts,
+      });
+    }
   } catch (err: any) {
     if (exitOnError) {
       throw new Error(err);

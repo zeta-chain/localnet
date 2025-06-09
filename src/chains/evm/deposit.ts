@@ -6,6 +6,7 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDeposit } from "../zetachain/deposit";
+import { zetachainDepositZeta } from "../zetachain/depositZeta";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { evmOnRevert } from "./onRevert";
 
@@ -19,6 +20,7 @@ export const evmDeposit = async ({
   tss,
   zetachainContracts,
   chainID,
+  wzeta,
   exitOnError = false,
 }: any) => {
   logger.info("Gateway: 'Deposited' event emitted", { chain: chainID });
@@ -35,6 +37,8 @@ export const evmDeposit = async ({
   let foreignCoin;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin: any) => coin.coin_type === "Gas");
+  } else if (asset === wzeta.target) {
+    foreignCoin = wzeta.target;
   } else {
     foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
   }
@@ -46,15 +50,22 @@ export const evmDeposit = async ({
     return;
   }
 
-  const zrc20 = foreignCoin.zrc20_contract_address;
   try {
-    await zetachainDeposit({
-      args,
-      chainID,
-      foreignCoins,
-      zetachainContracts,
-    });
+    if (foreignCoin === wzeta.target) {
+      await zetachainDepositZeta({
+        args,
+        zetachainContracts,
+      });
+    } else {
+      await zetachainDeposit({
+        args,
+        chainID,
+        foreignCoins,
+        zetachainContracts,
+      });
+    }
   } catch (err: any) {
+    const zrc20 = foreignCoin.zrc20_contract_address;
     if (exitOnError) {
       throw new Error(err);
     }
