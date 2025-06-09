@@ -45,12 +45,14 @@ export const getLocalnetConfig = () => {
   try {
     const configPath = path.join(process.cwd(), "localnet.json");
     if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      const config = JSON.parse(fs.readFileSync(configPath, "utf-8")) as {
+        addresses: { address: string; chain: string; type: string }[];
+      };
       const gatewayObjectId = config.addresses.find(
-        (addr: any) => addr.chain === "sui" && addr.type === "gatewayObjectId"
+        (addr) => addr.chain === "sui" && addr.type === "gatewayObjectId"
       )?.address;
       const packageId = config.addresses.find(
-        (addr: any) => addr.chain === "sui" && addr.type === "gatewayPackageId"
+        (addr) => addr.chain === "sui" && addr.type === "gatewayPackageId"
       )?.address;
       return { gatewayObjectId, packageId };
     }

@@ -2,6 +2,9 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { ZetachainContracts } from "../../types/contracts";
+import { ExecuteArgs, ExecuteArgsSchema } from "../../types/eventArgs";
+import { ForeignCoin } from "../../types/foreignCoins";
 import { isRegistryInitComplete } from "../../types/registryState";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainExecute } from "../zetachain/execute";
@@ -15,8 +18,16 @@ export const evmCall = async ({
   deployer,
   foreignCoins,
   exitOnError = false,
-}: any) => {
-  if (isRegistryInitComplete() && !isRegisteringGatewaysActive()) {
+}: {
+  args: ExecuteArgs;
+  chainID: string;
+  deployer: ethers.NonceManager;
+  exitOnError?: boolean;
+  foreignCoins: ForeignCoin[];
+  provider: ethers.Provider;
+  zetachainContracts: ZetachainContracts;
+}) => {
+  if (isRegistryInitComplete()) {
     logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   }
 
@@ -28,14 +39,16 @@ export const evmCall = async ({
     return;
   }
 
-  const sender = args[0];
-  const receiver = args[1];
+  const validatedArgs = ExecuteArgsSchema.parse(args);
+
+  const [sender, receiver, , revertOptions] = validatedArgs;
+
   logger.info(`Processing Called event from ${sender} to ${receiver}`, {
     chain: chainID,
   });
 
   try {
-    zetachainExecute({
+    await zetachainExecute({
       args,
       chainID,
       deployer,
@@ -44,27 +57,26 @@ export const evmCall = async ({
       provider,
       zetachainContracts,
     });
-  } catch (err: any) {
+  } catch (err) {
     if (exitOnError) {
-      throw new Error(err);
+      throw new Error(String(err));
     }
-    logger.error(`Error executing onCall: ${err}`, {
+    logger.error(`Error executing onCall: ${String(err)}`, {
       chain: NetworkID.ZetaChain,
     });
     // No asset calls don't support reverts, so aborting
-    const revertOptions = args[5];
-    const abortAddress = revertOptions[2];
-    const revertMessage = revertOptions[3];
+    const [, , abortAddress, revertMessage] = revertOptions;
+
     return await zetachainOnAbort({
-      abortAddress: abortAddress,
-      amount: 0,
+      abortAddress,
+      amount: 0n,
       asset: ethers.ZeroAddress,
       chainID,
       fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
       gatewayZEVM: zetachainContracts.gatewayZEVM,
       outgoing: false,
       provider,
-      revertMessage: revertMessage,
+      revertMessage,
       sender,
     });
   }

@@ -1,10 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import {
-  getAssociatedTokenAddress,
-  getOrCreateAssociatedTokenAccount,
-} from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import bs58 from "bs58";
+import { Wallet } from "@coral-xyz/anchor";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { keccak256 } from "ethereumjs-util";
 import { AbiCoder, ethers } from "ethers";
 
@@ -35,7 +31,7 @@ export const solanaExecute = async ({
     const connection = gatewayProgram.provider.connection;
     const provider = new anchor.AnchorProvider(
       connection,
-      new anchor.Wallet(payer),
+      new Wallet(payer),
       {}
     );
     anchor.setProvider(provider);
@@ -44,9 +40,15 @@ export const solanaExecute = async ({
       [Buffer.from("meta", "utf-8")],
       gatewayProgram.programId
     );
-    const pdaAccountData = await (gatewayProgram.account as any).pda.fetch(
-      pdaAccount
-    );
+    const pdaAccountData = await (
+      gatewayProgram.account as unknown as {
+        pda: {
+          fetch: (
+            pda: anchor.web3.PublicKey
+          ) => Promise<{ chainId: string; nonce: number }>;
+        };
+      }
+    ).pda.fetch(pdaAccount);
     const [connectedPdaAccount] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("connected", "utf-8")],
       connectedProgramId
@@ -60,19 +62,22 @@ export const solanaExecute = async ({
     // probably as we introduce more chains its better to deliver raw strings to localnet and parse specific to chain here
 
     // toolkit additionally is doing abi.encode on provided bytes, so first decode that and then decode accounts and data
-    const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
+    const decodedBytes = AbiCoder.defaultAbiCoder().decode(
+      ["bytes"],
+      message
+    ) as unknown as [string];
     const decodedAccountsAndData = AbiCoder.defaultAbiCoder().decode(
       [
         "tuple(tuple(bytes32 publicKey, bool isWritable)[] accounts, bytes data)",
       ],
       decodedBytes[0]
-    )[0];
+    )[0] as unknown as { 0: [string, boolean][]; 1: string };
 
     const accounts = decodedAccountsAndData[0];
     const data = decodedAccountsAndData[1];
 
     const remainingAccounts: anchor.web3.AccountMeta[] = [];
-    for (let acc of accounts) {
+    for (const acc of accounts) {
       // this is encoded as { pubkey, isWritable }
       remainingAccounts.push({
         isSigner: false,
@@ -220,7 +225,7 @@ export const solanaExecute = async ({
       });
     }
   } catch (err) {
-    logger.error(`Error executing Gateway execute: ${err}`, {
+    logger.error(`Error executing Gateway execute: ${String(err)}`, {
       chain: NetworkID.Solana,
     });
   }

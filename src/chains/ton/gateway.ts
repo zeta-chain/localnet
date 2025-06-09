@@ -3,7 +3,7 @@ import * as ton from "@ton/ton";
 import gatewayJson from "@zetachain/protocol-contracts-ton/build/Gateway.compiled.json";
 import * as types from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers";
-import axios from "axios";
+import { isAxiosError } from "axios";
 import * as ethers from "ethers";
 import { HDNodeWallet, NonceManager } from "ethers";
 
@@ -21,10 +21,10 @@ const donation = 10n * oneTon;
  * @param deployer - a deployer contract instance
  * @returns a deployed Gateway
  */
-export async function provisionGateway(
+export const provisionGateway = async (
   deployer: Deployer,
   tssAddress: string
-): Promise<OpenedContract<Gateway>> {
+): Promise<OpenedContract<Gateway>> => {
   // 1. Construct Gateway
   const config: types.GatewayConfig = {
     authority: deployer.address(),
@@ -65,7 +65,7 @@ export async function provisionGateway(
   }, 10);
 
   return gateway;
-}
+};
 
 // Example of a compiled TON program:
 // {
@@ -73,8 +73,8 @@ export async function provisionGateway(
 //   "hashBase64": "..."
 //   "hex": "..."
 // }
-function getCode(): Cell {
-  const buf = Buffer.from(gatewayJson.hex as string, "hex");
+const getCode = (): Cell => {
+  const buf = Buffer.from(gatewayJson.hex, "hex");
 
   const cells = Cell.fromBoc(buf);
   if (cells.length !== 1) {
@@ -82,16 +82,16 @@ function getCode(): Cell {
   }
 
   return cells[0];
-}
+};
 
-export async function observerInbounds(
+export const observerInbounds = async (
   client: ton.TonClient,
   gateway: OpenedContract<Gateway>,
   onInbound: (inbound: Inbound) => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const latestTx = async () => {
     const state = await client.getContractState(gateway.address);
-    let { lt, hash } = state.lastTransaction!;
+    const { lt, hash } = state.lastTransaction!;
 
     return { hash, lt };
   };
@@ -99,6 +99,7 @@ export async function observerInbounds(
   let { lt: oldLT, hash: oldHash } = await latestTx();
   console.log("TON: starting observer with tx", oldLT, oldHash);
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     let lt = "";
     let hash = "";
@@ -142,7 +143,7 @@ export async function observerInbounds(
       }
 
       try {
-        observeInbound(tx, onInbound);
+        await observeInbound(tx, onInbound);
       } catch (e) {
         console.error(`TON: error processing tx ${lt}:${hash}; skipped`, e);
       }
@@ -151,7 +152,7 @@ export async function observerInbounds(
     oldLT = lt;
     oldHash = hash;
   }
-}
+};
 
 export interface Inbound {
   amount: bigint;
@@ -165,10 +166,10 @@ export interface Inbound {
   sender: ton.Address;
 }
 
-async function observeInbound(
+const observeInbound = async (
   tx: ton.Transaction,
   onInbound: (inbound: Inbound) => Promise<void>
-): Promise<void> {
+): Promise<void> => {
   const hash = hashToString(tx.hash());
   const lt = ltToString(tx.lt);
 
@@ -182,7 +183,7 @@ async function observeInbound(
     return;
   }
 
-  const body = tx.inMessage.body!.beginParse();
+  const body = tx.inMessage.body.beginParse();
   if (body.remainingBits < 32 + 64) {
     console.log(`TON: not enough bits to read opCode (tx ${lt}:${hash})`);
     return;
@@ -214,7 +215,7 @@ async function observeInbound(
     return;
   }
 
-  const tonSender = info.src as ton.Address;
+  const tonSender = info.src;
   const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
   const depositLog = types.depositLogFromCell(logMessage.body);
   const depositAmount = depositLog.amount;
@@ -237,22 +238,22 @@ async function observeInbound(
   };
 
   await onInbound(inbound);
-}
+};
 
 export interface WithdrawArgs {
   amount: bigint;
   gateway: OpenedContract<Gateway>;
   recipient: ton.Address;
-  tss: any;
+  tss: NonceManager;
 }
 
-export async function withdrawTON(
+export const withdrawTON = async (
   client: ton.TonClient,
   gateway: OpenedContract<Gateway>,
   tss: ethers.NonceManager,
   recipient: ton.Address,
   amount: bigint
-) {
+) => {
   logger.info(
     `Executing withdrawal to ${recipient.toRawString()}, amount: ${amount.toString()}`,
     { chain: NetworkID.TON }
@@ -268,27 +269,25 @@ export async function withdrawTON(
       types.messageExternal(signature, body)
     );
   } catch (err) {
-    if (axios.isAxiosError(err)) {
+    if (isAxiosError(err)) {
       console.log("Axios error", err.response?.data);
     }
 
     throw err;
   }
-}
+};
 
-function ltToString(lt: bigint): string {
-  return lt.toString();
-}
+const ltToString = (lt: bigint): string => lt.toString();
 
-function hashToString(hash: Buffer | bigint): string {
+const hashToString = (hash: Buffer | bigint): string => {
   if (typeof hash === "bigint") {
     return hash.toString(16);
   }
 
   return hash.toString("hex");
-}
+};
 
-function ecdsaSignCell(signer: NonceManager, cell: Cell): ton.Slice {
+const ecdsaSignCell = (signer: NonceManager, cell: Cell): ton.Slice => {
   const wallet = signer.signer as HDNodeWallet;
   const hash = cell.hash();
   const sig = wallet.signingKey.sign(hash);
@@ -305,4 +304,4 @@ function ecdsaSignCell(signer: NonceManager, cell: Cell): ton.Slice {
     .storeUint(r, 256)
     .storeUint(s, 256)
     .asSlice();
-}
+};

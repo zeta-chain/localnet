@@ -1,8 +1,10 @@
+/* eslint-disable */
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
-import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { LocalnetContracts } from "../../types/contracts";
+import { CallArgs } from "../../types/eventArgs";
 import { isRegistryInitComplete } from "../../types/registryState";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { evmExecute } from "../evm/execute";
@@ -13,15 +15,15 @@ export const zetachainCall = async ({
   contracts,
   exitOnError = false,
 }: {
-  args: any;
-  contracts: any;
+  args: CallArgs;
+  contracts: LocalnetContracts;
   exitOnError: boolean;
 }) => {
   const {
     provider,
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
-  if (isRegistryInitComplete() && !isRegisteringGatewaysActive()) {
+  if (isRegistryInitComplete()) {
     logger.info("Gateway: 'Called' event emitted", {
       chain: NetworkID.ZetaChain,
     });
@@ -37,7 +39,7 @@ export const zetachainCall = async ({
 
   const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
   const chainID = contracts.foreignCoins.find(
-    (coin: any) => coin.zrc20_contract_address === zrc20
+    (coin) => coin.zrc20_contract_address === zrc20
   )?.foreign_chain_id;
 
   try {
@@ -50,17 +52,15 @@ export const zetachainCall = async ({
       sender,
       zrc20,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (exitOnError) {
-      throw new Error(err);
+      throw new Error(String(err));
     }
     logger.error(`Error executing a contract: ${err}`, { chain: chainID });
     return await zetachainOnRevert({
-      amount: 0,
+      amount: "0",
       asset: ethers.ZeroAddress,
-      chainID,
-      deployOpts,
-      err,
+      chainID: chainID as string,
       fungibleModuleSigner,
       gatewayZEVM,
       outgoing: true,

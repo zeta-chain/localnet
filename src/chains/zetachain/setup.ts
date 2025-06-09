@@ -1,20 +1,26 @@
 import * as CoreRegistry from "@zetachain/protocol-contracts/abi/CoreRegistry.sol/CoreRegistry.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayZEVM from "@zetachain/protocol-contracts/abi/GatewayZEVM.sol/GatewayZEVM.json";
-import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
+import * as SystemContractABI from "@zetachain/protocol-contracts/abi/SystemContractMock.sol/SystemContractMock.json";
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
-import { prepareUniswapV3 } from "../../tokens/uniswapV3";
+import {
+  CoreRegistryContract,
+  GatewayZEVMContract,
+  SystemContract,
+  ZetachainContracts,
+  ZRC20Contract,
+} from "../../types/contracts";
 
 export const zetachainSetup = async (
   deployer: Signer,
   tss: Signer,
-  provider: any
-) => {
+  provider: ethers.JsonRpcProvider
+): Promise<ZetachainContracts> => {
   const [, , deployerAddress] = await Promise.all([
     provider.send("anvil_impersonateAccount", [FUNGIBLE_MODULE_ADDRESS]),
     provider.send("anvil_setBalance", [
@@ -29,7 +35,7 @@ export const zetachainSetup = async (
     WETH9.bytecode,
     deployer
   );
-  const wzeta = await weth9Factory.deploy(deployOpts);
+  const wzeta = (await weth9Factory.deploy(deployOpts)) as ZRC20Contract;
 
   // Setup both Uniswap V2 and V3
   const v2Setup = await prepareUniswapV2(deployer, wzeta);
@@ -51,12 +57,12 @@ export const zetachainSetup = async (
   );
 
   const systemContractFactory = new ethers.ContractFactory(
-    SystemContract.abi,
-    SystemContract.bytecode,
+    SystemContractABI.abi,
+    SystemContractABI.bytecode,
     deployer
   );
 
-  const systemContract: any = await systemContractFactory.deploy(
+  const systemContract = await systemContractFactory.deploy(
     wzeta.target,
     uniswapFactoryInstanceAddress,
     uniswapRouterInstanceAddress,
@@ -79,17 +85,17 @@ export const zetachainSetup = async (
     [wzeta.target, deployerAddress]
   );
 
-  const proxyZEVM = (await proxyFactory.deploy(
+  const proxyZEVM = await proxyFactory.deploy(
     gatewayZEVMImpl.target,
     gatewayZEVMInitData,
     deployOpts
-  )) as any;
+  );
 
   const gatewayZEVM = new ethers.Contract(
     proxyZEVM.target,
     GatewayZEVM.abi,
     deployer
-  );
+  ) as GatewayZEVMContract;
 
   const coreRegistryFactory = new ethers.ContractFactory(
     CoreRegistry.abi,
@@ -107,40 +113,46 @@ export const zetachainSetup = async (
     [deployerAddress, deployerAddress, gatewayZEVM.target]
   );
 
-  const proxyCoreRegistry = (await proxyFactory.deploy(
+  const proxyCoreRegistry = await proxyFactory.deploy(
     coreRegistryImpl.target,
     coreRegistryInitData,
     deployOpts
-  )) as any;
+  );
 
   const coreRegistry = new ethers.Contract(
     proxyCoreRegistry.target,
     CoreRegistry.abi,
     deployer
-  );
+  ) as CoreRegistryContract;
 
   // Execute transactions sequentially to avoid nonce conflicts
-  await (wzeta as any)
-    .connect(fungibleModuleSigner)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
+  await (wzeta.connect(fungibleModuleSigner) as ZRC20Contract).deposit({
+    ...deployOpts,
+    value: ethers.parseEther("10"),
+  });
 
-  await (wzeta as any)
-    .connect(fungibleModuleSigner)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
+  await (wzeta.connect(fungibleModuleSigner) as ZRC20Contract).approve(
+    String(gatewayZEVM.target),
+    ethers.parseEther("10"),
+    deployOpts
+  );
 
-  await (wzeta as any)
-    .connect(deployer)
-    .deposit({ ...deployOpts, value: ethers.parseEther("10") });
+  await (wzeta.connect(deployer) as ZRC20Contract).deposit({
+    ...deployOpts,
+    value: ethers.parseEther("10"),
+  });
 
-  await (wzeta as any)
-    .connect(deployer)
-    .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
+  await (wzeta.connect(deployer) as ZRC20Contract).approve(
+    String(gatewayZEVM.target),
+    ethers.parseEther("10"),
+    deployOpts
+  );
 
   return {
     coreRegistry,
     fungibleModuleSigner,
     gatewayZEVM,
-    systemContract,
+    systemContract: systemContract as SystemContract,
     tss,
     uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,
     uniswapRouterInstance: v2Setup.uniswapRouterInstance,
