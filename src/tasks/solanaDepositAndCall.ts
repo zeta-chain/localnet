@@ -113,7 +113,7 @@ const solanaDepositAndCall = async (args: {
     await gatewayProgram.methods
       .depositAndCall(
         new anchor.BN(ethers.parseUnits(args.amount, 9).toString()),
-        ethers.getBytes(args.receiver),
+        receiverBytes,
         Buffer.from(encodedParameters)
       )
       .accounts({})
