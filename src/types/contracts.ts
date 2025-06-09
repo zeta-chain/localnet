@@ -284,13 +284,23 @@ export type UniswapV3PositionManagerContract = ethers.Contract & {
   positions: (tokenId: ethers.BigNumberish) => Promise<unknown[]>;
 };
 
+interface UniswapV3Slot0 {
+  feeProtocol: number;
+  observationCardinality: number;
+  observationCardinalityNext: number;
+  observationIndex: number;
+  sqrtPriceX96: bigint;
+  tick: number;
+  unlocked: boolean;
+}
+
 export type UniswapV3PoolContract = ethers.Contract & {
   getAddress: () => Promise<string>;
   initialize: (
     sqrtPriceX96: ethers.BigNumberish
   ) => Promise<ContractTransactionResponse>;
   liquidity: () => Promise<bigint>;
-  slot0: () => Promise<unknown[]>;
+  slot0: () => Promise<UniswapV3Slot0>;
   token0: () => Promise<string>;
   token1: () => Promise<string>;
 };
