@@ -1,9 +1,10 @@
+/* eslint-disable */
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { LocalnetContracts } from "../../types/contracts";
-import { CallArgs, CallArgsSchema } from "../../types/eventArgs";
+import { CallArgs } from "../../types/eventArgs";
 import { isRegistryInitComplete } from "../../types/registryState";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { evmExecute } from "../evm/execute";
@@ -36,19 +37,10 @@ export const zetachainCall = async ({
     return;
   }
 
-  // Validate the args using the schema
-  const validatedArgs = CallArgsSchema.parse(args);
-  const [sender, zrc20, receiver, message, callOptions, revertOptions] =
-    validatedArgs;
-  const foreignCoin = contracts.foreignCoins.find(
+  const [sender, zrc20, receiver, message, callOptions, revertOptions] = args;
+  const chainID = contracts.foreignCoins.find(
     (coin) => coin.zrc20_contract_address === zrc20
-  );
-
-  if (!foreignCoin) {
-    throw new Error(`Foreign coin not found for zrc20: ${zrc20}`);
-  }
-
-  const chainID = foreignCoin.foreign_chain_id;
+  )?.foreign_chain_id;
 
   try {
     await evmExecute({
@@ -64,13 +56,11 @@ export const zetachainCall = async ({
     if (exitOnError) {
       throw new Error(String(err));
     }
-    logger.error(`Error executing a contract: ${String(err)}`, {
-      chain: chainID,
-    });
+    logger.error(`Error executing a contract: ${err}`, { chain: chainID });
     return await zetachainOnRevert({
       amount: "0",
       asset: ethers.ZeroAddress,
-      chainID,
+      chainID: chainID as string,
       fungibleModuleSigner,
       gatewayZEVM,
       outgoing: true,
