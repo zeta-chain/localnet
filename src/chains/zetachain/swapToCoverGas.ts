@@ -55,7 +55,7 @@ export const zetachainSwapToCoverGas = async ({
     logger.error(`Foreign coin not found for asset: ${asset}`, {
       chain: NetworkID.ZetaChain,
     });
-    return { isGas: false, revertGasFee: 0n, token: null };
+    return { isGas: false, revertGasFee: 0, token: null };
   }
 
   const zrc20 = foreignCoin.zrc20_contract_address;
