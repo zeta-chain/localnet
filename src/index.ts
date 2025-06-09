@@ -269,7 +269,10 @@ export const initLocalnet = async ({
       (...args: CallArgs) =>
         void zetachainCall({ args, contracts, exitOnError }).catch(
           (error: unknown) => {
-            logger.error("Error in Called event handler", { error });
+            logger.error("Error in Called event handler", {
+              chain: "zetachain",
+              error,
+            });
           }
         )
     );
@@ -279,7 +282,10 @@ export const initLocalnet = async ({
       (...args: WithdrawArgs) =>
         void zetachainWithdraw({ args, contracts, exitOnError }).catch(
           (error: unknown) => {
-            logger.error("Error in Withdrawn event handler", { error });
+            logger.error("Error in Withdrawn event handler", {
+              chain: "zetachain",
+              error,
+            });
           }
         )
     );
@@ -290,6 +296,7 @@ export const initLocalnet = async ({
         void zetachainWithdrawAndCall({ args, contracts, exitOnError }).catch(
           (error: unknown) => {
             logger.error("Error in WithdrawnAndCalled event handler", {
+              chain: "zetachain",
               error,
             });
           }
