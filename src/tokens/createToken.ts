@@ -185,7 +185,7 @@ export const createToken = async (
   );
 
   // Execute transactions sequentially to avoid nonce conflicts
-  await zrc20.deposit(
+  await contractCall(zrc20, "deposit")(
     await deployer.getAddress(),
     ethers.parseEther("1000"),
     deployOpts
