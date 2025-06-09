@@ -2,13 +2,7 @@ import * as UniswapV3Factory from "@uniswap/v3-core/artifacts/contracts/UniswapV
 import * as UniswapV3Pool from "@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json";
 import * as NonfungiblePositionManager from "@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json";
 import * as SwapRouter from "@uniswap/v3-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json";
-import {
-  ContractTransactionResponse,
-  ethers,
-  Log,
-  LogDescription,
-  Signer,
-} from "ethers";
+import { ethers, Log, LogDescription, Signer } from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
@@ -16,6 +10,7 @@ import { logger } from "../logger";
 import {
   UniswapV3FactoryContract,
   UniswapV3PoolContract,
+  UniswapV3PositionManagerContract,
   ZRC20Contract,
 } from "../types/contracts";
 import { sleep } from "../utils";
@@ -100,7 +95,7 @@ export const uniswapV3AddLiquidity = async (
   zrc20Amount: bigint,
   wzetaAmount: bigint,
   uniswapV3Factory: ethers.Contract,
-  uniswapV3PositionManager: ethers.Contract
+  uniswapV3PositionManager: UniswapV3PositionManagerContract
 ) => {
   await Promise.all([
     (zrc20.connect(deployer) as ZRC20Contract).approve(
@@ -157,19 +152,7 @@ export const uniswapV3AddLiquidity = async (
       amount0,
       amount1,
       3000,
-      uniswapV3PositionManager as ethers.Contract & {
-        mint: (params: {
-          amount0Desired: bigint;
-          amount0Min: bigint;
-          amount1Desired: bigint;
-          amount1Min: bigint;
-          deadline: number;
-          fee: number;
-          recipient: string;
-          tickLower: number;
-          tickUpper: number;
-        }) => Promise<ContractTransactionResponse>;
-      },
+      uniswapV3PositionManager,
       await deployer.getAddress()
     );
     const receipt = await tx.wait();
@@ -276,19 +259,7 @@ export const addLiquidityV3 = async (
   amount0: bigint,
   amount1: bigint,
   fee: number = 3000,
-  nonfungiblePositionManager: ethers.Contract & {
-    mint: (params: {
-      amount0Desired: bigint;
-      amount0Min: bigint;
-      amount1Desired: bigint;
-      amount1Min: bigint;
-      deadline: number;
-      fee: number;
-      recipient: string;
-      tickLower: number;
-      tickUpper: number;
-    }) => Promise<ContractTransactionResponse>;
-  },
+  nonfungiblePositionManager: UniswapV3PositionManagerContract,
   recipient: string,
   tickLower: number = -887220, // Example tick range for full range
   tickUpper: number = 887220 // Example tick range for full range
