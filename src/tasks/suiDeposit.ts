@@ -21,8 +21,8 @@ const suiDeposit = async (args: {
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 
   const localnetConfig = getLocalnetConfig();
-  const gatewayObjectId = (gateway || localnetConfig.gatewayObjectId) as string;
-  const packageId = (module || localnetConfig.packageId) as string;
+  const gatewayObjectId = gateway || localnetConfig.gatewayObjectId;
+  const packageId = module || localnetConfig.packageId;
 
   if (!gatewayObjectId || !packageId) {
     throw new Error(
