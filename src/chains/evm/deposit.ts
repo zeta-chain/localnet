@@ -6,6 +6,7 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
 import { zetachainDeposit } from "../zetachain/deposit";
+import { zetachainDepositZeta } from "../zetachain/depositZeta";
 import { zetachainOnAbort } from "../zetachain/onAbort";
 import { evmOnRevert } from "./onRevert";
 
@@ -34,12 +35,10 @@ export const evmDeposit = async ({
 
   const [sender, , amount, asset, , revertOptions] = args;
   let foreignCoin;
-  let isZetaDeposit = false;
   if (asset === ethers.ZeroAddress) {
     foreignCoin = foreignCoins.find((coin: any) => coin.coin_type === "Gas");
   } else if (asset === wzeta.target) {
     foreignCoin = wzeta.target;
-    isZetaDeposit = true;
   } else {
     foreignCoin = foreignCoins.find((coin: any) => coin.asset === asset);
   }
@@ -52,13 +51,19 @@ export const evmDeposit = async ({
   }
 
   try {
-    await zetachainDeposit({
-      args,
-      chainID,
-      foreignCoins,
-      isZetaDeposit,
-      zetachainContracts,
-    });
+    if (foreignCoin === wzeta.target) {
+      await zetachainDepositZeta({
+        args,
+        zetachainContracts,
+      });
+    } else {
+      await zetachainDeposit({
+        args,
+        chainID,
+        foreignCoins,
+        zetachainContracts,
+      });
+    }
   } catch (err: any) {
     const zrc20 = foreignCoin.zrc20_contract_address;
     if (exitOnError) {
