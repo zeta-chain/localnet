@@ -1,5 +1,5 @@
-import { SuiClient } from "@mysten/sui/dist/cjs/client";
-import { Keypair } from "@mysten/sui/dist/cjs/cryptography";
+import { SuiClient } from "@mysten/sui/client";
+import { Keypair } from "@mysten/sui/cryptography";
 import { ethers, JsonRpcProvider, NonceManager } from "ethers";
 
 import { NetworkID } from "../../constants";
@@ -41,7 +41,7 @@ export const suiDepositAndCall = async ({
 
   // Find the matching foreign coin based on the coin type from the event
   const matchingCoin = foreignCoins.find(
-    (coin) =>
+    (coin: ForeignCoin) =>
       coin.foreign_chain_id === chainID &&
       ((coin.coin_type === "SUI" && event.coin_type === "0x2::sui::SUI") ||
         coin.asset === event.coin_type)
@@ -58,13 +58,13 @@ export const suiDepositAndCall = async ({
       chain: chainID,
     });
     const message = ethers.hexlify(
-      new Uint8Array(event.payload.split("").map((char) => char.charCodeAt(0)))
+      new Uint8Array(event.payload as unknown as ArrayLike<number>)
     );
     await zetachainDepositAndCall({
       args: [
         event.sender,
         event.receiver,
-        BigInt(event.amount),
+        event.amount,
         asset,
         message,
       ] as unknown as DepositAndCallArgs,
@@ -83,14 +83,15 @@ export const suiDepositAndCall = async ({
       chainID,
       deployer,
       foreignCoins,
-      gasLimit: BigInt(200000),
+      // fungibleModuleSigner,
+      gasLimit: 200000n,
       provider,
       zetachainContracts,
     });
     const revertAmount = BigInt(event.amount) - BigInt(revertGasFee);
     if (revertAmount > 0) {
       await suiWithdraw({
-        amount: String(revertAmount),
+        amount: revertAmount.toString(),
         client,
         gatewayObjectId,
         keypair,
