@@ -49,6 +49,7 @@ export const suiDeposit = async ({
       ],
       chainID,
       foreignCoins,
+      isZetaDeposit: false,
       zetachainContracts,
     });
   } catch (e) {

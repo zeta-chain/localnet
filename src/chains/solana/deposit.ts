@@ -39,6 +39,7 @@ export const solanaDeposit = async ({
       args,
       chainID,
       foreignCoins,
+      isZetaDeposit: false,
       zetachainContracts,
     });
   } catch (err) {

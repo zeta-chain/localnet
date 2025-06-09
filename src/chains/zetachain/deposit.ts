@@ -8,10 +8,23 @@ export const zetachainDeposit = async ({
   zetachainContracts,
   foreignCoins,
   args,
+  isZetaDeposit,
   chainID,
 }: any) => {
   const [, receiver, amount, asset] = args;
   let foreignCoin;
+
+  if (isZetaDeposit) {
+    const tx = await zetachainContracts.gatewayZEVM
+      .connect(zetachainContracts.fungibleModuleSigner)
+      .deposit(amount, receiver);
+    await tx.wait();
+    logger.info(`Deposited ${amount} of WZETA tokens to ${receiver}`, {
+      chain: NetworkID.ZetaChain,
+    });
+    return;
+  }
+
   // Check for both ZeroAddress and the full SUI path
   if (
     asset === ethers.ZeroAddress ||
