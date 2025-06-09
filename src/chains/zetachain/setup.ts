@@ -125,32 +125,25 @@ export const zetachainSetup = async (
     deployer
   ) as CoreRegistryContract;
 
-  const wzetaFungibleModuleSigner = new ethers.Contract(
-    wzeta.target,
-    WETH9.abi,
-    fungibleModuleSigner
-  );
-  const wzetaDeployer = new ethers.Contract(wzeta.target, WETH9.abi, deployer);
-
   // Execute transactions sequentially to avoid nonce conflicts
-  await wzetaFungibleModuleSigner.deposit({
+  await (wzeta.connect(fungibleModuleSigner) as ZRC20Contract).deposit({
     ...deployOpts,
     value: ethers.parseEther("10"),
   });
 
-  await wzetaFungibleModuleSigner.approve(
-    gatewayZEVM.target,
+  await (wzeta.connect(fungibleModuleSigner) as ZRC20Contract).approve(
+    String(gatewayZEVM.target),
     ethers.parseEther("10"),
     deployOpts
   );
 
-  await wzetaDeployer.deposit({
+  await (wzeta.connect(deployer) as ZRC20Contract).deposit({
     ...deployOpts,
     value: ethers.parseEther("10"),
   });
 
-  await wzetaDeployer.approve(
-    gatewayZEVM.target,
+  await (wzeta.connect(deployer) as ZRC20Contract).approve(
+    String(gatewayZEVM.target),
     ethers.parseEther("10"),
     deployOpts
   );
