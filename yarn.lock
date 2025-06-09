@@ -1609,10 +1609,10 @@
   dependencies:
     ethers "^6.13.2"
 
-"@zetachain/protocol-contracts@13.1.0-rc1":
-  version "13.1.0-rc1"
-  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-13.1.0-rc1.tgz#00940582a317078774a459d034d31427f4c6a907"
-  integrity sha512-zVyFz6hq3LhQqLq6VIsMb/WxKzEJH8mwbtoetskW1PKjOQHrWjqwUuwdDa7ai5wSQJwJwwmcKvJqTEGcwVe3yg==
+"@zetachain/protocol-contracts@13.1.0-rc2":
+  version "13.1.0-rc2"
+  resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-13.1.0-rc2.tgz#f8de4ceafdc3968b860579a5f082de5609137c72"
+  integrity sha512-EArk6pTLhV1xG8Yy9sYceBhS3/MpIFiwqyVJq31vIv2NrcG0OvbweMRiRVRMC7RbKb4wwR/9eEKqF4AdaQzKsA==
   dependencies:
     "@openzeppelin/contracts" "^5.0.2"
     "@openzeppelin/contracts-upgradeable" "^5.0.2"
