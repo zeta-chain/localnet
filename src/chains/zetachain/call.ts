@@ -22,7 +22,7 @@ export const zetachainCall = async ({
     provider,
     zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
-  if (isRegistryInitComplete() && !isRegisteringGatewaysActive()) {
+  if (isRegistryInitComplete()) {
     logger.info("Gateway: 'Called' event emitted", {
       chain: NetworkID.ZetaChain,
     });

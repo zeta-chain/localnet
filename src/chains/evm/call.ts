@@ -27,7 +27,7 @@ export const evmCall = async ({
   provider: ethers.Provider;
   zetachainContracts: ZetachainContracts;
 }) => {
-  if (isRegistryInitComplete() && !isRegisteringGatewaysActive()) {
+  if (isRegistryInitComplete()) {
     logger.info("Gateway: 'Called' event emitted", { chain: chainID });
   }
 
