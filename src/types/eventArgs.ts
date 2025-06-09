@@ -101,6 +101,22 @@ export const TSSTransferArgsSchema = z.tuple([
   RevertOptionsSchema, // revertOptions
 ]);
 
+// Schema for depositZeta event args: [placeholder, receiver, amount]
+export const DepositZetaArgsSchema = z.tuple([
+  z.unknown(), // placeholder
+  z.string(), // receiver
+  z.union([z.string(), z.number(), z.bigint()]), // amount
+]);
+
+// Schema for depositAndCallZeta event args: [sender, receiver, amount, placeholder, message]
+export const DepositAndCallZetaArgsSchema = z.tuple([
+  z.string(), // sender
+  z.string(), // receiver
+  z.union([z.string(), z.number(), z.bigint()]), // amount
+  z.unknown(), // placeholder
+  z.string(), // message
+]);
+
 // Export types
 export type RevertOptions = z.infer<typeof RevertOptionsSchema>;
 export type CallOptions = z.infer<typeof CallOptionsSchema>;
@@ -111,3 +127,7 @@ export type WithdrawArgs = z.infer<typeof WithdrawArgsSchema>;
 export type DepositAndCallArgs = z.infer<typeof DepositAndCallArgsSchema>;
 export type WithdrawAndCallArgs = z.infer<typeof WithdrawAndCallArgsSchema>;
 export type TSSTransferArgs = z.infer<typeof TSSTransferArgsSchema>;
+export type DepositZetaArgs = z.infer<typeof DepositZetaArgsSchema>;
+export type DepositAndCallZetaArgs = z.infer<
+  typeof DepositAndCallZetaArgsSchema
+>;
