@@ -72,7 +72,12 @@ export const WithdrawAndCallArgsSchema = z.tuple([
   z.unknown(), // placeholder
   z.string(), // receiver
   z.string(), // zrc20
-  z.union([z.string(), z.number(), z.bigint()]), // amount
+  z.preprocess((val) => {
+    if (typeof val === "bigint") return val;
+    if (typeof val === "string") return BigInt(val);
+    if (typeof val === "number") return BigInt(val);
+    throw new Error(`Cannot convert ${typeof val} to bigint`);
+  }, z.bigint()), // amount - always coerced to bigint
   z.unknown(), // placeholder
   z.unknown(), // placeholder
   z.string(), // message

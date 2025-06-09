@@ -69,7 +69,7 @@ export const zetachainWithdrawAndCall = async ({
       // solana
       case NetworkID.Solana: {
         await solanaExecute({
-          amount: BigInt(amount.toString()),
+          amount,
           decimals: 9,
           message: Buffer.from(message.slice(2), "hex"),
           mint: asset,
@@ -103,7 +103,7 @@ export const zetachainWithdrawAndCall = async ({
         }
         if (isGasToken) {
           await evmExecute({
-            amount: BigInt(amount.toString()),
+            amount,
             callOptions,
             contracts,
             message,
@@ -149,7 +149,7 @@ export const zetachainWithdrawAndCall = async ({
     ];
 
     return await zetachainOnRevert({
-      amount: String(amount),
+      amount: amount.toString(),
       asset: zrc20,
       chainID,
       fungibleModuleSigner,

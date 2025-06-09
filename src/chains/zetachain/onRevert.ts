@@ -8,17 +8,17 @@ import { contractCall } from "../../utils/contracts";
 import { zetachainOnAbort } from "./onAbort";
 
 export const zetachainOnRevert = async ({
-  revertOptions,
-  asset,
   amount,
-  sender,
+  asset,
   chainID,
-  gatewayZEVM,
-  provider,
-  outgoing,
   fungibleModuleSigner,
+  gatewayZEVM,
+  outgoing,
+  provider,
+  revertOptions,
+  sender,
 }: {
-  amount: string;
+  amount: ethers.BigNumberish;
   asset: string | Addressable;
   chainID: (typeof NetworkID)[keyof typeof NetworkID];
   fungibleModuleSigner: ethers.Signer;
@@ -28,6 +28,7 @@ export const zetachainOnRevert = async ({
   revertOptions: RevertOptions;
   sender: string;
 }) => {
+  const amountBigInt = BigInt(amount);
   const [revertAddress, callOnRevert, abortAddress, revertMessage] =
     revertOptions;
   const revertContext = {
@@ -86,7 +87,7 @@ export const zetachainOnRevert = async ({
       logger.error(error, { chain: NetworkID.ZetaChain });
       await zetachainOnAbort({
         abortAddress,
-        amount: Number(amount),
+        amount: amountBigInt,
         asset,
         chainID,
         fungibleModuleSigner,
@@ -121,7 +122,7 @@ export const zetachainOnRevert = async ({
       );
       await zetachainOnAbort({
         abortAddress,
-        amount: Number(amount),
+        amount: amountBigInt,
         asset,
         chainID,
         fungibleModuleSigner,

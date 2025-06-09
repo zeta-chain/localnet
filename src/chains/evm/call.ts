@@ -69,7 +69,7 @@ export const evmCall = async ({
 
     return await zetachainOnAbort({
       abortAddress,
-      amount: 0,
+      amount: 0n,
       asset: ethers.ZeroAddress,
       chainID,
       fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,

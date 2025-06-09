@@ -18,7 +18,7 @@ export const zetachainOnAbort = async ({
   gatewayZEVM,
 }: {
   abortAddress: string;
-  amount: number;
+  amount: bigint;
   asset: string | Addressable;
   chainID: (typeof NetworkID)[keyof typeof NetworkID];
   fungibleModuleSigner: ethers.Signer;
@@ -37,7 +37,7 @@ export const zetachainOnAbort = async ({
   try {
     if (abortAddress === ethers.ZeroAddress) {
       logger.error(`abortAddress is zero`, { chain: NetworkID.ZetaChain });
-      if (asset !== ethers.ZeroAddress && amount > 0) {
+      if (asset !== ethers.ZeroAddress && amount > 0n) {
         logger.error(
           `Transferring ${amount} of ${String(
             asset
@@ -57,7 +57,7 @@ export const zetachainOnAbort = async ({
       logger.info(`Transferring tokens to abortAddress ${abortAddress}`, {
         chain: NetworkID.ZetaChain,
       });
-      if (asset !== ethers.ZeroAddress && amount > 0) {
+      if (asset !== ethers.ZeroAddress && amount > 0n) {
         const transferTx = (await contractCall(assetContract, "transfer")(
           abortAddress,
           amount
