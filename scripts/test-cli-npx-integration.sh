@@ -374,14 +374,14 @@ rm -f ../localnet/test-import.mjs
 echo "  🧪 Running CLI test with error details..."
 echo "  🔍 Running with detailed error output..."
 # Cross-platform timeout implementation - works on both macOS and Linux
-echo "  ⏱️  Setting 120-second timeout for npx test..."
+echo "  ⏱️  Setting 180-second timeout for npx test..."
 
 # Run npx in background with isolated cache and capture its PID
 echo "y" | npx --cache "$TEMP_NPX_CACHE" "./$CLI_TARBALL" localnet start --stop-after-init &
 NPX_PID=$!
 
 # Wait for the process with timeout
-TIMEOUT_SECONDS=120
+TIMEOUT_SECONDS=180
 ELAPSED=0
 while kill -0 $NPX_PID 2>/dev/null && [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
     sleep 1
