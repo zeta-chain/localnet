@@ -329,7 +329,7 @@ export const verifyV3Liquidity = async (
   pool: ethers.Contract,
   token0: string,
   token1: string,
-  positionManager: ethers.Contract,
+  positionManager: UniswapV3PositionManagerContract,
   owner: string,
   tokenId: bigint
 ) => {
@@ -397,7 +397,7 @@ export const verifyV3Liquidity = async (
       );
     }
 
-    const positionOwner = (await positionManager.ownerOf(tokenId)) as string;
+    const positionOwner = await positionManager.ownerOf(tokenId);
 
     if (positionOwner.toLowerCase() !== owner.toLowerCase()) {
       throw new Error(
