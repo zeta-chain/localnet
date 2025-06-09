@@ -2,18 +2,19 @@ import ansis from "ansis";
 import { Command } from "commander";
 import fs from "fs";
 
+import { LocalnetData } from "../types/shared.interfaces";
+
 const LOCALNET_JSON_FILE = "./localnet.json";
 
-// eslint-disable-next-line @typescript-eslint/require-await
-const stopLocalnet = async () => {
+const stopLocalnet = () => {
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running or JSON file is missing."));
     return;
   }
 
-  const jsonData = JSON.parse(fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")) as {
-    pid: string;
-  };
+  const jsonData = JSON.parse(
+    fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")
+  ) as LocalnetData;
   const pid = jsonData.pid;
 
   try {
@@ -37,9 +38,9 @@ const stopLocalnet = async () => {
 
 export const stopCommand = new Command("stop")
   .description("Stop localnet")
-  .action(async () => {
+  .action(() => {
     try {
-      await stopLocalnet();
+      stopLocalnet();
     } catch (error) {
       console.error(ansis.red(`Error: ${String(error)}`));
       process.exit(1);

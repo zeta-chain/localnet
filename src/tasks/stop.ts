@@ -2,6 +2,8 @@ import ansis from "ansis";
 import fs from "fs";
 import { task } from "hardhat/config";
 
+import { LocalnetData } from "../types/shared.interfaces";
+
 const LOCALNET_JSON_FILE = "./localnet.json";
 
 // eslint-disable-next-line @typescript-eslint/require-await
@@ -11,9 +13,9 @@ const localnetStop = async (): Promise<void> => {
     return;
   }
 
-  const jsonData = JSON.parse(fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")) as {
-    pid: number;
-  };
+  const jsonData = JSON.parse(
+    fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")
+  ) as LocalnetData;
   const pid = jsonData.pid;
 
   try {

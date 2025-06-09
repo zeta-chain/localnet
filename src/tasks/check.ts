@@ -2,6 +2,7 @@ import ansis from "ansis";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 
+import { LocalnetData } from "../types/shared.interfaces";
 import { sleep } from "../utils";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
@@ -14,9 +15,9 @@ const localnetCheck = async (args: { delay: number }) => {
     process.exit(1);
   }
 
-  const jsonData = JSON.parse(fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")) as {
-    pid: number;
-  };
+  const jsonData = JSON.parse(
+    fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")
+  ) as LocalnetData;
   const pid = jsonData.pid;
 
   try {
