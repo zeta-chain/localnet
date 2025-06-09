@@ -265,6 +265,21 @@ export type UniswapV3FactoryContract = ethers.Contract & {
   getPool: (tokenA: string, tokenB: string, fee: number) => Promise<string>;
 };
 
+interface UniswapV3Position {
+  fee: number;
+  feeGrowthInside0LastX128: bigint;
+  feeGrowthInside1LastX128: bigint;
+  liquidity: bigint;
+  nonce: bigint;
+  operator: string;
+  tickLower: number;
+  tickUpper: number;
+  token0: string;
+  token1: string;
+  tokensOwed0: bigint;
+  tokensOwed1: bigint;
+}
+
 export type UniswapV3PositionManagerContract = ethers.Contract & {
   getAddress: () => Promise<string>;
   mint: (params: {
@@ -281,7 +296,7 @@ export type UniswapV3PositionManagerContract = ethers.Contract & {
     token1: string;
   }) => Promise<ContractTransactionResponse>;
   ownerOf: (tokenId: ethers.BigNumberish) => Promise<string>;
-  positions: (tokenId: ethers.BigNumberish) => Promise<unknown[]>;
+  positions: (tokenId: ethers.BigNumberish) => Promise<UniswapV3Position[]>;
 };
 
 interface UniswapV3Slot0 {
