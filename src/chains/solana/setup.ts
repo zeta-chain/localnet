@@ -14,14 +14,12 @@ import { addBackgroundProcess } from "../../backgroundProcesses";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
+import { DepositAndCallArgs, DepositArgs } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { sleep } from "../../utils";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
-import { solanaDeposit, SolanaDepositArgs } from "./deposit";
-import {
-  solanaDepositAndCall,
-  SolanaDepositAndCallArgs,
-} from "./depositAndCall";
+import { solanaDeposit } from "./deposit";
+import { solanaDepositAndCall } from "./depositAndCall";
 import Gateway_IDL from "./idl/gateway.json";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 
@@ -334,7 +332,7 @@ export const solanaMonitorTransactions = ({
                         const message = data.message;
                         args.push(message);
                         void solanaDepositAndCall({
-                          args: args as SolanaDepositAndCallArgs,
+                          args: args as DepositAndCallArgs,
                           deployer,
                           foreignCoins,
                           provider,
@@ -342,7 +340,7 @@ export const solanaMonitorTransactions = ({
                         });
                       } else if (decodedInstruction.name === "deposit") {
                         void solanaDeposit({
-                          args: args as SolanaDepositArgs,
+                          args: args as DepositArgs,
                           deployer,
                           foreignCoins,
                           provider,
@@ -359,7 +357,7 @@ export const solanaMonitorTransactions = ({
                           transaction.transaction.message.accountKeys[splIndex];
                         args[3] = asset.toString();
                         void solanaDeposit({
-                          args: args as SolanaDepositArgs,
+                          args: args as DepositArgs,
                           deployer,
                           foreignCoins,
                           provider,
@@ -377,7 +375,7 @@ export const solanaMonitorTransactions = ({
                         args[3] = asset.toString();
                         args.push(message);
                         void solanaDepositAndCall({
-                          args: args as SolanaDepositAndCallArgs,
+                          args: args as DepositAndCallArgs,
                           deployer,
                           foreignCoins,
                           provider,

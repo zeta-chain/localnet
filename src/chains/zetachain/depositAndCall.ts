@@ -17,11 +17,11 @@ interface ZetachainDepositAndCallParams {
 }
 
 export const zetachainDepositAndCall = async ({
+  args,
+  chainID,
+  foreignCoins,
   provider,
   zetachainContracts,
-  args,
-  foreignCoins,
-  chainID,
 }: ZetachainDepositAndCallParams) => {
   const [sender, receiver, amount, asset, message] = args;
   let foreignCoin;

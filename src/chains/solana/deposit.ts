@@ -1,5 +1,4 @@
 import { ethers } from "ethers";
-import { z } from "zod";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
@@ -11,19 +10,8 @@ import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import { solanaWithdraw } from "./withdraw";
 import { solanaWithdrawSPL } from "./withdrawSPL";
 
-// Schema for the args array based on destructuring pattern:
-// [sender, , amount, asset]
-export const solanaDepositArgsSchema = z.tuple([
-  z.string(), // sender (converted to UTF8 string later)
-  z.unknown(), // position 1 (unused)
-  z.union([z.string(), z.number(), z.bigint()]), // amount (converted to BigInt later)
-  z.string(), // asset (address, compared to ethers.ZeroAddress)
-]);
-
-export type SolanaDepositArgs = z.infer<typeof solanaDepositArgsSchema>;
-
 export interface SolanaDepositParams {
-  args: SolanaDepositArgs;
+  args: DepositArgs;
   deployer: ethers.NonceManager;
   foreignCoins: ForeignCoin[];
   provider: ethers.JsonRpcProvider;
@@ -57,17 +45,8 @@ export const solanaDeposit = async ({
       return;
     }
 
-    const depositArgs: DepositArgs = [
-      sender,
-      null, // unknown field
-      amount,
-      asset,
-      null, // unknown field
-      [ethers.ZeroAddress, false, ethers.ZeroAddress, "", amount], // revertOptions
-    ];
-
     await zetachainDeposit({
-      args: depositArgs,
+      args,
       chainID,
       foreignCoins,
       zetachainContracts,
