@@ -40,6 +40,7 @@ export const solanaDepositAndCall = async ({
       args,
       chainID,
       foreignCoins,
+      isZetaDeposit: false,
       provider,
       zetachainContracts,
     });

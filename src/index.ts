@@ -302,6 +302,7 @@ export const initLocalnet = async ({
           gatewayEVM: ethereumContracts.gatewayEVM,
           provider,
           tss,
+          wzeta: ethereumContracts.testEVMZeta,
           zetachainContracts,
         });
       }
@@ -346,6 +347,7 @@ export const initLocalnet = async ({
         gatewayEVM: bnbContracts.gatewayEVM,
         provider,
         tss,
+        wzeta: bnbContracts.testEVMZeta,
         zetachainContracts,
       });
     });

@@ -10,6 +10,7 @@ export const zetachainDepositAndCall = async ({
   zetachainContracts,
   args,
   foreignCoins,
+  isZetaDeposit,
   chainID,
 }: any) => {
   const [sender, receiver, amount, asset, message] = args;
@@ -40,34 +41,49 @@ export const zetachainDepositAndCall = async ({
     }
   }
 
-  if (!foreignCoin) {
-    logger.error(`Foreign coin not found for asset: ${asset}`, {
-      chain: NetworkID.ZetaChain,
-    });
-    return;
-  }
-
-  const zrc20 = foreignCoin.zrc20_contract_address;
-
   const context = {
     chainID,
     sender: sender,
     senderEVM: nonEVM.includes(chainID) ? ethers.ZeroAddress : sender,
   };
 
-  logger.info(
-    `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
-      context
-    )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`,
-    { chain: NetworkID.ZetaChain }
-  );
+  if (isZetaDeposit) {
+    logger.info(
+      `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
+        context
+      )}), WZETA, amount: ${amount}, message: ${message})`,
+      { chain: NetworkID.ZetaChain }
+    );
 
-  const tx = await zetachainContracts.gatewayZEVM
-    .connect(zetachainContracts.fungibleModuleSigner)
-    .depositAndCall(context, zrc20, amount, receiver, message, {
-      gasLimit: 1_500_000,
-    });
-  await tx.wait();
+    const tx = await zetachainContracts.gatewayZEVM
+      .connect(zetachainContracts.fungibleModuleSigner)
+      .depositAndCall(context, amount, receiver, message);
+    await tx.wait();
+  } else {
+    if (!foreignCoin) {
+      logger.error(`Foreign coin not found for asset: ${asset}`, {
+        chain: NetworkID.ZetaChain,
+      });
+      return;
+    }
+
+    const zrc20 = foreignCoin.zrc20_contract_address;
+
+    logger.info(
+      `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
+        context
+      )}), zrc20: ${zrc20}, amount: ${amount}, message: ${message})`,
+      { chain: NetworkID.ZetaChain }
+    );
+
+    const tx = await zetachainContracts.gatewayZEVM
+      .connect(zetachainContracts.fungibleModuleSigner)
+      .depositAndCall(context, zrc20, amount, receiver, message, {
+        gasLimit: 1_500_000,
+      });
+    await tx.wait();
+  }
+
   const logs = await provider.getLogs({
     address: receiver,
     fromBlock: "latest",

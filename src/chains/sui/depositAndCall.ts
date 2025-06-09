@@ -45,6 +45,7 @@ export const suiDepositAndCall = async ({
       chainID,
       foreignCoins,
       fungibleModuleSigner,
+      isZetaDeposit: false,
       provider,
       zetachainContracts,
     });
