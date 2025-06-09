@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { ZetachainContracts } from "../../types/contracts";
-import { ExecuteArgs, RevertOptions } from "../../types/eventArgs";
+import { ExecuteArgs, ExecuteArgsSchema } from "../../types/eventArgs";
 import { ForeignCoin } from "../../types/foreignCoins";
 import { isRegistryInitComplete } from "../../types/registryState";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
@@ -19,7 +19,7 @@ export const evmCall = async ({
   foreignCoins,
   exitOnError = false,
 }: {
-  args: unknown[];
+  args: ExecuteArgs;
   chainID: string;
   deployer: ethers.NonceManager;
   exitOnError?: boolean;
@@ -39,15 +39,17 @@ export const evmCall = async ({
     return;
   }
 
-  const sender = args[0] as string;
-  const receiver = args[1] as string;
+  const validatedArgs = ExecuteArgsSchema.parse(args);
+
+  const [sender, receiver, , revertOptions] = validatedArgs;
+
   logger.info(`Processing Called event from ${sender} to ${receiver}`, {
     chain: chainID,
   });
 
   try {
     await zetachainExecute({
-      args: args as ExecuteArgs,
+      args,
       chainID,
       deployer,
       exitOnError,
@@ -63,9 +65,8 @@ export const evmCall = async ({
       chain: NetworkID.ZetaChain,
     });
     // No asset calls don't support reverts, so aborting
-    const revertOptions = args[5] as RevertOptions;
-    const abortAddress = revertOptions[2];
-    const revertMessage = revertOptions[3];
+    const [, , abortAddress, revertMessage] = revertOptions;
+
     return await zetachainOnAbort({
       abortAddress,
       amount: 0,

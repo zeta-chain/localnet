@@ -24,6 +24,7 @@ import {
   CallArgs,
   DepositAndCallArgs,
   DepositArgs,
+  ExecuteArgs,
   WithdrawAndCallArgs,
   WithdrawArgs,
 } from "./types/eventArgs";
@@ -304,7 +305,7 @@ export const initLocalnet = async ({
     );
 
     // Set up EVM event handlers
-    ethereumContracts.gatewayEVM.on("Called", (...args: unknown[]) => {
+    ethereumContracts.gatewayEVM.on("Called", (...args: ExecuteArgs) => {
       void evmCall({
         args,
         chainID: NetworkID.Ethereum,
@@ -349,7 +350,7 @@ export const initLocalnet = async ({
       }
     );
 
-    bnbContracts.gatewayEVM.on("Called", (...args: unknown[]) => {
+    bnbContracts.gatewayEVM.on("Called", (...args: ExecuteArgs) => {
       void evmCall({
         args,
         chainID: NetworkID.BNB,
