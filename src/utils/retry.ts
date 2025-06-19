@@ -1,10 +1,10 @@
 import { sleep } from "./sleep";
 
-export async function retry<T>(
+export const retry = async <T>(
   fn: () => Promise<T>,
   retries: number = 3,
   onFailure?: (error: Error, attempt: number, isLastAttempt: boolean) => void
-): Promise<T> {
+): Promise<T> => {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -29,4 +29,4 @@ export async function retry<T>(
   }
 
   throw lastError;
-}
+};

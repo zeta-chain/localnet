@@ -8,10 +8,9 @@ export const PORT_RPC = 8081;
 
 export const ENV_SKIP_CONTAINER = "TON_SKIP_CONTAINER";
 
+export const sidecarURL = (path: string): string =>
+  `http://${HOST}:${PORT_SIDECAR}/${path}`;
+
 export const ENDPOINT_HEALTH = sidecarURL("status");
 export const ENDPOINT_FAUCET = sidecarURL("faucet.json");
 export const ENDPOINT_RPC = `http://${HOST}:${PORT_RPC}/jsonRPC`;
-
-function sidecarURL(path: string): string {
-  return `http://${HOST}:${PORT_SIDECAR}/${path}`;
-}

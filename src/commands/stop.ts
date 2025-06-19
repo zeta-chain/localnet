@@ -2,15 +2,19 @@ import ansis from "ansis";
 import { Command } from "commander";
 import fs from "fs";
 
+import { LocalnetData } from "../types/shared.interfaces";
+
 const LOCALNET_JSON_FILE = "./localnet.json";
 
-const stopLocalnet = async () => {
+const stopLocalnet = () => {
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running or JSON file is missing."));
     return;
   }
 
-  const jsonData = JSON.parse(fs.readFileSync(LOCALNET_JSON_FILE, "utf-8"));
+  const jsonData = JSON.parse(
+    fs.readFileSync(LOCALNET_JSON_FILE, "utf-8")
+  ) as LocalnetData;
   const pid = jsonData.pid;
 
   try {
@@ -19,7 +23,7 @@ const stopLocalnet = async () => {
       process.kill(Number(pid));
       console.log(ansis.green(`Successfully stopped localnet (PID: ${pid})`));
     } catch (err) {
-      console.error(ansis.red(`Failed to stop localnet: ${err}`));
+      console.error(ansis.red(`Failed to stop localnet: ${String(err)}`));
     }
   } catch (err) {
     console.log(ansis.yellow(`Localnet process (PID: ${pid}) is not running.`));
@@ -27,18 +31,18 @@ const stopLocalnet = async () => {
       fs.unlinkSync(LOCALNET_JSON_FILE);
       console.log(ansis.green("Localnet JSON file deleted."));
     } catch (err) {
-      console.error(ansis.red(`Failed to delete JSON file: ${err}`));
+      console.error(ansis.red(`Failed to delete JSON file: ${String(err)}`));
     }
   }
 };
 
 export const stopCommand = new Command("stop")
   .description("Stop localnet")
-  .action(async () => {
+  .action(() => {
     try {
-      await stopLocalnet();
+      stopLocalnet();
     } catch (error) {
-      console.error(ansis.red(`Error: ${error}`));
+      console.error(ansis.red(`Error: ${String(error)}`));
       process.exit(1);
     }
   });

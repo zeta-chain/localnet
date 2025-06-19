@@ -9,7 +9,14 @@ import {
   getLocalnetConfig,
 } from "./utils/sui";
 
-const suiDeposit = async (args: any) => {
+const suiDeposit = async (args: {
+  amount: string;
+  coinType: string;
+  gateway: string;
+  mnemonic: string;
+  module: string;
+  receiver: string;
+}) => {
   const { mnemonic, gateway, module, receiver, amount, coinType } = args;
   const client = new SuiClient({ url: getFullnodeUrl("localnet") });
 

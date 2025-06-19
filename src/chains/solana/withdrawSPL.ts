@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Wallet } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import bs58 from "bs58";
 import { keccak256 } from "ethereumjs-util";
 import { ethers } from "ethers";
 
@@ -26,7 +26,7 @@ export const solanaWithdrawSPL = async ({
     const connection = gatewayProgram.provider.connection;
     const provider = new anchor.AnchorProvider(
       connection,
-      new anchor.Wallet(payer),
+      new Wallet(payer),
       {}
     );
     anchor.setProvider(provider);
@@ -35,9 +35,15 @@ export const solanaWithdrawSPL = async ({
       [Buffer.from("meta", "utf-8")],
       gatewayProgram.programId
     );
-    const pdaAccountData = await (gatewayProgram.account as any).pda.fetch(
-      pdaAccount
-    );
+    const pdaAccountData = await (
+      gatewayProgram.account as unknown as {
+        pda: {
+          fetch: (
+            pda: anchor.web3.PublicKey
+          ) => Promise<{ chainId: string; nonce: number }>;
+        };
+      }
+    ).pda.fetch(pdaAccount);
     const chainIdBn = new anchor.BN(pdaAccountData.chainId);
     const nonce = pdaAccountData.nonce;
     const val = new anchor.BN(amount.toString());
@@ -110,7 +116,7 @@ export const solanaWithdrawSPL = async ({
       { chain: NetworkID.Solana }
     );
   } catch (err) {
-    logger.error(`Error executing Gateway withdraw: ${err}`, {
+    logger.error(`Error executing Gateway withdraw: ${String(err)}`, {
       chain: NetworkID.Solana,
     });
   }

@@ -1,6 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
-import { exec, execSync } from "child_process";
+import { ChildProcess, exec, execSync } from "child_process";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import waitOn from "wait-on";
@@ -56,7 +56,14 @@ const killProcessOnPort = async (port: number, forceKill: boolean) => {
   }
 };
 
-const localnet = async (args: any) => {
+const localnet = async (args: {
+  anvil: string;
+  exitOnError: boolean;
+  forceKill: boolean;
+  port: number;
+  skip: string;
+  stopAfterInit: boolean;
+}) => {
   try {
     execSync("which anvil");
   } catch (error) {
@@ -88,9 +95,9 @@ const localnet = async (args: any) => {
     await ton.startNode();
   }
 
-  let solanaTestValidator: any;
+  let solanaTestValidator: ChildProcess;
   let solanaError = "";
-  if ((await isSolanaAvailable()) && !skip.includes("solana")) {
+  if (isSolanaAvailable() && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
 
     // Record the output of the solana-test-validator.
@@ -113,7 +120,7 @@ const localnet = async (args: any) => {
     });
   }
 
-  if ((await isSuiAvailable()) && !skip.includes("sui")) {
+  if (isSuiAvailable() && !skip.includes("sui")) {
     console.log("Starting Sui...");
     exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
@@ -144,16 +151,37 @@ const localnet = async (args: any) => {
     });
 
     // Get unique chains
-    const chains = [...new Set(addresses.map((item: any) => item.chain))];
+    const chains = [
+      ...new Set(
+        addresses
+          .map((item: { chain: string } | undefined) => item?.chain)
+          .filter((chain): chain is string => chain !== undefined)
+      ),
+    ];
 
     // Create tables for each chain
     chains.forEach((chain) => {
       const chainContracts = addresses
-        .filter((contract: any) => contract.chain === chain)
-        .reduce((acc: any, { type, address }: any) => {
-          acc[type] = address;
-          return acc;
-        }, {});
+        .filter(
+          (contract: { chain: string } | undefined) =>
+            contract !== undefined && contract.chain === chain
+        )
+        .filter(
+          (
+            contract
+          ): contract is { address: string; chain: string; type: string } =>
+            contract !== undefined
+        )
+        .reduce(
+          (
+            acc: Record<string, string>,
+            contract: { address: string; chain: string; type: string }
+          ) => {
+            acc[contract.type] = contract.address;
+            return acc;
+          },
+          {}
+        );
 
       console.log(`\n${chain.toUpperCase()}`);
       console.table(chainContracts);
@@ -167,7 +195,7 @@ const localnet = async (args: any) => {
     );
 
     setRegistryInitComplete(true);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(ansis.red`Error initializing localnet: ${error}`);
     cleanup();
     process.exit(1);

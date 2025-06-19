@@ -1,4 +1,4 @@
-import "./packages/tasks/src";
+import "./src/tasks";
 
 import { HardhatUserConfig } from "hardhat/config";
 

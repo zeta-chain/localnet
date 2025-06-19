@@ -1,11 +1,12 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
-import { ethers, NonceManager } from "ethers";
+import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
-import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
+import { LocalnetContracts } from "../../types/contracts";
+import { WithdrawAndCallArgs } from "../../types/eventArgs";
+import { contractCall } from "../../utils/contracts";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
-import { connectorWithdrawAndCall } from "../evm/connectorWithdrawAndCall";
 import { evmCustodyWithdrawAndCall } from "../evm/custodyWithdrawAndCall";
 import { evmExecute } from "../evm/execute";
 import { solanaExecute } from "../solana/execute";
@@ -16,13 +17,17 @@ export const zetachainWithdrawAndCall = async ({
   args,
   contracts,
   exitOnError = false,
-}: any) => {
+}: {
+  args: WithdrawAndCallArgs;
+  contracts: LocalnetContracts;
+  exitOnError?: boolean;
+}) => {
   const {
     foreignCoins,
     deployer,
     tss,
     provider,
-    zetachainContracts: { fungibleModuleSigner, gatewayZEVM, wzeta },
+    zetachainContracts: { fungibleModuleSigner, gatewayZEVM },
   } = contracts;
 
   logger.info("Gateway: 'WithdrawnAndCalled' event emitted", {
@@ -37,38 +42,27 @@ export const zetachainWithdrawAndCall = async ({
     return;
   }
 
-  const [
-    sender,
-    chainId,
-    receiver,
-    zrc20,
-    amount,
-    ,
-    ,
-    message,
-    callOptions,
-    revertOptions,
-  ] = args;
+  const [sender, , receiver, zrc20, amount, , , message, callOptions] = args;
   const isArbitraryCall = callOptions[1];
-  const isZeta = zrc20 === wzeta.target;
-  let chainID = chainId.toString();
-  if (!isZeta) {
-    chainID = foreignCoins.find(
-      (coin: any) => coin.zrc20_contract_address === zrc20
-    )?.foreign_chain_id;
+
+  const foreignCoin = foreignCoins.find(
+    (coin) => coin.zrc20_contract_address === zrc20
+  );
+
+  if (!foreignCoin) {
+    throw new Error(`Foreign coin not found for zrc20: ${zrc20}`);
   }
 
-  const asset =
-    foreignCoins.find((coin: any) => coin.zrc20_contract_address === zrc20)
-      ?.asset || (isZeta ? "ZETA" : null);
+  const chainID = foreignCoin.foreign_chain_id;
+  const asset = foreignCoin.asset;
 
   try {
-    (tss as NonceManager).reset();
-    let coinType;
-    if (!isZeta) {
-      const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
-      coinType = await zrc20Contract.COIN_TYPE();
-    }
+    tss.reset();
+    const zrc20Contract = new ethers.Contract(zrc20, ZRC20.abi, deployer);
+    const coinType = (await contractCall(
+      zrc20Contract,
+      "COIN_TYPE"
+    )()) as bigint;
     const isGasToken = coinType === 1n;
 
     switch (chainID) {
@@ -77,18 +71,21 @@ export const zetachainWithdrawAndCall = async ({
         await solanaExecute({
           amount,
           decimals: 9,
-          message,
+          message: Buffer.from(message.slice(2), "hex"),
           mint: asset,
           recipient: ethers.toUtf8String(receiver),
-          sender,
+          sender: Buffer.from(sender.slice(2), "hex"),
         });
         break;
       }
       // sui
       case NetworkID.Sui: {
+        if (!contracts.suiContracts?.env) {
+          throw new Error("Sui contracts not available");
+        }
         await suiWithdrawAndCall({
-          amount,
-          message,
+          amount: amount.toString(),
+          message: Buffer.from(message.slice(2), "hex"),
           targetModule: receiver,
           ...contracts.suiContracts.env,
         });
@@ -120,44 +117,47 @@ export const zetachainWithdrawAndCall = async ({
               ? contracts.ethereumContracts
               : contracts.bnbContracts;
 
-          if (isZeta) {
-            await connectorWithdrawAndCall({
-              args,
-              chainID,
-              evmContracts,
-              tss,
-            });
-          }
-
-          if (coinType === 2n) {
-            await evmCustodyWithdrawAndCall({
-              args,
-              evmContracts,
-              foreignCoins,
-              tss,
-            });
-          }
+          await evmCustodyWithdrawAndCall({
+            args,
+            evmContracts,
+            foreignCoins,
+            tss,
+          });
         }
       }
     }
-  } catch (err: any) {
-    logger.error(`Error executing ${receiver}: ${err}`, { chain: chainID });
+  } catch (err) {
+    logger.error(`Error executing ${receiver}: ${String(err)}`, {
+      chain: chainID,
+    });
     if (exitOnError) {
-      throw new Error(err);
+      throw new Error(String(err));
     }
+    // WithdrawAndCall operations don't have revert options, so we create a default one
+    const defaultRevertOptions: [
+      string,
+      boolean,
+      string,
+      string,
+      string | number | bigint
+    ] = [
+      ethers.ZeroAddress, // revertAddress
+      false, // callOnRevert
+      ethers.ZeroAddress, // abortAddress
+      "", // revertMessage
+      "0", // amount
+    ];
+
     return await zetachainOnRevert({
-      amount,
+      amount: amount.toString(),
       asset: zrc20,
       chainID,
-      deployOpts,
-      err,
       fungibleModuleSigner,
       gatewayZEVM,
       outgoing: true,
       provider,
-      revertOptions,
+      revertOptions: defaultRevertOptions,
       sender,
-      tss,
     });
   }
 };
