@@ -49,7 +49,7 @@ export const evmCall = async ({
 
   try {
     await zetachainExecute({
-      args,
+      args: validatedArgs,
       chainID,
       deployer,
       exitOnError,

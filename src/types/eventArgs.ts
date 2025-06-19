@@ -14,13 +14,15 @@ export const CallOptionsSchema = z.tuple([
   z.boolean(), // isArbitraryCall
 ]);
 
-// Schema for execute event args: [sender, receiver, message, revertOptions]
-export const ExecuteArgsSchema = z.tuple([
-  z.string(), // sender
-  z.string(), // receiver
-  z.string(), // message
-  RevertOptionsSchema, // revertOptions
-]);
+// Schema for execute event args: [sender, receiver, message, revertOptions, ...ethersEventObject?]
+export const ExecuteArgsSchema = z
+  .tuple([
+    z.string(), // sender
+    z.string(), // receiver
+    z.string(), // message
+    RevertOptionsSchema, // revertOptions
+  ])
+  .rest(z.unknown()); // Allow additional elements (ethers.js event object)
 
 // Schema for call event args: [sender, zrc20, receiver, message, callOptions, revertOptions]
 export const CallArgsSchema = z.tuple([
