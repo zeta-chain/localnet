@@ -119,21 +119,18 @@ export class Deployer {
 
 const FAUCET_WALLET_VERSION = "V3R2";
 
+type FaucetInfo = {
+  mnemonic: string;
+  subWalletId: number;
+  walletRawAddress: string;
+  walletVersion: string;
+  workChain: number;
+};
+
 export async function deployerFromFaucetURL(
   faucetURL: string,
   client: ton.TonClient
 ): Promise<Deployer> {
-  type FaucetInfo = {
-    created: boolean;
-    mnemonic: string;
-    privateKey: string;
-    publicKey: string;
-    subWalletId: number;
-    walletRawAddress: string;
-    walletVersion: string;
-    workChain: number;
-  };
-
   const faucet = (await utils.getJSON(faucetURL)) as FaucetInfo;
   if (faucet.walletVersion !== FAUCET_WALLET_VERSION) {
     throw new Error(
@@ -141,26 +138,22 @@ export async function deployerFromFaucetURL(
     );
   }
 
-  const expectedAddress = ton.Address.parse(faucet.walletRawAddress);
+  const words = faucet.mnemonic.split(" ");
+  const keyPair = await mnemonicToPrivateKey(words);
 
-  const publicKey = Buffer.from(faucet.publicKey, "hex");
   const wallet = ton.WalletContractV3R2.create({
-    publicKey,
+    publicKey: keyPair.publicKey,
     walletId: faucet.subWalletId,
     workchain: faucet.workChain,
   });
+
+  const expectedAddress = ton.Address.parse(faucet.walletRawAddress);
 
   if (!wallet.address.equals(expectedAddress)) {
     const got = wallet.address.toRawString();
     const want = expectedAddress.toRawString();
 
     throw new Error(`Expected faucet to have address ${want}, got ${got}`);
-  }
-
-  const words = faucet.mnemonic.split(" ");
-  const keyPair = await mnemonicToPrivateKey(words);
-  if (!keyPair.publicKey.equals(publicKey)) {
-    throw new Error("TON public key mismatch");
   }
 
   return new Deployer(client, wallet, keyPair);

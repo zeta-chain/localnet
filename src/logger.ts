@@ -27,6 +27,11 @@ export const chains: Record<string, { color: any; name: string }> = {
 
 // Create a custom format for chain-based logging
 const chainFormat = winston.format.printf(({ level, message, chain }) => {
+  // fallback
+  if (chain === undefined) {
+    chain = "localnet";
+  }
+
   if (chain === "localnet") {
     return `${ansis.gray(`[${ansis.bold("LOCALNET")}]`)} ${ansis.gray(
       message

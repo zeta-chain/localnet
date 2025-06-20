@@ -6,6 +6,7 @@ import { ethers } from "ethers";
 import pc from "picocolors";
 
 import { client, deployerFromFaucetURL, ENDPOINT_FAUCET } from "../chains/ton";
+import * as cfg from "../chains/ton/config";
 import { retry, tonFormatCoin } from "../utils";
 
 const balanceCommand = new Command("balance")
@@ -42,7 +43,7 @@ export const tonCommand = new Command("ton")
   .addCommand(withdrawCommand);
 
 async function showBalance(args: any): Promise<void> {
-  const c = client();
+  const c = client(cfg.ENDPOINT_RPC);
 
   const address = Address.parse(args.address);
   const state = await c.getContractState(address);
@@ -53,7 +54,7 @@ async function showBalance(args: any): Promise<void> {
 }
 
 async function topup(args: any): Promise<void> {
-  const c = client();
+  const c = client(cfg.ENDPOINT_RPC);
   const deployer = await deployerFromFaucetURL(ENDPOINT_FAUCET, c);
 
   const address = Address.parse(args.address);
@@ -84,7 +85,7 @@ async function topup(args: any): Promise<void> {
 }
 
 async function createWallet(args: any): Promise<void> {
-  const c = client();
+  const c = client(cfg.ENDPOINT_RPC);
   const deployer = await deployerFromFaucetURL(ENDPOINT_FAUCET, c);
 
   const amount = parseAmount(args.amount);
