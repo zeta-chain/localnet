@@ -99,6 +99,8 @@ export const evmSetup = async ({
     ? await testERC20Factory.deploy("zeta", "ZETA", deployOpts)
     : await testERC20Factory.deploy(tssAddress, deployerAddress, deployOpts);
 
+  await testEVMZeta.waitForDeployment();
+
   const gatewayEVMInterface = new ethers.Interface(GatewayEVM.abi);
   const gatewayEVMInitData = gatewayEVMInterface.encodeFunctionData(
     "initialize",
