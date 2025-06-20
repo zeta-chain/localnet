@@ -93,6 +93,7 @@ export const evmSetup = async ({
     zetaTokenArtifacts.bytecode,
     deployer
   );
+
   let testEVMZeta;
   if (isNative) {
     testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
@@ -122,7 +123,7 @@ export const evmSetup = async ({
     GatewayEVM.abi,
     deployer
   );
-  // comment ignore
+
   const registryInterface = new ethers.Interface(Registry.abi);
   const registryInitFragment = registryInterface.getFunction("initialize");
   const registryInitData = registryInterface.encodeFunctionData(
@@ -167,6 +168,8 @@ export const evmSetup = async ({
     zetaConnectorInitData,
     deployOpts
   )) as any;
+
+  await proxyConnector.waitForDeployment();
 
   const zetaConnector = new ethers.Contract(
     proxyConnector.target,
