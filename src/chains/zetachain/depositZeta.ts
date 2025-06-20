@@ -8,9 +8,9 @@ export const zetachainDepositZeta = async ({
   const [, receiver, amount] = args;
   const tx = await zetachainContracts.gatewayZEVM
     .connect(zetachainContracts.fungibleModuleSigner)
-    .deposit(amount, receiver);
+    .deposit(receiver, { value: amount });
   await tx.wait();
-  logger.info(`Deposited ${amount} of WZETA tokens to ${receiver}`, {
+  logger.info(`Deposited ${amount} of native ZETA tokens to ${receiver}`, {
     chain: NetworkID.ZetaChain,
   });
   return;
