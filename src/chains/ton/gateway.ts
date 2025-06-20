@@ -201,43 +201,62 @@ async function observeInbound(
   const isDeposit =
     opCode === types.GatewayOp.Deposit ||
     opCode === types.GatewayOp.DepositAndCall;
-  if (!isDeposit) {
-    log.info(`Irrelevant opCode ${opCode} for deposit (tx ${lt}:${hash})`);
-    return;
+
+  if (isDeposit) {
+    // skip query_id
+    body.skip(64);
+
+    const logMessage = tx.outMessages.get(0);
+    if (!logMessage) {
+      log.info(`No log cell, skipping (tx ${lt}:${hash})`);
+      return;
+    }
+
+    const tonSender = info.src as ton.Address;
+    const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
+    const depositLog = types.depositLogFromCell(logMessage.body);
+    const depositAmount = depositLog.amount;
+
+    let callDataHex: string | null = null;
+
+    if (opCode === types.GatewayOp.DepositAndCall) {
+      const callDataSlice = body.loadRef().asSlice();
+      callDataHex = types.sliceToHexString(callDataSlice);
+    }
+
+    return await onInbound({
+      amount: depositAmount,
+      callDataHex,
+      hash,
+      lt,
+      opCode,
+      recipient: zetaRecipient,
+      sender: tonSender,
+    });
   }
 
-  // skip query_id
-  body.skip(64);
+  if (opCode === types.GatewayOp.Call) {
+    // skip query_id
+    body.skip(64);
 
-  const logMessage = tx.outMessages.get(0);
-  if (!logMessage) {
-    log.info(`No log cell, skipping (tx ${lt}:${hash})`);
-    return;
-  }
+    const tonSender = info.src as ton.Address;
+    const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
 
-  const tonSender = info.src as ton.Address;
-  const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
-  const depositLog = types.depositLogFromCell(logMessage.body);
-  const depositAmount = depositLog.amount;
-
-  let callDataHex: string | null = null;
-
-  if (opCode === types.GatewayOp.DepositAndCall) {
     const callDataSlice = body.loadRef().asSlice();
-    callDataHex = types.sliceToHexString(callDataSlice);
+    const callDataHex = types.sliceToHexString(callDataSlice);
+
+    return await onInbound({
+      amount: 0n,
+      callDataHex,
+      hash,
+      lt,
+      opCode,
+      recipient: zetaRecipient,
+      sender: tonSender,
+    });
   }
 
-  const inbound: Inbound = {
-    amount: depositAmount,
-    callDataHex,
-    hash,
-    lt,
-    opCode,
-    recipient: zetaRecipient,
-    sender: tonSender,
-  };
-
-  await onInbound(inbound);
+  log.error(`Irrelevant opCode ${opCode} for deposit (tx ${lt}:${hash})`);
 }
 
 export interface WithdrawArgs {

@@ -5,6 +5,7 @@ import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway
 import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
+import { zetachainCall } from "../zetachain/call";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
@@ -134,6 +135,8 @@ function onInbound(
   client: ton.TonClient,
   gateway: OpenedContract<Gateway>
 ) {
+  const log = logger.child({ chain: opts.chainID });
+
   // gas coin
   const asset = ethers.ZeroAddress;
 
@@ -166,25 +169,50 @@ function onInbound(
     await zetachainDepositAndCall({ args, ...opts });
   };
 
+  const onCall = async (inbound: Inbound) => {
+    const senderRaw = byteOrigin(inbound.sender);
+
+    const args = [
+      senderRaw,
+      asset,
+      inbound.recipient,
+      inbound.callDataHex!,
+      // todo: this array represents revert opts (fix)
+      [senderRaw, false, senderRaw, "0x00"],
+    ];
+
+    await zetachainCall({
+      args,
+      contracts: {
+        foreignCoins: opts.foreignCoins,
+        provider: opts.provider,
+        zetachainContracts: opts.zetachainContracts,
+      },
+      exitOnError: false,
+    });
+  };
+
   return async (inbound: Inbound) => {
     try {
       if (inbound.opCode === GatewayOp.Deposit) {
-        logger.info(`Gateway deposit: ${JSON.stringify(inbound)}`, {
-          chain: opts.chainID,
-        });
+        log.info(`Gateway deposit: ${JSON.stringify(inbound)}`);
         return await onDeposit(inbound);
       }
 
-      logger.info(`Gateway deposit and call: ${JSON.stringify(inbound)}`, {
-        chain: opts.chainID,
-      });
-      return await onDepositAndCall(inbound);
+      if (inbound.opCode === GatewayOp.DepositAndCall) {
+        log.info(`Gateway depositAndCall: ${JSON.stringify(inbound)}`);
+        return await onDepositAndCall(inbound);
+      }
+
+      if (inbound.opCode === GatewayOp.Call) {
+        log.info(`Gateway call: ${JSON.stringify(inbound)}`);
+        return await onCall(inbound);
+      }
     } catch (e) {
-      logger.error(
-        `Something went wrong for inbound: ${JSON.stringify(inbound)}`,
-        { chain: opts.chainID, error: e }
+      log.error(
+        `Something went wrong for inbound ${JSON.stringify(inbound)}`,
+        e
       );
-      console.error(e);
 
       const { revertGasFee } = await zetachainSwapToCoverGas({
         amount: inbound.amount,
@@ -195,13 +223,11 @@ function onInbound(
 
       const revertAmount = inbound.amount - revertGasFee;
       if (revertAmount <= 0n) {
-        logger.error("Revert amount is not enough to make a revert back", {
-          chain: opts.chainID,
-        });
+        log.error("Revert amount is not enough to make a revert back");
         return;
       }
 
-      logger.info("Reverting inbound", { chain: opts.chainID });
+      log.info("Reverting inbound");
       await withdrawTON(
         client,
         gateway,
