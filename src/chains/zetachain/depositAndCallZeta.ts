@@ -21,13 +21,13 @@ export const zetachainDepositAndCallZeta = async ({
   logger.info(
     `Universal contract ${receiver} executing onCall (context: ${JSON.stringify(
       context
-    )}), WZETA, amount: ${amount}, message: ${message})`,
+    )}), ZETA, amount: ${amount}, message: ${message})`,
     { chain: NetworkID.ZetaChain }
   );
 
   const tx = await zetachainContracts.gatewayZEVM
     .connect(zetachainContracts.fungibleModuleSigner)
-    .depositAndCall(context, amount, receiver, message);
+    .depositAndCall(context, receiver, message, { value: amount });
   await tx.wait();
 
   const logs = await provider.getLogs({
