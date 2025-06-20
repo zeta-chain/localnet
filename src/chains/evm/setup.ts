@@ -71,28 +71,28 @@ export const evmSetup = async ({
     deployer
   );
 
-  const [
-    tssAddress,
-    deployerAddress,
-    gatewayEVMImpl,
-    registryImpl,
-    custodyImpl,
-    zetaConnectorImpl,
-  ] = await Promise.all([
-    tss.getAddress(),
-    deployer.getAddress(),
-    gatewayEVMFactory.deploy(deployOpts),
-    registryFactory.deploy(deployOpts),
-    custodyFactory.deploy(deployOpts),
-    zetaConnectorFactory.deploy(deployOpts),
-  ]);
+  const tssAddress = await tss.getAddress();
+  const deployerAddress = await deployer.getAddress();
 
-  const zetaTokenArtifacts = await getZetaTokenArtifacts(isNative);
+  const gatewayEVMImpl = await gatewayEVMFactory.deploy(deployOpts);
+  await gatewayEVMImpl.waitForDeployment();
+
+  const registryImpl = await registryFactory.deploy(deployOpts);
+  await registryImpl.waitForDeployment();
+
+  const custodyImpl = await custodyFactory.deploy(deployOpts);
+  await custodyImpl.waitForDeployment();
+
+  const zetaConnectorImpl = await zetaConnectorFactory.deploy(deployOpts);
+  await zetaConnectorImpl.waitForDeployment();
+
+  const zetaTokenArtifacts = getZetaTokenArtifacts(isNative);
   const testERC20Factory = new ethers.ContractFactory(
     zetaTokenArtifacts.abi,
     zetaTokenArtifacts.bytecode,
     deployer
   );
+
   let testEVMZeta;
   if (isNative) {
     testEVMZeta = await testERC20Factory.deploy("zeta", "ZETA", deployOpts);
