@@ -122,7 +122,7 @@ export const evmSetup = async ({
     GatewayEVM.abi,
     deployer
   );
-
+  // comment ignore
   const registryInterface = new ethers.Interface(Registry.abi);
   const registryInitFragment = registryInterface.getFunction("initialize");
   const registryInitData = registryInterface.encodeFunctionData(
