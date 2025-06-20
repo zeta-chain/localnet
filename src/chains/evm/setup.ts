@@ -93,7 +93,7 @@ export const evmSetup = async ({
     zetaTokenArtifacts.bytecode,
     deployer
   );
-
+  // trigger ci
   const testEVMZeta = isNative
     ? await testERC20Factory.deploy("zeta", "ZETA", deployOpts)
     : await testERC20Factory.deploy(tssAddress, deployerAddress, deployOpts);
