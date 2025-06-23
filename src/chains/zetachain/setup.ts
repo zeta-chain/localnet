@@ -145,9 +145,9 @@ export const zetachainSetup = async (
     tss,
     uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,
     uniswapRouterInstance: v2Setup.uniswapRouterInstance,
-    wzeta,
     uniswapV3Factory: v3Setup.uniswapV3FactoryInstance,
     uniswapV3PositionManager: v3Setup.nonfungiblePositionManagerInstance,
     uniswapV3Router: v3Setup.swapRouterInstance,
+    wzeta,
   };
 };
