@@ -5,9 +5,9 @@ import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway
 import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
-import { zetachainCall } from "../zetachain/call";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
+import { zetachainExecute } from "../zetachain/execute";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import * as cfg from "./config";
 import { Deployer, deployerFromFaucetURL } from "./deployer";
@@ -174,38 +174,32 @@ function onInbound(
 
     const args = [
       senderRaw,
-      asset,
       inbound.recipient,
       inbound.callDataHex!,
-      // todo: this array represents revert opts (fix)
       [senderRaw, false, senderRaw, "0x00"],
     ];
 
-    await zetachainCall({
+    await zetachainExecute({
       args,
-      contracts: {
-        foreignCoins: opts.foreignCoins,
-        provider: opts.provider,
-        zetachainContracts: opts.zetachainContracts,
-      },
       exitOnError: false,
+      ...opts,
     });
   };
 
   return async (inbound: Inbound) => {
     try {
       if (inbound.opCode === GatewayOp.Deposit) {
-        log.info(`Gateway deposit: ${JSON.stringify(inbound)}`);
+        log.info(`Gateway deposit: ${inboundToString(inbound)}`);
         return await onDeposit(inbound);
       }
 
       if (inbound.opCode === GatewayOp.DepositAndCall) {
-        log.info(`Gateway depositAndCall: ${JSON.stringify(inbound)}`);
+        log.info(`Gateway depositAndCall: ${inboundToString(inbound)}`);
         return await onDepositAndCall(inbound);
       }
 
       if (inbound.opCode === GatewayOp.Call) {
-        log.info(`Gateway call: ${JSON.stringify(inbound)}`);
+        log.info(`Gateway call: ${inboundToString(inbound)}`);
         return await onCall(inbound);
       }
     } catch (e) {
@@ -237,4 +231,11 @@ function onInbound(
       );
     }
   };
+}
+
+function inboundToString(inbound: Inbound): string {
+  return JSON.stringify({
+    ...inbound,
+    sender: inbound.sender.toRawString(),
+  });
 }
