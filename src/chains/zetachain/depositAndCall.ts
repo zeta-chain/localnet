@@ -1,9 +1,7 @@
 import { ethers } from "ethers";
 
-import { NetworkID } from "../../constants";
+import { isEVMChain, NetworkID } from "../../constants";
 import { logger } from "../../logger";
-
-const nonEVM = [NetworkID.Solana, NetworkID.TON, NetworkID.Sui];
 
 export const zetachainDepositAndCall = async ({
   provider,
@@ -52,7 +50,7 @@ export const zetachainDepositAndCall = async ({
   const context = {
     chainID,
     sender: sender,
-    senderEVM: nonEVM.includes(chainID) ? ethers.ZeroAddress : sender,
+    senderEVM: isEVMChain(chainID) ? sender : ethers.ZeroAddress,
   };
 
   logger.info(

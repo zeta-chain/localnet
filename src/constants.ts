@@ -16,3 +16,9 @@ export const NetworkID = {
   TON: "2015141",
   ZetaChain: "7001",
 };
+
+const evmChains = [NetworkID.Ethereum, NetworkID.BNB, NetworkID.ZetaChain];
+
+export const isEVMChain = function (networkId: string) {
+  return evmChains.includes(networkId);
+};
