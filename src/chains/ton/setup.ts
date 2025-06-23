@@ -7,6 +7,7 @@ import { ethers, NonceManager } from "ethers";
 import { logger } from "../../logger";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
+import { zetachainExecute } from "../zetachain/execute";
 import { zetachainSwapToCoverGas } from "../zetachain/swapToCoverGas";
 import * as cfg from "./config";
 import { Deployer, deployerFromFaucetURL } from "./deployer";
@@ -18,8 +19,9 @@ import {
 } from "./gateway";
 import * as node from "./node";
 
-export function client(): ton.TonClient {
-  return new ton.TonClient({ endpoint: cfg.ENDPOINT_RPC });
+// endpoint should be jsonRPC url of toncenter-v2 API.
+export function client(endpoint: string): ton.TonClient {
+  return new ton.TonClient({ endpoint });
 }
 
 export interface SetupOptions {
@@ -40,18 +42,19 @@ export interface Env {
 }
 
 export async function setup(opts: SetupOptions) {
+  const log = logger.child({ chain: opts.chainID });
+
   // noop
   if (opts.skip) {
-    logger.info("TON setup skipped", { chain: opts.chainID });
+    log.info("TON setup skipped");
     return;
   }
 
   try {
-    logger.info("Starting TON setup", { chain: opts.chainID });
+    log.info("Starting TON setup");
     return await setupThrowable(opts);
   } catch (error) {
-    logger.error("Unable to setup TON", {
-      chain: opts.chainID,
+    log.error("Unable to setup TON", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
@@ -65,50 +68,39 @@ export async function setup(opts: SetupOptions) {
  *  - Setup observer-signer event-listener
  */
 async function setupThrowable(opts: SetupOptions) {
-  logger.info("Creating TON RPC client", { chain: opts.chainID });
-  const rpcClient = await client();
-  logger.info("TON RPC client created", { chain: opts.chainID });
+  const log = logger.child({ chain: opts.chainID });
 
-  logger.info("Waiting for TON node", {
-    chain: opts.chainID,
+  log.info("Creating RPC client");
+  const rpcClient = await client(cfg.ENDPOINT_RPC);
+  log.info("RPC client created");
+
+  log.info("Waiting for TON node", {
     healthEndpoint: cfg.ENDPOINT_HEALTH,
     rpcEndpoint: cfg.ENDPOINT_RPC,
   });
-  await node.waitForNodeWithRPC(cfg.ENDPOINT_HEALTH, rpcClient);
-  logger.info("TON node is ready", { chain: opts.chainID });
 
-  logger.info("Creating deployer from faucet", {
-    chain: opts.chainID,
-    faucetUrl: cfg.ENDPOINT_FAUCET,
-  });
+  await node.waitForNodeWithRPC(cfg.ENDPOINT_HEALTH);
+
+  log.info("Creating deployer from faucet", { faucetUrl: cfg.ENDPOINT_FAUCET });
   const deployer = await deployerFromFaucetURL(cfg.ENDPOINT_FAUCET, rpcClient);
-  logger.info("Deployer created", {
-    chain: opts.chainID,
-    deployerAddress: deployer.address().toRawString(),
+  log.info("Deployer created", {
+    deployer: deployer.address().toRawString(),
   });
 
-  logger.info("Getting TSS address", { chain: opts.chainID });
+  log.info("Getting TSS address");
   const tssAddress = await opts.tss.getAddress();
-  logger.info("TSS address obtained", { chain: opts.chainID, tssAddress });
+  log.info("TSS address obtained", { tssAddress });
 
-  logger.info("Provisioning gateway", { chain: opts.chainID });
+  log.info("Provisioning gateway");
   const gateway = await provisionGateway(deployer, tssAddress);
-  logger.info("Gateway provisioned", {
-    chain: opts.chainID,
+  log.info("Gateway provisioned", {
     gatewayAddress: gateway.address.toRawString(),
   });
 
-  logger.info(
-    `TON Gateway (${gateway.address.toRawString()}) deployed by ${deployer
-      .address()
-      .toRawString()}. TSS address: ${tssAddress}`,
-    { chain: opts.chainID }
-  );
-
   // Observe inbound transactions (async loop)
-  logger.info("Setting up inbound observer", { chain: opts.chainID });
+  log.info("Setting up inbound observer");
   observerInbounds(rpcClient, gateway, onInbound(opts, rpcClient, gateway));
-  logger.info("Inbound observer setup complete", { chain: opts.chainID });
+  log.info("Inbound observer setup complete");
 
   const env: Env = {
     client: rpcClient,
@@ -132,7 +124,7 @@ async function setupThrowable(opts: SetupOptions) {
     env,
   };
 
-  logger.info("TON setup complete", { chain: opts.chainID });
+  log.info("TON setup complete");
   return result;
 }
 
@@ -143,6 +135,8 @@ function onInbound(
   client: ton.TonClient,
   gateway: OpenedContract<Gateway>
 ) {
+  const log = logger.child({ chain: opts.chainID });
+
   // gas coin
   const asset = ethers.ZeroAddress;
 
@@ -175,25 +169,44 @@ function onInbound(
     await zetachainDepositAndCall({ args, ...opts });
   };
 
+  const onCall = async (inbound: Inbound) => {
+    const senderRaw = byteOrigin(inbound.sender);
+
+    const args = [
+      senderRaw,
+      inbound.recipient,
+      inbound.callDataHex!,
+      [senderRaw, false, senderRaw, "0x00"],
+    ];
+
+    await zetachainExecute({
+      args,
+      exitOnError: false,
+      ...opts,
+    });
+  };
+
   return async (inbound: Inbound) => {
     try {
       if (inbound.opCode === GatewayOp.Deposit) {
-        logger.info(`Gateway deposit: ${JSON.stringify(inbound)}`, {
-          chain: opts.chainID,
-        });
+        log.info(`Gateway deposit: ${inboundToString(inbound)}`);
         return await onDeposit(inbound);
       }
 
-      logger.info(`Gateway deposit and call: ${JSON.stringify(inbound)}`, {
-        chain: opts.chainID,
-      });
-      return await onDepositAndCall(inbound);
+      if (inbound.opCode === GatewayOp.DepositAndCall) {
+        log.info(`Gateway depositAndCall: ${inboundToString(inbound)}`);
+        return await onDepositAndCall(inbound);
+      }
+
+      if (inbound.opCode === GatewayOp.Call) {
+        log.info(`Gateway call: ${inboundToString(inbound)}`);
+        return await onCall(inbound);
+      }
     } catch (e) {
-      logger.error(
-        `Something went wrong for inbound: ${JSON.stringify(inbound)}`,
-        { chain: opts.chainID, error: e }
+      log.error(
+        `Something went wrong for inbound ${JSON.stringify(inbound)}`,
+        e
       );
-      console.error(e);
 
       const { revertGasFee } = await zetachainSwapToCoverGas({
         amount: inbound.amount,
@@ -204,13 +217,11 @@ function onInbound(
 
       const revertAmount = inbound.amount - revertGasFee;
       if (revertAmount <= 0n) {
-        logger.error("Revert amount is not enough to make a revert back", {
-          chain: opts.chainID,
-        });
+        log.error("Revert amount is not enough to make a revert back");
         return;
       }
 
-      logger.info("Reverting inbound", { chain: opts.chainID });
+      log.info("Reverting inbound");
       await withdrawTON(
         client,
         gateway,
@@ -220,4 +231,11 @@ function onInbound(
       );
     }
   };
+}
+
+function inboundToString(inbound: Inbound): string {
+  return JSON.stringify({
+    ...inbound,
+    sender: inbound.sender.toRawString(),
+  });
 }

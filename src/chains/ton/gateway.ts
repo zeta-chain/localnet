@@ -25,6 +25,7 @@ export async function provisionGateway(
   deployer: Deployer,
   tssAddress: string
 ): Promise<OpenedContract<Gateway>> {
+  const log = logger.child({ chain: NetworkID.TON });
   // 1. Construct Gateway
   const config: types.GatewayConfig = {
     authority: deployer.address(),
@@ -37,14 +38,14 @@ export async function provisionGateway(
   );
 
   // 2. Deploy Gateway
-  console.log("Deploying TON gateway");
+  log.info("Deploying Gateway");
 
   await gateway.sendDeploy(deployer.getSender(), oneTon);
 
   // Transactions are async, wait for deployment
   await utils.retry(async () => {
     await gateway.getGatewayState();
-    console.log("TON Gateway deployed!");
+    log.info("Gateway deployed!");
   }, 10);
 
   // 3. Send a donation
@@ -57,10 +58,8 @@ export async function provisionGateway(
       throw new Error("Donation tx is not processed yet");
     }
 
-    console.log(
-      `TON Gateway received a donation! Balance ${utils.tonFormatCoin(
-        balance
-      )}ton`
+    log.info(
+      `Gateway received a donation! Balance ${utils.tonFormatCoin(balance)}ton`
     );
   }, 10);
 
@@ -89,6 +88,8 @@ export async function observerInbounds(
   gateway: OpenedContract<Gateway>,
   onInbound: (inbound: Inbound) => Promise<void>
 ): Promise<void> {
+  const log = logger.child({ chain: NetworkID.TON });
+
   const latestTx = async () => {
     const state = await client.getContractState(gateway.address);
     let { lt, hash } = state.lastTransaction!;
@@ -97,7 +98,7 @@ export async function observerInbounds(
   };
 
   let { lt: oldLT, hash: oldHash } = await latestTx();
-  console.log("TON: starting observer with tx", oldLT, oldHash);
+  log.info("Starting observer with tx", oldLT, oldHash);
 
   while (true) {
     let lt = "";
@@ -109,7 +110,7 @@ export async function observerInbounds(
       lt = tx.lt;
       hash = tx.hash;
     } catch (e) {
-      console.error("TON: error getting latest tx", e);
+      log.error("Error getting latest tx", e);
       await sleep(1000);
       continue;
     }
@@ -144,7 +145,7 @@ export async function observerInbounds(
       try {
         observeInbound(tx, onInbound);
       } catch (e) {
-        console.error(`TON: error processing tx ${lt}:${hash}; skipped`, e);
+        log.error(`Error processing tx ${lt}:${hash}; skipped`, e);
       }
     }
 
@@ -169,6 +170,8 @@ async function observeInbound(
   tx: ton.Transaction,
   onInbound: (inbound: Inbound) => Promise<void>
 ): Promise<void> {
+  const log = logger.child({ chain: NetworkID.TON });
+
   const hash = hashToString(tx.hash());
   const lt = ltToString(tx.lt);
 
@@ -178,65 +181,82 @@ async function observeInbound(
   }
 
   if (!tx.inMessage) {
-    console.log(`TON: no inMessage, skipping (tx ${lt}:${hash})`);
+    log.info(`No inMessage, skipping (tx ${lt}:${hash})`);
     return;
   }
 
   const body = tx.inMessage.body!.beginParse();
   if (body.remainingBits < 32 + 64) {
-    console.log(`TON: not enough bits to read opCode (tx ${lt}:${hash})`);
+    log.info(`Not enough bits to read opCode (tx ${lt}:${hash})`);
     return;
   }
 
   const opCode = body.loadUint(32) as types.GatewayOp;
 
   if (opCode === types.GatewayOp.Donate) {
-    console.log(`TON: gateway donation (tx ${lt}:${hash})`);
+    log.info(`Gateway donation (tx ${lt}:${hash})`);
     return;
   }
 
   const isDeposit =
     opCode === types.GatewayOp.Deposit ||
     opCode === types.GatewayOp.DepositAndCall;
-  if (!isDeposit) {
-    console.log(
-      `TON: irrelevant opCode ${opCode} for deposit (tx ${lt}:${hash})`
-    );
-    return;
+
+  if (isDeposit) {
+    // skip query_id
+    body.skip(64);
+
+    const logMessage = tx.outMessages.get(0);
+    if (!logMessage) {
+      log.info(`No log cell, skipping (tx ${lt}:${hash})`);
+      return;
+    }
+
+    const tonSender = info.src as ton.Address;
+    const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
+    const depositLog = types.depositLogFromCell(logMessage.body);
+    const depositAmount = depositLog.amount;
+
+    let callDataHex: string | null = null;
+
+    if (opCode === types.GatewayOp.DepositAndCall) {
+      const callDataSlice = body.loadRef().asSlice();
+      callDataHex = types.sliceToHexString(callDataSlice);
+    }
+
+    return await onInbound({
+      amount: depositAmount,
+      callDataHex,
+      hash,
+      lt,
+      opCode,
+      recipient: zetaRecipient,
+      sender: tonSender,
+    });
   }
 
-  // skip query_id
-  body.skip(64);
+  if (opCode === types.GatewayOp.Call) {
+    // skip query_id
+    body.skip(64);
 
-  const logMessage = tx.outMessages.get(0);
-  if (!logMessage) {
-    console.log(`TON: no log cell, skipping (tx ${lt}:${hash})`);
-    return;
-  }
+    const tonSender = info.src as ton.Address;
+    const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
 
-  const tonSender = info.src as ton.Address;
-  const zetaRecipient = types.bufferToHexString(body.loadBuffer(20));
-  const depositLog = types.depositLogFromCell(logMessage.body);
-  const depositAmount = depositLog.amount;
-
-  let callDataHex: string | null = null;
-
-  if (opCode === types.GatewayOp.DepositAndCall) {
     const callDataSlice = body.loadRef().asSlice();
-    callDataHex = types.sliceToHexString(callDataSlice);
+    const callDataHex = types.sliceToHexString(callDataSlice);
+
+    return await onInbound({
+      amount: 0n,
+      callDataHex,
+      hash,
+      lt,
+      opCode,
+      recipient: zetaRecipient,
+      sender: tonSender,
+    });
   }
 
-  const inbound: Inbound = {
-    amount: depositAmount,
-    callDataHex,
-    hash,
-    lt,
-    opCode,
-    recipient: zetaRecipient,
-    sender: tonSender,
-  };
-
-  await onInbound(inbound);
+  log.error(`Irrelevant opCode ${opCode} for deposit (tx ${lt}:${hash})`);
 }
 
 export interface WithdrawArgs {
@@ -253,9 +273,10 @@ export async function withdrawTON(
   recipient: ton.Address,
   amount: bigint
 ) {
-  logger.info(
-    `Executing withdrawal to ${recipient.toRawString()}, amount: ${amount.toString()}`,
-    { chain: NetworkID.TON }
+  const log = logger.child({ chain: NetworkID.TON });
+
+  log.info(
+    `Executing withdrawal to ${recipient.toRawString()}, amount: ${amount.toString()}`
   );
 
   const seqno = await gateway.getSeqno();
@@ -269,7 +290,7 @@ export async function withdrawTON(
     );
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      console.log("Axios error", err.response?.data);
+      log.error("Axios error", err.response?.data);
     }
 
     throw err;

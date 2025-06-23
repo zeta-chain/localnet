@@ -97,6 +97,10 @@ const startLocalnet = async (options: {
     fs.mkdirSync(LOCALNET_DIR, { recursive: true });
   }
 
+  const gracefulShutdown = async () => {
+    await cleanup(options);
+  };
+
   // Set up readline interface for interactive terminal sessions to handle process termination
   // Only create the interface if we're running in a TTY (interactive terminal)
   // This ensures proper cleanup and return of shell control when the program runs in background
@@ -106,15 +110,15 @@ const startLocalnet = async (options: {
       output: process.stdout,
     });
     readlineInterface.on("close", async () => {
-      await cleanup();
+      await gracefulShutdown();
       process.exit(0);
     });
     readlineInterface.on("error", (err) => {
       logger.error(`Readline interface error: ${err}`, { chain: "localnet" });
     });
   } else {
-    process.on("SIGINT", cleanup);
-    process.on("SIGTERM", cleanup);
+    process.on("SIGINT", gracefulShutdown);
+    process.on("SIGTERM", gracefulShutdown);
   }
 
   const enabledChains = options.chains || [];
@@ -239,7 +243,7 @@ const startLocalnet = async (options: {
     logger.error(`Error initializing localnet: ${error}`, {
       chain: "localnet",
     });
-    cleanup();
+    await gracefulShutdown();
     process.exit(1);
   }
 
@@ -247,12 +251,8 @@ const startLocalnet = async (options: {
     logger.info("Localnet successfully initialized. Stopping...", {
       chain: "localnet",
     });
-    await cleanup();
+    await gracefulShutdown();
     process.exit(0);
-  }
-
-  if (enabledChains.includes("ton")) {
-    await waitForTonContainerToStop();
   }
 };
 
@@ -269,32 +269,23 @@ const waitForTonContainerToStop = async () => {
 
     try {
       logger.info(
-        "Waiting for TON container to stop. Please, don't close this terminal.",
-        { chain: "localnet" }
+        "Waiting for TON container to stop. Please, don't close this terminal."
       );
       await container.stop();
       await container.wait();
-      logger.info(ansis.green("TON container stopped successfully."), {
-        chain: "localnet",
-      });
+      logger.info(ansis.green("TON container stopped successfully."));
     } catch (stopError) {
-      logger.error(`Error stopping container: ${stopError}`, {
-        chain: "localnet",
-      });
+      logger.error(`Error stopping container: ${stopError}`);
     }
   } catch (error) {
-    logger.error(`Error accessing Docker: ${error}`, { chain: "localnet" });
+    logger.error(`Error accessing Docker: ${error}`);
     // Container might not exist or already be stopped
-    logger.info(ansis.yellow("TON container not found or already stopped."), {
-      chain: "localnet",
-    });
+    logger.info(ansis.yellow("TON container not found or already stopped."));
   }
 };
 
-const cleanup = async () => {
-  logger.info("Shutting down processes and cleaning up...", {
-    chain: "localnet",
-  });
+const cleanup = async (options: { chains: string[] }) => {
+  logger.info("Shutting down processes and cleaning up...");
 
   // Close readline interface if it exists
   if (readlineInterface) {
@@ -313,24 +304,20 @@ const cleanup = async () => {
           try {
             process.kill(proc.pid, "SIGKILL");
             logger.info(
-              `Successfully killed process ${proc.pid} (${proc.command}).`,
-              { chain: "localnet" }
+              `Successfully killed process ${proc.pid} (${proc.command}).`
             );
           } catch (error) {
             logger.info(
               ansis.yellow(
                 `Failed to kill process ${proc.pid} (${proc.command}): ${error}`
-              ),
-              { chain: "localnet" }
+              )
             );
           }
         }
       }
       fs.unlinkSync(PROCESS_FILE);
     } catch (error) {
-      logger.error(`Error cleaning up processes: ${error}`, {
-        chain: "localnet",
-      });
+      logger.error(`Error cleaning up processes`, error);
     }
   }
 
@@ -342,10 +329,12 @@ const cleanup = async () => {
     try {
       fs.unlinkSync(ANVIL_CONFIG);
     } catch (error) {
-      logger.info(ansis.yellow(`Failed to remove anvil.json: ${error}`), {
-        chain: "localnet",
-      });
+      logger.info(ansis.yellow(`Failed to remove anvil.json`), error);
     }
+  }
+
+  if (options.chains.includes("ton")) {
+    await waitForTonContainerToStop();
   }
 };
 
