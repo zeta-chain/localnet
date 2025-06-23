@@ -8,7 +8,7 @@ import { ethers, Signer } from "ethers";
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
-import { prepareUniswapV3 } from "../../tokens/uniswapV3";
+// import { prepareUniswapV3 } from "../../tokens/uniswapV3";
 
 export const zetachainSetup = async (
   deployer: Signer,
