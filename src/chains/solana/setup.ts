@@ -291,7 +291,6 @@ export const solanaMonitorTransactions = async ({
                     decodedInstruction.name === "deposit_spl_token_and_call"
                   ) {
                     const data = decodedInstruction.data as any;
-                    console.log(data);
                     const receiver =
                       "0x" +
                       data.receiver
@@ -313,7 +312,6 @@ export const solanaMonitorTransactions = async ({
                           data.revert_options.revert_message
                         ).toString("hex"),
                     ];
-                    console.log(revertOptions);
                     const asset = ethers.ZeroAddress;
                     if (decodedInstruction.name === "call") {
                       const message = Buffer.from(data.message, "hex");

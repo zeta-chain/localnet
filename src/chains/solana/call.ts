@@ -18,7 +18,6 @@ export const solanaCall = async ({
     logger.info("Gateway Call executed", {
       chain: NetworkID.Solana,
     });
-    console.log(args);
     await zetachainExecute({
       args: [sender, receiver, message, revertOptions],
       chainID,
