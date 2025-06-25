@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cpx 'src/chains/solana/deploy/**/*' dist/chains/solana/deploy/ && cpx 'src/chains/solana/idl/**/*' dist/chains/solana/idl/ && cpx 'src/chains/sui/token/token.json' dist/chains/sui/token",
+    "build": "del-cli dist && tsc && cpx 'src/chains/sui/token/token.json' dist/chains/sui/token",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts .",
     "localnet": "yarn build && node dist/commands/program.js"

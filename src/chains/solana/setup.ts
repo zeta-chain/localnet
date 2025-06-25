@@ -95,10 +95,10 @@ export const solanaSetup = async ({
   );
   logger.info("Setting up Solana...", { chain: NetworkID.Solana });
   const gatewaySoPath = require.resolve(
-    "@zetachain/localnet/solana/deploy/gateway.so"
+    "@zetachain/protocol-contracts-solana/dev/lib/gateway.so"
   );
   const gatewayKeypairPath = require.resolve(
-    "@zetachain/localnet/solana/deploy/gateway-keypair.json"
+    "@zetachain/protocol-contracts-solana/dev/keypair/gateway-keypair.json"
   );
 
   const defaultSolanaUserKeypair = await loadSolanaKeypair();
