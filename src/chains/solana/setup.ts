@@ -88,9 +88,12 @@ export const solanaSetup = async ({
   if (skip || !(await isSolanaAvailable())) {
     return;
   }
+  logger.info(`Default user mnemonic: ${MNEMONIC}`, {
+    chain: NetworkID.Solana,
+  });
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
   logger.info(
-    `Default Solana user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`,
+    `Default user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`,
     { chain: NetworkID.Solana }
   );
   logger.info("Setting up Solana...", { chain: NetworkID.Solana });
