@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, hexlify } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
@@ -31,7 +31,7 @@ export const solanaCall = async ({
     logger.error(`Error during call: ${e}`, {
       chain: NetworkID.ZetaChain,
     });
-    const abortAddress = revertOptions[2];
+    const abortAddress = hexlify(new Uint8Array(revertOptions[2]));
     const revertMessage = revertOptions[3];
     return await zetachainOnAbort({
       abortAddress: abortAddress,

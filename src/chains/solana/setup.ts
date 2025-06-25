@@ -302,13 +302,18 @@ export const solanaMonitorTransactions = async ({
                         transaction.transaction.message.accountKeys[0].toString()
                       )
                     );
-                    //revertAddress, callOnRevert, abortAddress, revertMessage
                     const revertOptions = [
                       data.revert_options.revert_address,
                       data.revert_options.call_on_revert,
-                      data.revert_options.abort_address,
-                      data.revert_options.revert_message,
+                      ethers.hexlify(
+                        new Uint8Array(data.revert_options.abort_address)
+                      ),
+                      "0x" +
+                        Buffer.from(
+                          data.revert_options.revert_message
+                        ).toString("hex"),
                     ];
+                    console.log(revertOptions);
                     const asset = ethers.ZeroAddress;
                     if (decodedInstruction.name === "call") {
                       const message = Buffer.from(data.message, "hex");
