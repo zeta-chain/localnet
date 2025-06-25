@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { ethers } from "ethers";
 import { task } from "hardhat/config";
-import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 
 import { getKeypair } from "./solanaDepositAndCall";
 

@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import * as bip39 from "bip39";
 import { exec } from "child_process";
 import { keccak256 } from "ethereumjs-util";
@@ -16,7 +17,6 @@ import { sleep } from "../../utils";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
 import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
-import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 
 const execAsync = util.promisify(exec);

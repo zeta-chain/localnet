@@ -1,10 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { AbiCoder, ethers } from "ethers";
 import * as fs from "fs";
 import { task } from "hardhat/config";
 import * as path from "path";
-import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 
 import { keypairFromMnemonic } from "../chains/solana/setup";
 
