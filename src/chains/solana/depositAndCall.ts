@@ -36,7 +36,6 @@ export const solanaDepositAndCall = async ({
       });
       return;
     }
-    console.log(args);
     await zetachainDepositAndCall({
       args,
       chainID,

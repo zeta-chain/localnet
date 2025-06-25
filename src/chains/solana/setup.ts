@@ -14,6 +14,7 @@ import { addBackgroundProcess } from "../../backgroundProcesses";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { sleep } from "../../utils";
+import { solanaCall } from "./call";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
 import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
@@ -283,13 +284,14 @@ export const solanaMonitorTransactions = async ({
                 );
                 if (decodedInstruction) {
                   if (
+                    decodedInstruction.name === "call" ||
                     decodedInstruction.name === "deposit_and_call" ||
                     decodedInstruction.name === "deposit" ||
                     decodedInstruction.name === "deposit_spl_token" ||
                     decodedInstruction.name === "deposit_spl_token_and_call"
                   ) {
                     const data = decodedInstruction.data as any;
-                    const amount = data.amount.toString();
+                    console.log(data);
                     const receiver =
                       "0x" +
                       data.receiver
@@ -300,21 +302,45 @@ export const solanaMonitorTransactions = async ({
                         transaction.transaction.message.accountKeys[0].toString()
                       )
                     );
+                    //revertAddress, callOnRevert, abortAddress, revertMessage
+                    const revertOptions = [
+                      data.revert_options.revert_address,
+                      data.revert_options.call_on_revert,
+                      data.revert_options.abort_address,
+                      data.revert_options.revert_message,
+                    ];
                     const asset = ethers.ZeroAddress;
-                    let args = [sender, receiver, amount, asset];
-                    if (decodedInstruction.name === "deposit_and_call") {
+                    if (decodedInstruction.name === "call") {
                       const message = Buffer.from(data.message, "hex");
-                      args.push(message);
+                      solanaCall({
+                        args: [sender, receiver, message, revertOptions],
+                        deployer,
+                        foreignCoins,
+                        provider,
+                        zetachainContracts,
+                      });
+                    }
+                    if (decodedInstruction.name === "deposit_and_call") {
+                      const amount = data.amount.toString();
+                      const message = Buffer.from(data.message, "hex");
                       solanaDepositAndCall({
-                        args,
+                        args: [
+                          sender,
+                          receiver,
+                          amount,
+                          asset,
+                          message,
+                          revertOptions,
+                        ],
                         deployer,
                         foreignCoins,
                         provider,
                         zetachainContracts,
                       });
                     } else if (decodedInstruction.name === "deposit") {
+                      const amount = data.amount.toString();
                       solanaDeposit({
-                        args,
+                        args: [sender, receiver, amount, asset],
                         deployer,
                         foreignCoins,
                         provider,
@@ -323,15 +349,15 @@ export const solanaMonitorTransactions = async ({
                     } else if (
                       decodedInstruction.name === "deposit_spl_token"
                     ) {
+                      const amount = data.amount.toString();
                       const mintAccountIndex = 3;
                       const splIndex =
                         transaction.transaction.message.instructions[0]
                           .accounts[mintAccountIndex];
                       const asset =
                         transaction.transaction.message.accountKeys[splIndex];
-                      args[3] = asset.toString();
                       solanaDeposit({
-                        args,
+                        args: [sender, receiver, amount, asset],
                         deployer,
                         foreignCoins,
                         provider,
@@ -340,16 +366,22 @@ export const solanaMonitorTransactions = async ({
                     } else if (
                       decodedInstruction.name === "deposit_spl_token_and_call"
                     ) {
+                      const amount = data.amount.toString();
                       const message = Buffer.from(data.message, "hex");
                       const splIndex =
                         transaction.transaction.message.instructions[0]
                           .accounts[3];
                       const asset =
                         transaction.transaction.message.accountKeys[splIndex];
-                      args[3] = asset.toString();
-                      args.push(message);
                       solanaDepositAndCall({
-                        args,
+                        args: [
+                          sender,
+                          receiver,
+                          amount,
+                          asset,
+                          message,
+                          revertOptions,
+                        ],
                         deployer,
                         foreignCoins,
                         provider,
