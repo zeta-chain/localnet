@@ -1,16 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { ethers } from "ethers";
-import * as fs from "fs";
 import { task } from "hardhat/config";
+import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 
 import { getKeypair } from "./solanaDepositAndCall";
 
 const solanaDeposit = async (args: any) => {
-  const gatewayPath = require.resolve(
-    "@zetachain/localnet/solana/idl/gateway.json"
-  );
-  const Gateway_IDL = JSON.parse(fs.readFileSync(gatewayPath, "utf-8"));
-
   const keypair = await getKeypair(args.mnemonic);
 
   const provider = new anchor.AnchorProvider(
