@@ -28,9 +28,6 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./solana/idl/gateway.json": "./dist/chains/solana/idl/gateway.json",
-    "./solana/deploy/gateway.so": "./dist/chains/solana/deploy/gateway.so",
-    "./solana/deploy/gateway-keypair.json": "./dist/chains/solana/deploy/gateway-keypair.json",
     "./sui/token/token.json": "./dist/chains/sui/token/token.json"
   },
   "keywords": [],
