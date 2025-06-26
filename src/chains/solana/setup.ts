@@ -20,8 +20,6 @@ import { solanaDeposit } from "./deposit";
 import { solanaDepositAndCall } from "./depositAndCall";
 import { isSolanaAvailable } from "./isSolanaAvailable";
 
-const execAsync = util.promisify(exec);
-
 const formatRevertOptions = (revert_options: any): string[] => {
   return [
     revert_options.revert_address,
@@ -30,6 +28,8 @@ const formatRevertOptions = (revert_options: any): string[] => {
     "0x" + Buffer.from(revert_options.revert_message).toString("hex"),
   ];
 };
+
+const execAsync = util.promisify(exec);
 
 const loadSolanaKeypair = async (): Promise<Keypair> => {
   const log = logger.child({ chain: NetworkID.Solana });
