@@ -22,6 +22,15 @@ import { isSolanaAvailable } from "./isSolanaAvailable";
 
 const execAsync = util.promisify(exec);
 
+const createRevertOptions = (data: any): string[] => {
+  return [
+    data.revert_options.revert_address,
+    data.revert_options.call_on_revert,
+    ethers.hexlify(new Uint8Array(data.revert_options.abort_address)),
+    "0x" + Buffer.from(data.revert_options.revert_message).toString("hex"),
+  ];
+};
+
 const loadSolanaKeypair = async (): Promise<Keypair> => {
   const log = logger.child({ chain: NetworkID.Solana });
   const filePath = path.join(os.homedir(), ".config", "solana", "id.json");
@@ -287,17 +296,7 @@ export const solanaMonitorTransactions = async ({
                         transaction.transaction.message.accountKeys[0].toString()
                       )
                     );
-                    const revertOptions = [
-                      data.revert_options.revert_address,
-                      data.revert_options.call_on_revert,
-                      ethers.hexlify(
-                        new Uint8Array(data.revert_options.abort_address)
-                      ),
-                      "0x" +
-                        Buffer.from(
-                          data.revert_options.revert_message
-                        ).toString("hex"),
-                    ];
+                    const revertOptions = createRevertOptions(data);
                     const asset = ethers.ZeroAddress;
                     if (decodedInstruction.name === "call") {
                       const message = Buffer.from(data.message, "hex");
