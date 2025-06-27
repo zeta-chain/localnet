@@ -19,6 +19,7 @@ import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
+import { getRegistryAsJson } from "./utils/registryUtils";
 
 const foreignCoins: any[] = [];
 
@@ -242,6 +243,11 @@ export const initLocalnet = async ({
     // Init registry
     logger.debug("Initializing registry", { chain: "localnet" });
     await initRegistry({ contracts, res });
+
+    const registryJson = await getRegistryAsJson(
+      zetachainContracts.coreRegistry
+    );
+
     logger.debug("Registry initialization complete", { chain: "localnet" });
 
     // Now set up ALL event handlers after everything is initialized
