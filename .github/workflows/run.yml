@@ -27,6 +27,8 @@ jobs:
 
       - name: Install Anchor (Solana)
         uses: metadaoproject/setup-anchor@v3.1
+        with:
+          node-version: "21"
 
       - name: Install Dependencies
         run: yarn
