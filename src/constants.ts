@@ -1,3 +1,6 @@
+import os from "os";
+import path from "path";
+
 export const FUNGIBLE_MODULE_ADDRESS =
   "0x735b14BB79463307AAcBED86DAf3322B1e6226aB";
 
@@ -22,3 +25,6 @@ const evmChains = [NetworkID.Ethereum, NetworkID.BNB, NetworkID.ZetaChain];
 export const isEVMChain = function (networkId: string) {
   return evmChains.includes(networkId);
 };
+
+export const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
+export const REGISTRY_FILE = path.join(LOCALNET_DIR, "registry.json");

@@ -1,4 +1,5 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
+import fs from "fs";
 
 import { evmCall } from "./chains/evm/call";
 import { evmDeposit } from "./chains/evm/deposit";
@@ -15,7 +16,7 @@ import {
 import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
-import { anvilTestMnemonic, MNEMONIC, NetworkID } from "./constants";
+import { anvilTestMnemonic, NetworkID, REGISTRY_FILE } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
@@ -247,6 +248,14 @@ export const initLocalnet = async ({
     const registryJson = await getRegistryAsJson(
       zetachainContracts.coreRegistry
     );
+
+    // Write registry to file
+    fs.writeFileSync(
+      REGISTRY_FILE,
+      JSON.stringify(registryJson, null, 2),
+      "utf-8"
+    );
+    logger.debug("Registry written to file", { chain: "localnet" });
 
     logger.debug("Registry initialization complete", { chain: "localnet" });
 

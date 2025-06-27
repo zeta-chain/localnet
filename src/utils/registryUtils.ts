@@ -40,7 +40,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
 
       result[chainKey].contracts.push({
         active: Boolean(contract.active),
-        address: ethers.hexlify(contract.addressBytes),
+        address: String(contract.addressBytes),
         chainId: Number(contract.chainId),
         contractType: String(contract.contractType),
       });
