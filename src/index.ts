@@ -244,22 +244,23 @@ export const initLocalnet = async ({
     // Init registry
     logger.debug("Initializing registry", { chain: "localnet" });
     await initRegistry({ contracts, res });
-
-    const registryJson = await getRegistryAsJson(
-      zetachainContracts.coreRegistry
-    );
-
-    // Write registry to file
-    fs.writeFileSync(
-      REGISTRY_FILE,
-      JSON.stringify(registryJson, null, 2),
-      "utf-8"
-    );
-    logger.debug("Registry written to file", { chain: "localnet" });
-
     logger.debug("Registry initialization complete", { chain: "localnet" });
+    // Write registry to file
+    try {
+      const registryJson = await getRegistryAsJson(
+        zetachainContracts.coreRegistry
+      );
 
-    // Now set up ALL event handlers after everything is initialized
+      await fs.promises.writeFile(
+        REGISTRY_FILE,
+        JSON.stringify(registryJson, null, 2),
+        "utf-8"
+      );
+      logger.debug("Registry written to file", { chain: "localnet" });
+    } catch (error) {
+      logger.error("Error writing registry to file");
+    }
+
     logger.debug("Setting up event handlers", { chain: "localnet" });
 
     // Set up ZetaChain event handlers
