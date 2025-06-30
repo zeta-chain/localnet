@@ -10,6 +10,28 @@ export function isRegisteringGatewaysActive(): boolean {
   return isRegisteringGateways;
 }
 
+// Helper function to convert address bytes to appropriate format
+const convertAddressBytes = (addressBytes: Uint8Array): string => {
+  try {
+    // Try to decode as UTF-8 string first
+    const decodedString = ethers.toUtf8String(addressBytes);
+    // Check if the decoded string looks like hex (starts with 0x and contains only hex chars)
+    if (
+      decodedString.startsWith("0x") &&
+      /^0x[0-9a-fA-F]+$/.test(decodedString)
+    ) {
+      // Keep as hex if it's a valid hex string
+      return decodedString;
+    } else {
+      // Use the decoded ASCII string
+      return decodedString;
+    }
+  } catch {
+    // If UTF-8 decoding fails, treat as hex bytes
+    return ethers.hexlify(addressBytes);
+  }
+};
+
 export const getRegistryAsJson = async (registry: ethers.Contract) => {
   try {
     const allContracts = await registry.getAllContracts();
@@ -40,7 +62,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
 
       result[chainKey].contracts.push({
         active: Boolean(contract.active),
-        address: String(contract.addressBytes),
+        address: convertAddressBytes(contract.addressBytes),
         chainId: Number(contract.chainId),
         contractType: String(contract.contractType),
       });

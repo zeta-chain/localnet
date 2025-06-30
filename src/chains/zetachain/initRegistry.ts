@@ -249,7 +249,10 @@ const registerContract = async ({
 }) => {
   const chainId = chainIdMap[contract.chain];
   const { type: contractType } = contract;
-  const addressBytes = ethers.toUtf8Bytes(contract.address);
+
+  const addressBytes = contract.address.startsWith("0x")
+    ? ethers.getBytes(contract.address)
+    : ethers.toUtf8Bytes(contract.address);
 
   const tx = await coreRegistry.registerContract(
     chainId,
@@ -285,7 +288,7 @@ const approveAllZRC20GasTokens = async ({
     )?.zrc20_contract_address;
 
     if (!gasZRC20Address) {
-      logger.error(`Gas ZRC20 address not found for chain ID: ${chainId}`, {
+      logger.debug(`Gas ZRC20 address not found for chain ID: ${chainId}`, {
         chain: NetworkID.ZetaChain,
       });
       continue;
