@@ -11,7 +11,7 @@ export const zetachainOnRevert = async ({
   amount,
   sender,
   chainID,
-  gatewayZEVM,
+  gateway,
   provider,
   outgoing,
   fungibleModuleSigner,
@@ -44,13 +44,13 @@ export const zetachainOnRevert = async ({
         );
         let tx;
         if (asset === ethers.ZeroAddress) {
-          tx = await gatewayZEVM
+          tx = await gateway
             .connect(fungibleModuleSigner)
             .executeRevert(revertAddress, revertContext, {
               gasLimit: 1_500_000,
             });
         } else {
-          tx = await gatewayZEVM
+          tx = await gateway
             .connect(fungibleModuleSigner)
             .depositAndRevert(asset, amount, revertAddress, revertContext, {
               gasLimit: 1_500_000,
@@ -104,7 +104,7 @@ export const zetachainOnRevert = async ({
         asset,
         chainID,
         fungibleModuleSigner,
-        gatewayZEVM,
+        gateway,
         outgoing,
         provider,
         revertMessage,

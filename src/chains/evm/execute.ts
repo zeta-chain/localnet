@@ -49,7 +49,7 @@ export const evmExecute = async ({
     chainID === NetworkID.Ethereum
       ? contracts.ethereumContracts
       : contracts.bnbContracts;
-  const executeTx = await evmContracts.gatewayEVM
+  const executeTx = await evmContracts.gateway
     .connect(contracts.tss)
     .execute(messageContext, receiver, message, {
       gasLimit: callOptions.gasLimit,

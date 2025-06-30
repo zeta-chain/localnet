@@ -25,7 +25,7 @@ export const zetachainWithdraw = async ({
     deployer,
     tss,
     provider,
-    zetachainContracts: { fungibleModuleSigner, gatewayZEVM, wzeta },
+    zetachainContracts: { fungibleModuleSigner, gateway, wzeta },
   } = contracts;
   logger.info("Gateway: 'Withdrawn' event emitted", {
     chain: NetworkID.ZetaChain,
@@ -146,7 +146,7 @@ export const zetachainWithdraw = async ({
       deployOpts,
       err,
       fungibleModuleSigner,
-      gatewayZEVM,
+      gateway,
       outgoing: true,
       provider,
       revertOptions,

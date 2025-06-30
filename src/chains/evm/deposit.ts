@@ -14,7 +14,7 @@ export const evmDeposit = async ({
   args,
   deployer,
   foreignCoins,
-  gatewayEVM,
+  gateway,
   provider,
   custody,
   tss,

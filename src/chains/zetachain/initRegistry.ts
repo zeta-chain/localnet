@@ -250,7 +250,7 @@ const registerContract = async ({
   const chainId = chainIdMap[contract.chain];
   const { type: contractType } = contract;
   const addressBytes = ethers.toUtf8Bytes(contract.address);
-  console.log(chainId, contractType, addressBytes);
+
   const tx = await coreRegistry.registerContract(
     chainId,
     contractType,
@@ -339,12 +339,7 @@ export const registerGatewayContracts = async ({
 
     const gatewayContracts = addresses.filter(
       (item: any) =>
-        (item.type === "gateway" ||
-          item.type === "gatewayEVM" ||
-          item.type === "gatewayProgram") &&
-        item.chain &&
-        item.address &&
-        item.type
+        item.type === "gateway" && item.chain && item.address && item.type
     );
 
     for (const contract of gatewayContracts) {
