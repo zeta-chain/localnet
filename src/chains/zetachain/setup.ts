@@ -124,7 +124,7 @@ export const zetachainSetup = async (
     .connect(fungibleModuleSigner)
     .deposit({ ...deployOpts, value: ethers.parseEther("10") });
 
-  await(wzeta as any)
+  await (wzeta as any)
     .connect(fungibleModuleSigner)
     .approve(gatewayZEVM.target, ethers.parseEther("10"), deployOpts);
 
