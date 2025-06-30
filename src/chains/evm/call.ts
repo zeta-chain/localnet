@@ -61,7 +61,7 @@ export const evmCall = async ({
       asset: ethers.ZeroAddress,
       chainID,
       fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
-      gatewayZEVM: zetachainContracts.gatewayZEVM,
+      gateway: zetachainContracts.gateway,
       outgoing: false,
       provider,
       revertMessage: revertMessage,

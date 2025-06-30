@@ -23,7 +23,7 @@ export const zetachainDepositAndCallZeta = async ({
     { chain: NetworkID.ZetaChain }
   );
 
-  const tx = await zetachainContracts.gatewayZEVM
+  const tx = await zetachainContracts.gateway
     .connect(zetachainContracts.fungibleModuleSigner)
     .depositAndCall(context, receiver, message, { value: amount });
   await tx.wait();

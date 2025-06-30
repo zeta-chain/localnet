@@ -36,7 +36,7 @@ export const zetachainExecute = async ({
         context
       )}), zrc20: ${zrc20}, amount: 0, message: ${message})`
     );
-    const executeTx = await zetachainContracts.gatewayZEVM
+    const executeTx = await zetachainContracts.gateway
       .connect(zetachainContracts.fungibleModuleSigner)
       .execute(context, zrc20, 0, receiver, message, {
         gasLimit: 1_500_000,
@@ -66,7 +66,7 @@ export const zetachainExecute = async ({
       asset: ethers.ZeroAddress,
       chainID,
       fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
-      gatewayZEVM: zetachainContracts.gatewayZEVM,
+      gateway: zetachainContracts.gateway,
       outgoing: false,
       provider,
       revertMessage: revertMessage,

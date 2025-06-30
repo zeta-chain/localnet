@@ -47,7 +47,6 @@ export const initRegistry = async ({
     const contractsToRegister = addresses.filter(
       (item: any) =>
         !item.type.includes("ZRC-20") &&
-        !item.type.includes("gateway") &&
         !item.type.includes("SPL-20") &&
         item.chain !== "sui" &&
         item.chain !== "ton" &&
@@ -250,8 +249,8 @@ const registerContract = async ({
 }) => {
   const chainId = chainIdMap[contract.chain];
   const { type: contractType } = contract;
-
   const addressBytes = ethers.toUtf8Bytes(contract.address);
+  console.log(chainId, contractType, addressBytes);
   const tx = await coreRegistry.registerContract(
     chainId,
     contractType,
@@ -340,9 +339,9 @@ export const registerGatewayContracts = async ({
 
     const gatewayContracts = addresses.filter(
       (item: any) =>
-        item.type.includes("gateway") &&
-        item.chain !== "sui" && // Exclude Sui gateway
-        item.chain !== "ton" && // Exclude TON gateway
+        (item.type === "gateway" ||
+          item.type === "gatewayEVM" ||
+          item.type === "gatewayProgram") &&
         item.chain &&
         item.address &&
         item.type

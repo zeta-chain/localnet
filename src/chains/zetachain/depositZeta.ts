@@ -6,7 +6,7 @@ export const zetachainDepositZeta = async ({
   args,
 }: any) => {
   const [, receiver, amount] = args;
-  const tx = await zetachainContracts.gatewayZEVM
+  const tx = await zetachainContracts.gateway
     .connect(zetachainContracts.fungibleModuleSigner)
     .deposit(receiver, { value: amount });
   await tx.wait();

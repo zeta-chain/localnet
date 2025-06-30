@@ -121,7 +121,7 @@ export const evmDeposit = async ({
         asset: zrc20,
         chainID,
         fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
-        gatewayZEVM: zetachainContracts.gatewayZEVM,
+        gateway: zetachainContracts.gateway,
         outgoing: false,
         provider,
         revertMessage: revertMessage,

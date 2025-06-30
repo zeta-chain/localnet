@@ -265,15 +265,15 @@ export const initLocalnet = async ({
     log.debug("Setting up event handlers");
 
     // Set up ZetaChain event handlers
-    zetachainContracts.gatewayZEVM.on("Called", async (...args) =>
+    zetachainContracts.gateway.on("Called", async (...args) =>
       zetachainCall({ args, contracts, exitOnError })
     );
 
-    zetachainContracts.gatewayZEVM.on("Withdrawn", async (...args) =>
+    zetachainContracts.gateway.on("Withdrawn", async (...args) =>
       zetachainWithdraw({ args, contracts, exitOnError })
     );
 
-    zetachainContracts.gatewayZEVM.on("WithdrawnAndCalled", async (...args) =>
+    zetachainContracts.gateway.on("WithdrawnAndCalled", async (...args) =>
       zetachainWithdrawAndCall({ args, contracts, exitOnError })
     );
 
@@ -372,8 +372,8 @@ export const initLocalnet = async ({
     log.debug("Event handlers setup complete");
 
     // Now register gateway contracts after event handlers are ready
-    log.debug("Registering gateway contracts");
-    await registerGatewayContracts({ contracts, res });
+    // log.debug("Registering gateway contracts");
+    // await registerGatewayContracts({ contracts, res });
     log.debug("Gateway contracts registered");
 
     return res;
