@@ -27,6 +27,7 @@ export const initRegistry = async ({
     const chainIdMap: Record<string, number> = {
       bnb: toNumber(NetworkID.BNB),
       ethereum: toNumber(NetworkID.Ethereum),
+      solana: toNumber(NetworkID.Solana),
       zetachain: ZetaChainID,
     };
 
@@ -48,7 +49,6 @@ export const initRegistry = async ({
         !item.type.includes("ZRC-20") &&
         !item.type.includes("gateway") &&
         !item.type.includes("SPL-20") &&
-        item.chain !== "solana" &&
         item.chain !== "sui" &&
         item.chain !== "ton" &&
         item.chain &&
@@ -78,7 +78,7 @@ export const initRegistry = async ({
       if (chain === "zetachain") continue;
 
       // Skip non-EVM chains that don't have registry contracts
-      if (["solana", "sui", "ton"].includes(chain)) continue;
+      if (["sui", "ton"].includes(chain)) continue;
 
       try {
         logger.debug(`Registering ${chain} chain`, { chain: "localnet" });
@@ -205,18 +205,15 @@ const registerChain = async ({
   foreignCoins: any[];
 }) => {
   const chainId = chainIdMap[chainName];
+  let registryBytes = new Uint8Array([]);
   const registryAddress = addresses.find(
     (item: any) => item.chain === chainName && item.type === "registry"
   )?.address;
 
-  if (!registryAddress) {
-    logger.error(`Registry address not found for chain: ${chainName}`, {
-      chain: NetworkID.ZetaChain,
-    });
-    return;
+  if (registryAddress) {
+    registryBytes = ethers.getBytes(registryAddress);
   }
 
-  const registryBytes = ethers.getBytes(registryAddress);
   const gasZRC20 = foreignCoins.find(
     (coin: any) =>
       toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
@@ -253,8 +250,8 @@ const registerContract = async ({
 }) => {
   const chainId = chainIdMap[contract.chain];
   const { type: contractType } = contract;
-  const addressBytes = ethers.getBytes(contract.address);
 
+  const addressBytes = ethers.toUtf8Bytes(contract.address);
   const tx = await coreRegistry.registerContract(
     chainId,
     contractType,
@@ -330,6 +327,7 @@ export const registerGatewayContracts = async ({
     const chainIdMap: Record<string, number> = {
       bnb: toNumber(NetworkID.BNB),
       ethereum: toNumber(NetworkID.Ethereum),
+      solana: toNumber(NetworkID.Solana),
       zetachain: ZetaChainID,
     };
 
@@ -343,7 +341,6 @@ export const registerGatewayContracts = async ({
     const gatewayContracts = addresses.filter(
       (item: any) =>
         item.type.includes("gateway") &&
-        item.chain !== "solana" && // Exclude Solana gateway
         item.chain !== "sui" && // Exclude Sui gateway
         item.chain !== "ton" && // Exclude TON gateway
         item.chain &&
