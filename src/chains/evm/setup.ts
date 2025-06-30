@@ -218,7 +218,7 @@ export const evmSetup = async ({
 
   return {
     custody,
-    gatewayEVM,
+    gateway: gatewayEVM,
     registry,
     testEVMZeta,
     zetaConnector,

@@ -9,10 +9,7 @@ import { solanaSetup } from "./chains/solana/setup";
 import { suiSetup } from "./chains/sui/suiSetup";
 import * as ton from "./chains/ton";
 import { zetachainCall } from "./chains/zetachain/call";
-import {
-  initRegistry,
-  registerGatewayContracts,
-} from "./chains/zetachain/initRegistry";
+import { initRegistry } from "./chains/zetachain/initRegistry";
 import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
@@ -278,7 +275,7 @@ export const initLocalnet = async ({
     );
 
     // Set up EVM event handlers
-    ethereumContracts.gatewayEVM.on("Called", async (...args: any[]) => {
+    ethereumContracts.gateway.on("Called", async (...args: any[]) => {
       await evmCall({
         args,
         chainID: NetworkID.Ethereum,
@@ -290,7 +287,7 @@ export const initLocalnet = async ({
       });
     });
 
-    ethereumContracts.gatewayEVM.on("Deposited", async (...args: any[]) => {
+    ethereumContracts.gateway.on("Deposited", async (...args: any[]) => {
       await evmDeposit({
         args,
         chainID: NetworkID.Ethereum,
@@ -298,7 +295,7 @@ export const initLocalnet = async ({
         deployer,
         exitOnError,
         foreignCoins,
-        gatewayEVM: ethereumContracts.gatewayEVM,
+        gatewayEVM: ethereumContracts.gateway,
         provider,
         tss,
         wzeta: ethereumContracts.testEVMZeta,
@@ -306,7 +303,7 @@ export const initLocalnet = async ({
       });
     });
 
-    ethereumContracts.gatewayEVM.on(
+    ethereumContracts.gateway.on(
       "DepositedAndCalled",
       async (...args: any[]) => {
         await evmDepositAndCall({
@@ -316,7 +313,7 @@ export const initLocalnet = async ({
           deployer,
           exitOnError: false,
           foreignCoins,
-          gatewayEVM: ethereumContracts.gatewayEVM,
+          gatewayEVM: ethereumContracts.gateway,
           provider,
           tss,
           wzeta: ethereumContracts.testEVMZeta,
@@ -325,7 +322,7 @@ export const initLocalnet = async ({
       }
     );
 
-    bnbContracts.gatewayEVM.on("Called", async (...args: any[]) => {
+    bnbContracts.gateway.on("Called", async (...args: any[]) => {
       await evmCall({
         args,
         chainID: NetworkID.BNB,
@@ -337,7 +334,7 @@ export const initLocalnet = async ({
       });
     });
 
-    bnbContracts.gatewayEVM.on("Deposited", async (...args: any[]) => {
+    bnbContracts.gateway.on("Deposited", async (...args: any[]) => {
       await evmDeposit({
         args,
         chainID: NetworkID.BNB,
@@ -345,7 +342,7 @@ export const initLocalnet = async ({
         deployer,
         exitOnError,
         foreignCoins,
-        gatewayEVM: bnbContracts.gatewayEVM,
+        gatewayEVM: bnbContracts.gateway,
         provider,
         tss,
         wzeta: bnbContracts.testEVMZeta,
@@ -353,7 +350,7 @@ export const initLocalnet = async ({
       });
     });
 
-    bnbContracts.gatewayEVM.on("DepositedAndCalled", async (...args: any[]) => {
+    bnbContracts.gateway.on("DepositedAndCalled", async (...args: any[]) => {
       await evmDepositAndCall({
         args,
         chainID: NetworkID.BNB,
@@ -361,7 +358,7 @@ export const initLocalnet = async ({
         deployer,
         exitOnError: false,
         foreignCoins,
-        gatewayEVM: bnbContracts.gatewayEVM,
+        gatewayEVM: bnbContracts.gateway,
         provider,
         tss,
         wzeta: bnbContracts.testEVMZeta,
@@ -370,11 +367,6 @@ export const initLocalnet = async ({
     });
 
     log.debug("Event handlers setup complete");
-
-    // Now register gateway contracts after event handlers are ready
-    // log.debug("Registering gateway contracts");
-    // await registerGatewayContracts({ contracts, res });
-    log.debug("Gateway contracts registered");
 
     return res;
   } catch (error) {
