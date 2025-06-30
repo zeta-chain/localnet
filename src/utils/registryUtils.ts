@@ -47,7 +47,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
       result[chainKey] = {
         chainInfo: {
           active: Boolean(chain.active),
-          chainId: Number(chain.chainId),
+          chainId: chain.chainId,
           gasZRC20: String(chain.gasZRC20),
           registry: ethers.hexlify(chain.registry),
         },
@@ -63,7 +63,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
       result[chainKey].contracts.push({
         active: Boolean(contract.active),
         address: convertAddressBytes(contract.addressBytes),
-        chainId: Number(contract.chainId),
+        chainId: contract.chainId,
         contractType: String(contract.contractType),
       });
     }
@@ -78,7 +78,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
         coinType: String(token.coinType),
         decimals: Number(token.decimals),
         originAddress: ethers.hexlify(token.originAddress),
-        originChainId: Number(token.originChainId),
+        originChainId: token.originChainId,
         symbol: String(token.symbol),
       });
     }

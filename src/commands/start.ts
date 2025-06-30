@@ -15,7 +15,7 @@ import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
-import { LOCALNET_DIR, REGISTRY_FILE } from "../constants";
+import { LOCALNET_DIR, NetworkID, REGISTRY_FILE } from "../constants";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
 import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
@@ -348,7 +348,7 @@ const cleanup = async (options: { chains: string[] }) => {
 
 export const startCommand = new Command("start")
   .description("Start localnet")
-  .option("-p, --port <number>", "Port to run anvil on", "8545")
+  .option("-p, --port <number>", "Port to run anvil on", NetworkID.ZetaChain)
   .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "-q")
   .option(
     "-f, --force-kill",

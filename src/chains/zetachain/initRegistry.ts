@@ -7,12 +7,6 @@ import { setRegistryInitComplete } from "../../types/registryState";
 import { sleep } from "../../utils";
 import { setRegisteringGateways } from "../../utils/registryUtils";
 
-const ZetaChainID = 31337;
-
-const toNumber = (chainId: number | string): number => {
-  return typeof chainId === "string" ? parseInt(chainId, 10) : chainId;
-};
-
 export const initRegistry = async ({
   contracts,
   res,
@@ -24,11 +18,11 @@ export const initRegistry = async ({
     logger.debug("Starting registry initialization", { chain: "localnet" });
     setRegistryInitComplete(false);
 
-    const chainIdMap: Record<string, number> = {
-      bnb: toNumber(NetworkID.BNB),
-      ethereum: toNumber(NetworkID.Ethereum),
-      solana: toNumber(NetworkID.Solana),
-      zetachain: ZetaChainID,
+    const chainIdMap: Record<string, string> = {
+      bnb: NetworkID.BNB,
+      ethereum: NetworkID.Ethereum,
+      solana: NetworkID.Solana,
+      zetachain: NetworkID.ZetaChain,
     };
 
     const {
@@ -198,7 +192,7 @@ const registerChain = async ({
   chainIdMap,
 }: {
   addresses: any[];
-  chainIdMap: Record<string, number>;
+  chainIdMap: Record<string, string>;
   chainName: string;
   coreRegistry: any;
   foreignCoins: any[];
@@ -214,8 +208,7 @@ const registerChain = async ({
   }
 
   const gasZRC20 = foreignCoins.find(
-    (coin: any) =>
-      toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
+    (coin: any) => coin.foreign_chain_id === chainId && coin.coin_type === "Gas"
   )?.zrc20_contract_address;
 
   if (!gasZRC20) {
@@ -224,7 +217,7 @@ const registerChain = async ({
     });
     return;
   }
-
+  console.log(chainId, gasZRC20, registryBytes);
   const tx = await coreRegistry.changeChainStatus(
     chainId,
     gasZRC20,
@@ -243,7 +236,7 @@ const registerContract = async ({
   coreRegistry,
   chainIdMap,
 }: {
-  chainIdMap: Record<string, number>;
+  chainIdMap: Record<string, string>;
   contract: any;
   coreRegistry: any;
 }) => {
@@ -253,7 +246,7 @@ const registerContract = async ({
   const addressBytes = contract.address.startsWith("0x")
     ? ethers.getBytes(contract.address)
     : ethers.toUtf8Bytes(contract.address);
-
+  console.log(chainId, contractType, addressBytes);
   const tx = await coreRegistry.registerContract(
     chainId,
     contractType,
@@ -272,7 +265,7 @@ const approveAllZRC20GasTokens = async ({
   deployer,
   chainIdMap,
 }: {
-  chainIdMap: Record<string, number>;
+  chainIdMap: Record<string, string>;
   coreRegistry: any;
   deployer: any;
   foreignCoins: any[];
@@ -280,11 +273,11 @@ const approveAllZRC20GasTokens = async ({
   const MAX_UINT256 = ethers.MaxUint256;
 
   for (const chainId of Object.values(chainIdMap)) {
-    if (chainId === ZetaChainID) continue;
+    if (chainId === NetworkID.ZetaChain) continue;
 
     const gasZRC20Address = foreignCoins.find(
       (coin: any) =>
-        toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
+        coin.foreign_chain_id === chainId && coin.coin_type === "Gas"
     )?.zrc20_contract_address;
 
     if (!gasZRC20Address) {
@@ -326,11 +319,11 @@ export const registerGatewayContracts = async ({
     logger.debug("Registering gateway contracts", { chain: "localnet" });
     setRegisteringGateways(true);
 
-    const chainIdMap: Record<string, number> = {
-      bnb: toNumber(NetworkID.BNB),
-      ethereum: toNumber(NetworkID.Ethereum),
-      solana: toNumber(NetworkID.Solana),
-      zetachain: ZetaChainID,
+    const chainIdMap: Record<string, string> = {
+      bnb: NetworkID.BNB,
+      ethereum: NetworkID.Ethereum,
+      solana: NetworkID.Solana,
+      zetachain: NetworkID.ZetaChain,
     };
 
     const { zetachainContracts } = contracts;

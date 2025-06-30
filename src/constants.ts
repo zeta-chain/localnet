@@ -11,13 +11,12 @@ export const anvilTestMnemonic =
   "test test test test test test test test test test test junk";
 
 export const NetworkID = {
-  BNB: "97",
-  Ethereum: "5",
-  Solana: "901",
-  Sui: "103",
-  // ton testnet id
-  TON: "2015141",
-  ZetaChain: "7001",
+  BNB: "98",
+  Ethereum: "11155112",
+  Solana: "902",
+  Sui: "104",
+  TON: "2015142",
+  ZetaChain: "31337",
 };
 
 const evmChains = [NetworkID.Ethereum, NetworkID.BNB, NetworkID.ZetaChain];
