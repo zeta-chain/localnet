@@ -217,7 +217,7 @@ const registerChain = async ({
     });
     return;
   }
-  console.log(chainId, gasZRC20, registryBytes);
+
   const tx = await coreRegistry.changeChainStatus(
     chainId,
     gasZRC20,
