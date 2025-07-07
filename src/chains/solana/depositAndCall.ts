@@ -44,6 +44,9 @@ export const solanaDepositAndCall = async ({
       zetachainContracts,
     });
   } catch (e) {
+    logger.error(`Error depositing and calling: ${e}`, {
+      chain: NetworkID.ZetaChain,
+    });
     const { revertGasFee } = await zetachainSwapToCoverGas({
       amount,
       asset,

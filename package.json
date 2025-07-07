@@ -4,7 +4,7 @@
   "version": "0.0.0-set-on-publish",
   "description": "",
   "scripts": {
-    "build": "del-cli dist && tsc && cpx 'src/chains/solana/deploy/**/*' dist/chains/solana/deploy/ && cpx 'src/chains/solana/idl/**/*' dist/chains/solana/idl/ && cpx 'src/chains/sui/token/token.json' dist/chains/sui/token",
+    "build": "del-cli dist && tsc && cpx 'src/chains/sui/token/token.json' dist/chains/sui/token",
     "lint:fix": "eslint --ext .js,.ts . --fix",
     "lint": "eslint --ext .js,.ts .",
     "localnet": "yarn build && node dist/commands/program.js"
@@ -28,9 +28,6 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./solana/idl/gateway.json": "./dist/chains/solana/idl/gateway.json",
-    "./solana/deploy/gateway.so": "./dist/chains/solana/deploy/gateway.so",
-    "./solana/deploy/gateway-keypair.json": "./dist/chains/solana/deploy/gateway-keypair.json",
     "./sui/token/token.json": "./dist/chains/sui/token/token.json"
   },
   "keywords": [],
@@ -76,6 +73,7 @@
     "@uniswap/v3-periphery": "^1.4.4",
     "@uniswap/v3-sdk": "^3.25.2",
     "@zetachain/protocol-contracts": "13.1.0-rc3",
+    "@zetachain/protocol-contracts-solana": "^5.0.0",
     "@zetachain/protocol-contracts-ton": "2.0.0",
     "ansis": "^3.3.2",
     "bip39": "^3.1.0",
