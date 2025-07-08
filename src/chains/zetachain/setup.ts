@@ -33,7 +33,7 @@ export const zetachainSetup = async (
 
   // Setup both Uniswap V2 and V3
   const v2Setup = await prepareUniswapV2(deployer, wzeta);
-  const v3Setup = await prepareUniswapV3(deployer, wzeta);
+  // const v3Setup = await prepareUniswapV3(deployer, wzeta);
 
   const [
     uniswapFactoryInstanceAddress,
