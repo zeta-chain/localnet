@@ -15,13 +15,13 @@ import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
+import { LOCALNET_DIR, NetworkID, REGISTRY_FILE } from "../constants";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
 import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
 import { initLocalnetAddressesSchema } from "../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
-const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
 const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
@@ -333,6 +333,14 @@ const cleanup = async (options: { chains: string[] }) => {
     }
   }
 
+  if (fs.existsSync(REGISTRY_FILE)) {
+    try {
+      fs.unlinkSync(REGISTRY_FILE);
+    } catch (error) {
+      logger.info(ansis.yellow(`Failed to remove registry.json`), error);
+    }
+  }
+
   if (options.chains.includes("ton")) {
     await waitForTonContainerToStop();
   }
@@ -340,7 +348,7 @@ const cleanup = async (options: { chains: string[] }) => {
 
 export const startCommand = new Command("start")
   .description("Start localnet")
-  .option("-p, --port <number>", "Port to run anvil on", "8545")
+  .option("-p, --port <number>", "Port to run anvil on", NetworkID.ZetaChain)
   .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "-q")
   .option(
     "-f, --force-kill",

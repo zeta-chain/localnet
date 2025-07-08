@@ -7,12 +7,6 @@ import { setRegistryInitComplete } from "../../types/registryState";
 import { sleep } from "../../utils";
 import { setRegisteringGateways } from "../../utils/registryUtils";
 
-const ZetaChainID = 31337;
-
-const toNumber = (chainId: number | string): number => {
-  return typeof chainId === "string" ? parseInt(chainId, 10) : chainId;
-};
-
 export const initRegistry = async ({
   contracts,
   res,
@@ -24,10 +18,11 @@ export const initRegistry = async ({
     logger.debug("Starting registry initialization", { chain: "localnet" });
     setRegistryInitComplete(false);
 
-    const chainIdMap: Record<string, number> = {
-      bnb: toNumber(NetworkID.BNB),
-      ethereum: toNumber(NetworkID.Ethereum),
-      zetachain: ZetaChainID,
+    const chainIdMap: Record<string, string> = {
+      bnb: NetworkID.BNB,
+      ethereum: NetworkID.Ethereum,
+      solana: NetworkID.Solana,
+      zetachain: NetworkID.ZetaChain,
     };
 
     const {
@@ -46,9 +41,7 @@ export const initRegistry = async ({
     const contractsToRegister = addresses.filter(
       (item: any) =>
         !item.type.includes("ZRC-20") &&
-        !item.type.includes("gateway") &&
         !item.type.includes("SPL-20") &&
-        item.chain !== "solana" &&
         item.chain !== "sui" &&
         item.chain !== "ton" &&
         item.chain &&
@@ -78,7 +71,7 @@ export const initRegistry = async ({
       if (chain === "zetachain") continue;
 
       // Skip non-EVM chains that don't have registry contracts
-      if (["solana", "sui", "ton"].includes(chain)) continue;
+      if (["sui", "ton"].includes(chain)) continue;
 
       try {
         logger.debug(`Registering ${chain} chain`, { chain: "localnet" });
@@ -199,27 +192,23 @@ const registerChain = async ({
   chainIdMap,
 }: {
   addresses: any[];
-  chainIdMap: Record<string, number>;
+  chainIdMap: Record<string, string>;
   chainName: string;
   coreRegistry: any;
   foreignCoins: any[];
 }) => {
   const chainId = chainIdMap[chainName];
+  let registryBytes = new Uint8Array([]);
   const registryAddress = addresses.find(
     (item: any) => item.chain === chainName && item.type === "registry"
   )?.address;
 
-  if (!registryAddress) {
-    logger.error(`Registry address not found for chain: ${chainName}`, {
-      chain: NetworkID.ZetaChain,
-    });
-    return;
+  if (registryAddress) {
+    registryBytes = ethers.getBytes(registryAddress);
   }
 
-  const registryBytes = ethers.getBytes(registryAddress);
   const gasZRC20 = foreignCoins.find(
-    (coin: any) =>
-      toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
+    (coin: any) => coin.foreign_chain_id === chainId && coin.coin_type === "Gas"
   )?.zrc20_contract_address;
 
   if (!gasZRC20) {
@@ -247,14 +236,17 @@ const registerContract = async ({
   coreRegistry,
   chainIdMap,
 }: {
-  chainIdMap: Record<string, number>;
+  chainIdMap: Record<string, string>;
   contract: any;
   coreRegistry: any;
 }) => {
   const chainId = chainIdMap[contract.chain];
   const { type: contractType } = contract;
-  const addressBytes = ethers.getBytes(contract.address);
 
+  const addressBytes = contract.address.startsWith("0x")
+    ? ethers.getBytes(contract.address)
+    : ethers.toUtf8Bytes(contract.address);
+  console.log(chainId, contractType, addressBytes);
   const tx = await coreRegistry.registerContract(
     chainId,
     contractType,
@@ -273,7 +265,7 @@ const approveAllZRC20GasTokens = async ({
   deployer,
   chainIdMap,
 }: {
-  chainIdMap: Record<string, number>;
+  chainIdMap: Record<string, string>;
   coreRegistry: any;
   deployer: any;
   foreignCoins: any[];
@@ -281,15 +273,15 @@ const approveAllZRC20GasTokens = async ({
   const MAX_UINT256 = ethers.MaxUint256;
 
   for (const chainId of Object.values(chainIdMap)) {
-    if (chainId === ZetaChainID) continue;
+    if (chainId === NetworkID.ZetaChain) continue;
 
     const gasZRC20Address = foreignCoins.find(
       (coin: any) =>
-        toNumber(coin.foreign_chain_id) === chainId && coin.coin_type === "Gas"
+        coin.foreign_chain_id === chainId && coin.coin_type === "Gas"
     )?.zrc20_contract_address;
 
     if (!gasZRC20Address) {
-      logger.error(`Gas ZRC20 address not found for chain ID: ${chainId}`, {
+      logger.debug(`Gas ZRC20 address not found for chain ID: ${chainId}`, {
         chain: NetworkID.ZetaChain,
       });
       continue;
@@ -327,10 +319,11 @@ export const registerGatewayContracts = async ({
     logger.debug("Registering gateway contracts", { chain: "localnet" });
     setRegisteringGateways(true);
 
-    const chainIdMap: Record<string, number> = {
-      bnb: toNumber(NetworkID.BNB),
-      ethereum: toNumber(NetworkID.Ethereum),
-      zetachain: ZetaChainID,
+    const chainIdMap: Record<string, string> = {
+      bnb: NetworkID.BNB,
+      ethereum: NetworkID.Ethereum,
+      solana: NetworkID.Solana,
+      zetachain: NetworkID.ZetaChain,
     };
 
     const { zetachainContracts } = contracts;
@@ -342,13 +335,7 @@ export const registerGatewayContracts = async ({
 
     const gatewayContracts = addresses.filter(
       (item: any) =>
-        item.type.includes("gateway") &&
-        item.chain !== "solana" && // Exclude Solana gateway
-        item.chain !== "sui" && // Exclude Sui gateway
-        item.chain !== "ton" && // Exclude TON gateway
-        item.chain &&
-        item.address &&
-        item.type
+        item.type === "gateway" && item.chain && item.address && item.type
     );
 
     for (const contract of gatewayContracts) {

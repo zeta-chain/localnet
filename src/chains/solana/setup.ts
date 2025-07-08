@@ -204,7 +204,7 @@ export const solanaSetup = async ({
       {
         address: gatewayProgram.programId.toBase58(),
         chain: "solana",
-        type: "gatewayProgram",
+        type: "gateway",
       },
     ],
     env: {

@@ -14,7 +14,7 @@ export const evmOnRevert = async ({
   custody,
   provider,
   tss,
-  gatewayEVM,
+  gateway,
 }: any) => {
   const [revertAddress, callOnRevert, , revertMessage, onRevertGasLimit] =
     revertOptions;
@@ -30,7 +30,7 @@ export const evmOnRevert = async ({
       (tss as NonceManager).reset();
       let tx;
       if (isGas) {
-        tx = await gatewayEVM
+        tx = await gateway
           .connect(tss)
           .executeRevert(revertAddress, "0x", revertContext, {
             gasLimit: onRevertGasLimit,

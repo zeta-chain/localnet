@@ -60,7 +60,7 @@ export const zetachainDepositAndCall = async ({
     { chain: NetworkID.ZetaChain }
   );
 
-  const tx = await zetachainContracts.gatewayZEVM
+  const tx = await zetachainContracts.gateway
     .connect(zetachainContracts.fungibleModuleSigner)
     .depositAndCall(context, zrc20, amount, receiver, message, {
       gasLimit: 1_500_000,

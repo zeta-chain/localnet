@@ -14,7 +14,7 @@ export const zetachainOnAbort = async ({
   revertMessage,
   abortAddress,
   outgoing,
-  gatewayZEVM,
+  gateway,
 }: any) => {
   const assetContract = new ethers.Contract(
     asset,
@@ -59,7 +59,7 @@ export const zetachainOnAbort = async ({
           )}`,
           { chain: NetworkID.ZetaChain }
         );
-        const abortTx = await gatewayZEVM
+        const abortTx = await gateway
           .connect(fungibleModuleSigner)
           .executeAbort(abortAddress, context, { gasLimit: 1_500_000 });
         await abortTx.wait();

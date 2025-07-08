@@ -140,7 +140,7 @@ export const zetachainSetup = async (
   return {
     coreRegistry,
     fungibleModuleSigner,
-    gatewayZEVM,
+    gateway: gatewayZEVM,
     systemContract,
     tss,
     uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,

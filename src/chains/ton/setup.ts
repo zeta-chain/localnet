@@ -46,7 +46,7 @@ export async function setup(opts: SetupOptions) {
 
   // noop
   if (opts.skip) {
-    log.info("TON setup skipped");
+    log.debug("TON setup skipped");
     return;
   }
 

@@ -46,7 +46,7 @@ export const createToken = async (
   const { deployer, foreignCoins, tss } = contracts;
   const {
     systemContract,
-    gatewayZEVM,
+    gateway,
     uniswapFactoryInstance,
     uniswapRouterInstance,
     wzeta,
@@ -70,7 +70,7 @@ export const createToken = async (
       isGasToken ? 1 : 2,
       1,
       systemContract.target,
-      gatewayZEVM.target,
+      gateway.target,
       deployOpts
     );
   await zrc20.waitForDeployment();

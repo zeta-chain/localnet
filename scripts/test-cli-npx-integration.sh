@@ -377,7 +377,7 @@ echo "  🔍 Running with detailed error output..."
 echo "  ⏱️  Setting 120-second timeout for npx test..."
 
 # Run npx in background with isolated cache and capture its PID
-echo "y" | npx --cache "$TEMP_NPX_CACHE" "./$CLI_TARBALL" localnet start --stop-after-init &
+echo "y" | npx --cache "$TEMP_NPX_CACHE" "./$CLI_TARBALL" localnet start --stop-after-init --verbosity debug &
 NPX_PID=$!
 
 # Wait for the process with timeout
