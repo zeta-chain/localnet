@@ -128,17 +128,17 @@ export const initLocalnet = async ({
     };
 
     log.debug("Creating tokens");
-    await Promise.all([
-      createToken(contracts, "ETH", true, NetworkID.Ethereum, 18),
-      createToken(contracts, "USDC", false, NetworkID.Ethereum, 18),
-      createToken(contracts, "BNB", true, NetworkID.BNB, 18),
-      createToken(contracts, "USDC", false, NetworkID.BNB, 18),
-      createToken(contracts, "SOL", true, NetworkID.Solana, 9),
-      createToken(contracts, "USDC", false, NetworkID.Solana, 9),
-      createToken(contracts, "SUI", true, NetworkID.Sui, 9),
-      createToken(contracts, "USDC", false, NetworkID.Sui, 9),
-      createToken(contracts, "TON", true, NetworkID.TON, 9),
-    ]);
+
+    await createToken(contracts, "ETH", true, NetworkID.Ethereum, 18);
+    await createToken(contracts, "USDC", false, NetworkID.Ethereum, 18);
+    await createToken(contracts, "BNB", true, NetworkID.BNB, 18);
+    await createToken(contracts, "USDC", false, NetworkID.BNB, 18);
+    await createToken(contracts, "SOL", true, NetworkID.Solana, 9);
+    await createToken(contracts, "USDC", false, NetworkID.Solana, 9);
+    await createToken(contracts, "SUI", true, NetworkID.Sui, 9);
+    await createToken(contracts, "USDC", false, NetworkID.Sui, 9);
+    await createToken(contracts, "TON", true, NetworkID.TON, 9);
+
     log.debug("Token creation complete");
 
     let res = [
