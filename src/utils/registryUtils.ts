@@ -34,9 +34,11 @@ const convertAddressBytes = (addressBytes: Uint8Array): string => {
 
 export const getRegistryAsJson = async (registry: ethers.Contract) => {
   try {
-    const allContracts = await registry.getAllContracts();
-    const allZRC20Tokens = await registry.getAllZRC20Tokens();
-    const allChains = await registry.getAllChains();
+    const [allContracts, allZRC20Tokens, allChains] = await Promise.all([
+      registry.getAllContracts(),
+      registry.getAllZRC20Tokens(),
+      registry.getAllChains(),
+    ]);
 
     const result: any = {};
 
