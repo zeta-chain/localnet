@@ -98,10 +98,10 @@ export const solanaSetup = async ({
   if (skip || !(await isSolanaAvailable())) {
     return;
   }
-  log.info(`Default user mnemonic: ${MNEMONIC}`);
+  log.info(`Default mnemonic: ${MNEMONIC}`);
   const defaultLocalnetUserKeypair = await keypairFromMnemonic(MNEMONIC);
   log.info(
-    `Default user address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`
+    `Default address: ${defaultLocalnetUserKeypair.publicKey.toBase58()}`
   );
   log.info("Setting up Solana...");
   const gatewaySoPath = require.resolve(

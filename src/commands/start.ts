@@ -5,7 +5,6 @@ import { spawn } from "child_process";
 import { Command, Option } from "commander";
 import Docker from "dockerode";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import readline from "readline/promises";
 import waitOn from "wait-on";
@@ -93,6 +92,8 @@ const startLocalnet = async (options: {
   verbosity: LoggerLevel;
 }) => {
   initLogger(options.verbosity);
+  const log = logger.child({ chain: "localnet" });
+
   if (!fs.existsSync(LOCALNET_DIR)) {
     fs.mkdirSync(LOCALNET_DIR, { recursive: true });
   }
@@ -114,7 +115,7 @@ const startLocalnet = async (options: {
       process.exit(0);
     });
     readlineInterface.on("error", (err) => {
-      logger.error(`Readline interface error: ${err}`, { chain: "localnet" });
+      log.error(`Readline interface error: ${err}`);
     });
   } else {
     process.on("SIGINT", gracefulShutdown);
@@ -129,9 +130,8 @@ const startLocalnet = async (options: {
   try {
     execSync("which anvil");
   } catch (error) {
-    logger.error(
-      "Error: 'anvil' not found. Please install Foundry: https://getfoundry.sh",
-      { chain: "localnet" }
+    log.error(
+      "Error: 'anvil' not found. Please install Foundry: https://getfoundry.sh"
     );
     process.exit(1);
   }
@@ -139,9 +139,8 @@ const startLocalnet = async (options: {
   await killProcessOnPort(options.port, options.forceKill);
 
   if (options.anvil !== "")
-    logger.info(
-      `Starting anvil on port ${options.port} with args: ${options.anvil}`,
-      { chain: "localnet" }
+    log.info(
+      `Starting anvil on port ${options.port} with args: ${options.anvil}`
     );
 
   const anvilArgs = [
@@ -167,15 +166,17 @@ const startLocalnet = async (options: {
   });
 
   if (enabledChains.includes("ton") && isDockerAvailable()) {
+    log.info("Starting TON...");
     await ton.startNode();
     // Note: Docker processes are managed differently, not adding to processes array
   } else {
-    logger.info("Skipping Ton...", { chain: "localnet" });
+    log.info("Skipping Ton...");
   }
 
   let solanaTestValidator: ChildProcess;
 
   if (enabledChains.includes("solana") && isSolanaAvailable()) {
+    log.info("Starting Solana...");
     solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
 
     if (solanaTestValidator.pid) {
@@ -185,11 +186,13 @@ const startLocalnet = async (options: {
       });
     }
     await waitOn({ resources: [`tcp:127.0.0.1:8899`], timeout: 30_000 });
+  } else {
+    log.info("Skipping Solana...");
   }
 
   let suiProcess: ChildProcess;
   if (enabledChains.includes("sui") && isSuiAvailable()) {
-    logger.info("Starting Sui...", { chain: "localnet" });
+    log.info("Starting Sui...");
     suiProcess = spawn("sui", ["start", "--with-faucet", "--force-regenesis"], {
       env: { ...process.env, RUST_LOG: "off,sui_node=info" },
     });
@@ -201,6 +204,8 @@ const startLocalnet = async (options: {
       });
     }
     await waitOn({ resources: [`tcp:127.0.0.1:9000`], timeout: 30_000 });
+  } else {
+    log.info("Skipping Sui...");
   }
 
   fs.writeFileSync(
@@ -240,17 +245,13 @@ const startLocalnet = async (options: {
       "utf-8"
     );
   } catch (error: unknown) {
-    logger.error(`Error initializing localnet: ${error}`, {
-      chain: "localnet",
-    });
+    log.error(`Error initializing localnet: ${error}`);
     await gracefulShutdown();
     process.exit(1);
   }
 
   if (options.stopAfterInit) {
-    logger.info("Localnet successfully initialized. Stopping...", {
-      chain: "localnet",
-    });
+    log.info("Localnet successfully initialized. Stopping...");
     await gracefulShutdown();
     process.exit(0);
   }
@@ -348,7 +349,7 @@ const cleanup = async (options: { chains: string[] }) => {
 
 export const startCommand = new Command("start")
   .description("Start localnet")
-  .option("-p, --port <number>", "Port to run anvil on", NetworkID.ZetaChain)
+  .option("-p, --port <number>", "Port to run anvil on", "8545")
   .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "-q")
   .option(
     "-f, --force-kill",
