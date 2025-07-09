@@ -49,6 +49,18 @@ export const initLocalnet = async ({
       )
     ).connect(provider);
 
+    log.info(
+      `EVM default wallet address: ${(deployer.signer as HDNodeWallet).address}`
+    );
+
+    log.info(
+      `EVM default wallet private key: ${
+        (deployer.signer as HDNodeWallet).privateKey
+      }`
+    );
+
+    log.info(`Default wallet mnemonic: ${anvilTestMnemonic}`);
+
     let tss = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
