@@ -166,6 +166,7 @@ const startLocalnet = async (options: {
   });
 
   if (enabledChains.includes("ton") && isDockerAvailable()) {
+    log.info("Starting TON...");
     await ton.startNode();
     // Note: Docker processes are managed differently, not adding to processes array
   } else {
@@ -175,6 +176,7 @@ const startLocalnet = async (options: {
   let solanaTestValidator: ChildProcess;
 
   if (enabledChains.includes("solana") && isSolanaAvailable()) {
+    log.info("Starting Solana...");
     solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
 
     if (solanaTestValidator.pid) {
