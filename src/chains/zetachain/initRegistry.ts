@@ -246,7 +246,7 @@ const registerContract = async ({
   const addressBytes = contract.address.startsWith("0x")
     ? ethers.getBytes(contract.address)
     : ethers.toUtf8Bytes(contract.address);
-  console.log(chainId, contractType, addressBytes);
+
   const tx = await coreRegistry.registerContract(
     chainId,
     contractType,
