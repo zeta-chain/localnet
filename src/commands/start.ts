@@ -347,7 +347,7 @@ const cleanup = async (options: { chains: string[] }) => {
 
 export const startCommand = new Command("start")
   .description("Start localnet")
-  .option("-p, --port <number>", "Port to run anvil on", NetworkID.ZetaChain)
+  .option("-p, --port <number>", "Port to run anvil on", "8545")
   .option("-a, --anvil <string>", "Additional arguments to pass to anvil", "-q")
   .option(
     "-f, --force-kill",
