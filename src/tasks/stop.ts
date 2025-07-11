@@ -4,6 +4,7 @@ import { task } from "hardhat/config";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
+// eslint-disable-next-line @typescript-eslint/require-await
 const localnetStop = async () => {
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running or JSON file is missing."));

@@ -216,7 +216,7 @@ export const solanaSetup = async ({
   };
 };
 
-export const solanaMonitorTransactions = async ({
+export const solanaMonitorTransactions = ({
   deployer,
   foreignCoins,
   zetachainContracts,

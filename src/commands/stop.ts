@@ -4,7 +4,7 @@ import fs from "fs";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
-const stopLocalnet = async () => {
+const stopLocalnet = () => {
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running or JSON file is missing."));
     return;
@@ -34,9 +34,9 @@ const stopLocalnet = async () => {
 
 export const stopCommand = new Command("stop")
   .description("Stop localnet")
-  .action(async () => {
+  .action(() => {
     try {
-      await stopLocalnet();
+      stopLocalnet();
     } catch (error) {
       console.error(ansis.red(`Error: ${error}`));
       process.exit(1);

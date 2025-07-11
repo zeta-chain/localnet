@@ -53,7 +53,7 @@ module.exports = {
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/no-wrapper-object-types": "off",
     "@typescript-eslint/prefer-promise-reject-errors": "off",
-    "@typescript-eslint/require-await": "off",
+    "@typescript-eslint/require-await": "error",
     "@typescript-eslint/restrict-plus-operands": "off",
     "@typescript-eslint/restrict-template-expressions": "off",
     camelcase: "off",
