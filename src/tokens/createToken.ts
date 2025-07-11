@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
 import { createEVMToken } from "./createEVMToken";
 import { createSolanaToken } from "./createSolanaToken";
 import { createSuiToken } from "./createSuiToken";
@@ -35,6 +36,7 @@ export const createToken = async (
   chainID: string,
   decimals: number
 ) => {
+  logger.debug(`Creating token ${symbol}`);
   const solanaNotSupported =
     chainID === NetworkID.Solana && !contracts.solanaContracts;
   const suiNotSupported = chainID === NetworkID.Sui && !contracts.suiContracts;
