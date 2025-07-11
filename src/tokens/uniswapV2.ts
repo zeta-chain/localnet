@@ -3,6 +3,7 @@ import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router0
 import { ethers, Signer } from "ethers";
 
 import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
 
 /**
  * Prepares and deploys Uniswap V2 contracts.
@@ -30,11 +31,15 @@ export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
     deployOpts
   );
 
+  await uniswapFactoryInstance.waitForDeployment();
+
   const uniswapRouterInstance = await uniswapRouterFactory.deploy(
     await uniswapFactoryInstance.getAddress(),
     await wzeta.getAddress(),
     deployOpts
   );
+
+  await uniswapRouterInstance.waitForDeployment();
 
   return { uniswapFactoryInstance, uniswapRouterInstance };
 };
@@ -65,6 +70,9 @@ export const uniswapV2AddLiquidity = async (
   zrc20Amount: any,
   wzetaAmount: any
 ) => {
+  logger.debug(
+    `Adding liquidity to Uniswap V2 pool for ${zrc20.target} and ${wzeta.target}`
+  );
   await uniswapFactoryInstance.createPair(
     zrc20.target,
     wzeta.target,
