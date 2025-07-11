@@ -63,7 +63,7 @@ module.exports = {
     "no-empty": "error",
     "no-prototype-builtins": "error",
     "no-unreachable": "error",
-    "object-shorthand": ["off", "always"],
+    "object-shorthand": ["error", "always"],
     "prefer-arrow/prefer-arrow-functions": [
       "off",
       {

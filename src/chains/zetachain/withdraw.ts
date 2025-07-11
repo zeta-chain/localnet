@@ -60,13 +60,13 @@ export const zetachainWithdraw = async ({
 
       return asset
         ? await solanaWithdrawSPL({
-            amount: amount,
+            amount,
             decimals: 9,
             mint: asset,
             recipient: receiverAddress,
           })
         : await solanaWithdraw({
-            amount: amount,
+            amount,
             recipient: receiverAddress,
           });
     }

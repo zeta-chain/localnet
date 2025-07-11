@@ -114,7 +114,7 @@ export const evmDeposit = async ({
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       return await zetachainOnAbort({
-        abortAddress: abortAddress,
+        abortAddress,
         amount,
         asset: zrc20,
         chainID,
@@ -122,7 +122,7 @@ export const evmDeposit = async ({
         gateway: zetachainContracts.gateway,
         outgoing: false,
         provider,
-        revertMessage: revertMessage,
+        revertMessage,
         sender,
       });
     }

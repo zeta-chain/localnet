@@ -12,7 +12,7 @@ export const zetachainDepositAndCallZeta = async ({
   const [sender, receiver, amount, , message] = args;
   const context = {
     chainID,
-    sender: sender,
+    sender,
     senderEVM: isEVMChain(chainID) ? sender : ethers.ZeroAddress,
   };
 

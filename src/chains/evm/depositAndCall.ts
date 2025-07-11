@@ -111,15 +111,15 @@ export const evmDepositAndCall = async ({
       const abortAddress = revertOptions[2];
       const revertMessage = revertOptions[3];
       return await zetachainOnAbort({
-        abortAddress: abortAddress,
-        amount: amount,
+        abortAddress,
+        amount,
         asset: zrc20,
         chainID,
         fungibleModuleSigner: zetachainContracts.fungibleModuleSigner,
         gateway: zetachainContracts.gateway,
         outgoing: false,
         provider,
-        revertMessage: revertMessage,
+        revertMessage,
         sender,
       });
     }

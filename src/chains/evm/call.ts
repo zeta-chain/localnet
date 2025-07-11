@@ -56,7 +56,7 @@ export const evmCall = async ({
     const abortAddress = revertOptions[2];
     const revertMessage = revertOptions[3];
     return await zetachainOnAbort({
-      abortAddress: abortAddress,
+      abortAddress,
       amount: 0,
       asset: ethers.ZeroAddress,
       chainID,
@@ -64,7 +64,7 @@ export const evmCall = async ({
       gateway: zetachainContracts.gateway,
       outgoing: false,
       provider,
-      revertMessage: revertMessage,
+      revertMessage,
       sender,
     });
   }
