@@ -36,7 +36,7 @@ export const createToken = async (
   chainID: string,
   decimals: number
 ) => {
-  logger.debug(`Creating token ${symbol}`);
+  logger.debug(`Creating token ${symbol} from chain ${chainID}`);
   const solanaNotSupported =
     chainID === NetworkID.Solana && !contracts.solanaContracts;
   const suiNotSupported = chainID === NetworkID.Sui && !contracts.suiContracts;
