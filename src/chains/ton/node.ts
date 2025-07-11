@@ -1,4 +1,3 @@
-import * as ton from "@ton/ton";
 import Docker, { Container } from "dockerode";
 
 import { NetworkID } from "../../constants";

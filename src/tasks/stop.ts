@@ -4,7 +4,7 @@ import { task } from "hardhat/config";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 
-const localnetStop = async (args: any) => {
+const localnetStop = async () => {
   if (!fs.existsSync(LOCALNET_JSON_FILE)) {
     console.log(ansis.red("Localnet is not running or JSON file is missing."));
     return;

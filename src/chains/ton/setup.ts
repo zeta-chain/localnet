@@ -2,7 +2,7 @@ import * as ton from "@ton/ton";
 import { OpenedContract } from "@ton/ton";
 import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway";
-import { ethers, Network, NonceManager } from "ethers";
+import { ethers, NonceManager } from "ethers";
 
 import { logger } from "../../logger";
 import { zetachainDeposit } from "../zetachain/deposit";

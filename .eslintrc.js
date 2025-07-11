@@ -50,7 +50,7 @@ module.exports = {
     "@typescript-eslint/no-unsafe-member-access": "off",
     "@typescript-eslint/no-unsafe-return": "off",
     "@typescript-eslint/no-unused-expressions": "off",
-    "@typescript-eslint/no-unused-vars": ["off", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/no-wrapper-object-types": "off",
     "@typescript-eslint/prefer-promise-reject-errors": "off",
     "@typescript-eslint/require-await": "off",

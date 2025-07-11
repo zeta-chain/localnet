@@ -1,4 +1,4 @@
-import { BigNumberish, ethers, GasCostPlugin } from "ethers";
+import { BigNumberish, ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
