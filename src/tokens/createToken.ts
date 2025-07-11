@@ -180,12 +180,15 @@ export const createToken = async (
   const wzetaAmount = ethers.parseUnits("100", await (wzeta as any).decimals());
 
   // Execute transactions sequentially to avoid nonce conflicts
+
+  logger.debug(`Depositing ZRC-20 ${symbol} to deployer`);
   await (zrc20 as any).deposit(
     await deployer.getAddress(),
     ethers.parseEther("1000"),
     deployOpts
   );
 
+  logger.debug(`Transferring ZRC-20 ${symbol} to fungible module signer`);
   await (zrc20 as any)
     .connect(deployer)
     .transfer(
@@ -194,6 +197,7 @@ export const createToken = async (
       deployOpts
     );
 
+  logger.debug(`Depositing WZETA to deployer`);
   await (wzeta as any)
     .connect(deployer)
     .deposit({ value: ethers.parseEther("1000"), ...deployOpts });

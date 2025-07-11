@@ -78,6 +78,8 @@ export const uniswapV2AddLiquidity = async (
     wzeta.target,
     deployOpts
   );
+
+  logger.debug(`Approving ZRC-20 ${zrc20.target} to Uniswap V2 router`);
   await zrc20
     .connect(deployer)
     .approve(
@@ -85,6 +87,8 @@ export const uniswapV2AddLiquidity = async (
       ethers.parseEther("1000"),
       deployOpts
     );
+
+  logger.debug(`Approving WZETA to Uniswap V2 router`);
   await wzeta
     .connect(deployer)
     .approve(
@@ -92,6 +96,8 @@ export const uniswapV2AddLiquidity = async (
       ethers.parseEther("1000"),
       deployOpts
     );
+
+  logger.debug(`Adding liquidity to Uniswap V2 pool`);
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20.target,
     wzeta.target,
