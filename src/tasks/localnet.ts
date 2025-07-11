@@ -192,9 +192,8 @@ const localnet = async (args: any) => {
     process.exit(0);
   }
 
-  // @todo: Was this added to prevent the process from exiting?
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  await new Promise(() => {});
+  // Keep the process alive by resuming stdin
+  process.stdin.resume();
 };
 
 export const localnetTask = task("localnet", "Start localnet", localnet)
