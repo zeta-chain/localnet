@@ -81,12 +81,19 @@ export const createToken = async (
   let asset;
 
   if (isGasToken) {
-    (systemContract as any)
+    logger.debug(`Setting gas coin ZRC-20 ${symbol} for ${chainID}`);
+    const setGasCoinZRC20Tx = await (systemContract as any)
       .connect(fungibleModuleSigner)
       .setGasCoinZRC20(chainID, zrc20.target);
-    (systemContract as any)
+    await setGasCoinZRC20Tx.wait();
+
+    logger.debug(`Setting gas price for ${chainID}`);
+    const setGasPriceTx = await (systemContract as any)
       .connect(fungibleModuleSigner)
       .setGasPrice(chainID, 1);
+
+    await setGasPriceTx.wait();
+
     asset = "";
   } else {
     switch (chainID) {
