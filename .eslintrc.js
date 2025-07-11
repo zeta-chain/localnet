@@ -56,7 +56,6 @@ module.exports = {
     "@typescript-eslint/require-await": "off",
     "@typescript-eslint/restrict-plus-operands": "off",
     "@typescript-eslint/restrict-template-expressions": "off",
-    "@typescript-eslint/sort-type-union-intersection-members": "error",
     camelcase: "off",
     "func-style": ["off", "expression", { allowArrowFunctions: true }],
     "import/no-named-as-default": "off",
