@@ -54,8 +54,8 @@ export const createToken = async (
     uniswapRouterInstance,
     wzeta,
     fungibleModuleSigner,
-    // uniswapV3Factory,
-    // uniswapV3PositionManager,
+    uniswapV3Factory,
+    uniswapV3PositionManager,
   } = contracts.zetachainContracts;
 
   const zrc20Factory = new ethers.ContractFactory(
@@ -212,13 +212,13 @@ export const createToken = async (
     wzetaAmount
   );
 
-  // await uniswapV3AddLiquidity(
-  //   zrc20,
-  //   wzeta,
-  //   deployer,
-  //   zrc20Amount,
-  //   wzetaAmount,
-  //   uniswapV3Factory,
-  //   uniswapV3PositionManager
-  // );
+  await uniswapV3AddLiquidity(
+    zrc20,
+    wzeta,
+    deployer,
+    zrc20Amount,
+    wzetaAmount,
+    uniswapV3Factory,
+    uniswapV3PositionManager
+  );
 };

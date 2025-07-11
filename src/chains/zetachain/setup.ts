@@ -8,7 +8,7 @@ import { ethers, Signer } from "ethers";
 import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
-// import { prepareUniswapV3 } from "../../tokens/uniswapV3";
+import { prepareUniswapV3 } from "../../tokens/uniswapV3";
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -33,7 +33,7 @@ export const zetachainSetup = async (
 
   // Setup both Uniswap V2 and V3
   const v2Setup = await prepareUniswapV2(deployer, wzeta);
-  // const v3Setup = await prepareUniswapV3(deployer, wzeta);
+  const v3Setup = await prepareUniswapV3(deployer, wzeta);
 
   const [
     uniswapFactoryInstanceAddress,
@@ -145,9 +145,9 @@ export const zetachainSetup = async (
     tss,
     uniswapFactoryInstance: v2Setup.uniswapFactoryInstance,
     uniswapRouterInstance: v2Setup.uniswapRouterInstance,
-    // uniswapV3Factory: v3Setup.uniswapV3FactoryInstance,
-    // uniswapV3PositionManager: v3Setup.nonfungiblePositionManagerInstance,
-    // uniswapV3Router: v3Setup.swapRouterInstance,
+    uniswapV3Factory: v3Setup.uniswapV3FactoryInstance,
+    uniswapV3PositionManager: v3Setup.nonfungiblePositionManagerInstance,
+    uniswapV3Router: v3Setup.swapRouterInstance,
     wzeta,
   };
 };
