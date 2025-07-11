@@ -172,6 +172,7 @@ async function withdraw(args: any): Promise<void> {
 
   console.log("Withdraw transaction sent:", tx.hash);
 
+  await tx.wait();
   console.log("Transaction confirmed");
 }
 
