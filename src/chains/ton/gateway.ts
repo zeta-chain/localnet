@@ -3,7 +3,7 @@ import * as ton from "@ton/ton";
 import gatewayJson from "@zetachain/protocol-contracts-ton/build/Gateway.compiled.json";
 import * as types from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers";
-import axios from "axios";
+import { isAxiosError } from "axios";
 import * as ethers from "ethers";
 import { HDNodeWallet, NonceManager } from "ethers";
 
@@ -92,7 +92,7 @@ export async function observerInbounds(
 
   const latestTx = async () => {
     const state = await client.getContractState(gateway.address);
-    let { lt, hash } = state.lastTransaction!;
+    const { lt, hash } = state.lastTransaction!;
 
     return { hash, lt };
   };
@@ -289,7 +289,7 @@ export async function withdrawTON(
       types.messageExternal(signature, body)
     );
   } catch (err) {
-    if (axios.isAxiosError(err)) {
+    if (isAxiosError(err)) {
       log.error("Axios error", err.response?.data);
     }
 

@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { keccak256 } from "ethereumjs-util";
@@ -30,7 +31,7 @@ export const solanaExecute = async ({
     const connection = gatewayProgram.provider.connection;
     const provider = new anchor.AnchorProvider(
       connection,
-      new anchor.Wallet(payer),
+      new AnchorWallet(payer),
       {}
     );
     anchor.setProvider(provider);

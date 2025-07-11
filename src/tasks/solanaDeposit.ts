@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import { ethers } from "ethers";
 import { task } from "hardhat/config";
@@ -10,7 +11,7 @@ const solanaDeposit = async (args: any) => {
 
   const provider = new anchor.AnchorProvider(
     new anchor.web3.Connection("http://localhost:8899"),
-    new anchor.Wallet(keypair),
+    new AnchorWallet(keypair),
     {}
   );
 
