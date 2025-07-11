@@ -58,7 +58,7 @@ module.exports = {
     "@typescript-eslint/restrict-template-expressions": "off",
     camelcase: "off",
     "func-style": ["off", "expression", { allowArrowFunctions: true }],
-    "import/no-named-as-default": "off",
+    "import/no-named-as-default": "error",
     "no-constant-condition": "error",
     "no-empty": "error",
     "no-prototype-builtins": "error",
