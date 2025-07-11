@@ -88,22 +88,20 @@ export const uniswapV3AddLiquidity = async (
   uniswapV3Factory: any,
   uniswapV3PositionManager: any
 ) => {
-  Promise.all([
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-  ]);
+  await zrc20
+    .connect(deployer)
+    .approve(
+      uniswapV3PositionManager.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+  await wzeta
+    .connect(deployer)
+    .approve(
+      uniswapV3PositionManager.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
 
   // Create and add liquidity to Uniswap V3
   const [token0Address, token1Address] = await Promise.all([
