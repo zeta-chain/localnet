@@ -73,7 +73,7 @@ async function setupThrowable(opts: SetupOptions) {
   const log = logger.child({ chain: opts.chainID });
 
   log.info("Creating RPC client");
-  const rpcClient = await client(cfg.ENDPOINT_RPC);
+  const rpcClient = client(cfg.ENDPOINT_RPC);
   log.info("RPC client created");
 
   log.info("Waiting for TON node", {

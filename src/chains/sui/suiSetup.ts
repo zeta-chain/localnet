@@ -49,7 +49,7 @@ export const suiSetup = async ({
   provider,
   skip,
 }: any) => {
-  if (skip || !(await isSuiAvailable())) {
+  if (skip || !isSuiAvailable()) {
     return;
   }
 

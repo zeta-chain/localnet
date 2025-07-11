@@ -96,7 +96,7 @@ export const solanaSetup = async ({
   skip,
 }: any) => {
   const log = logger.child({ chain: NetworkID.Solana });
-  if (skip || !(await isSolanaAvailable())) {
+  if (skip || !isSolanaAvailable()) {
     return;
   }
   log.info(`Default mnemonic: ${MNEMONIC}`);

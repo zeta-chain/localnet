@@ -38,7 +38,7 @@ module.exports = {
     "prefer-arrow",
   ],
   rules: {
-    "@typescript-eslint/await-thenable": "off",
+    "@typescript-eslint/await-thenable": "error",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-floating-promises": "off",
     "@typescript-eslint/no-misused-promises": "off",

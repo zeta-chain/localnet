@@ -90,7 +90,7 @@ const localnet = async (args: any) => {
 
   let solanaTestValidator: any;
   let solanaError = "";
-  if ((await isSolanaAvailable()) && !skip.includes("solana")) {
+  if (isSolanaAvailable() && !skip.includes("solana")) {
     solanaTestValidator = exec(`solana-test-validator --reset`);
 
     // Record the output of the solana-test-validator.
@@ -113,7 +113,7 @@ const localnet = async (args: any) => {
     });
   }
 
-  if ((await isSuiAvailable()) && !skip.includes("sui")) {
+  if (isSuiAvailable() && !skip.includes("sui")) {
     console.log("Starting Sui...");
     exec(
       `RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis`
@@ -192,6 +192,8 @@ const localnet = async (args: any) => {
     process.exit(0);
   }
 
+  // @todo: Was this added to prevent the process from exiting?
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   await new Promise(() => {});
 };
 
