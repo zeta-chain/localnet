@@ -65,27 +65,25 @@ export const uniswapV2AddLiquidity = async (
   zrc20Amount: any,
   wzetaAmount: any
 ) => {
-  Promise.all([
-    (uniswapFactoryInstance as any).createPair(
-      zrc20.target,
-      wzeta.target,
+  await uniswapFactoryInstance.createPair(
+    zrc20.target,
+    wzeta.target,
+    deployOpts
+  );
+  await zrc20
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
       deployOpts
-    ),
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-  ]);
+    );
+  await wzeta
+    .connect(deployer)
+    .approve(
+      uniswapRouterInstance.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20.target,
     wzeta.target,
