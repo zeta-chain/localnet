@@ -42,7 +42,7 @@ export const initLocalnet = async ({
     const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
     provider.pollingInterval = 100;
 
-    let deployer = new NonceManager(
+    const deployer = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
         `m/44'/60'/0'/0/0`
@@ -61,7 +61,7 @@ export const initLocalnet = async ({
 
     log.info(`Default wallet mnemonic: ${anvilTestMnemonic}`);
 
-    let tss = new NonceManager(
+    const tss = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
         `m/44'/60'/0'/0/1`

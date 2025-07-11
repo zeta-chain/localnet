@@ -48,7 +48,7 @@ export const zetachainWithdraw = async ({
     return;
   }
 
-  let asset =
+  const asset =
     foreignCoins.find((coin: any) => coin.zrc20_contract_address === zrc20)
       ?.asset || (isZeta ? "ZETA" : null);
 

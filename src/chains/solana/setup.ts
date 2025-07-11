@@ -271,10 +271,10 @@ export const solanaMonitorTransactions = async ({
                 programIdFromInstruction &&
                 programIdFromInstruction.equals(gatewayProgram.programId)
               ) {
-                let coder = new anchor.BorshInstructionCoder(
+                const coder = new anchor.BorshInstructionCoder(
                   Gateway_IDL as anchor.Idl
                 );
-                let decodedInstruction: any = coder.decode(
+                const decodedInstruction: any = coder.decode(
                   instruction.data,
                   "base58"
                 );

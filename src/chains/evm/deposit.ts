@@ -73,7 +73,6 @@ export const evmDeposit = async ({
     const [gasZRC20, gasFee] = await zrc20Contract.withdrawGasFeeWithGasLimit(
       revertOptions[4]
     );
-    let revertAmount;
     let revertGasFee = gasFee;
     let isGas = true;
     let token = null;
@@ -95,7 +94,7 @@ export const evmDeposit = async ({
         zetachainContracts.uniswapRouterInstance.target
       );
     }
-    revertAmount = amount - revertGasFee;
+    const revertAmount = amount - revertGasFee;
     if (revertAmount > 0) {
       return await evmOnRevert({
         amount: revertAmount,
