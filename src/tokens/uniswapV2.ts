@@ -3,6 +3,7 @@ import * as UniswapV2Router02 from "@uniswap/v2-periphery/build/UniswapV2Router0
 import { ethers, Signer } from "ethers";
 
 import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
 
 /**
  * Prepares and deploys Uniswap V2 contracts.
@@ -30,11 +31,15 @@ export const prepareUniswapV2 = async (deployer: Signer, wzeta: any) => {
     deployOpts
   );
 
+  await uniswapFactoryInstance.waitForDeployment();
+
   const uniswapRouterInstance = await uniswapRouterFactory.deploy(
     await uniswapFactoryInstance.getAddress(),
     await wzeta.getAddress(),
     deployOpts
   );
+
+  await uniswapRouterInstance.waitForDeployment();
 
   return { uniswapFactoryInstance, uniswapRouterInstance };
 };
@@ -65,27 +70,27 @@ export const uniswapV2AddLiquidity = async (
   zrc20Amount: any,
   wzetaAmount: any
 ) => {
-  Promise.all([
-    (uniswapFactoryInstance as any).createPair(
-      zrc20.target,
-      wzeta.target,
-      deployOpts
-    ),
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapRouterInstance.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-  ]);
+  logger.debug(
+    `Adding liquidity to Uniswap V2 pool for ${zrc20.target} and ${wzeta.target}`
+  );
+  const uniswapRouterAddress = await uniswapRouterInstance.getAddress();
+  await uniswapFactoryInstance.createPair(
+    zrc20.target,
+    wzeta.target,
+    deployOpts
+  );
+
+  logger.debug(`Approving ZRC-20 ${zrc20.target} to Uniswap V2 router`);
+  await zrc20
+    .connect(deployer)
+    .approve(uniswapRouterAddress, ethers.parseEther("1000"), deployOpts);
+
+  logger.debug(`Approving WZETA to Uniswap V2 router`);
+  await wzeta
+    .connect(deployer)
+    .approve(uniswapRouterAddress, ethers.parseEther("1000"), deployOpts);
+
+  logger.debug(`Adding liquidity to Uniswap V2 pool`);
   await (uniswapRouterInstance as any).addLiquidity(
     zrc20.target,
     wzeta.target,

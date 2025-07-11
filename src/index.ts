@@ -251,7 +251,6 @@ export const initLocalnet = async ({
       ];
     }
 
-    // Init registry
     log.debug("Initializing registry");
     await initRegistry({ contracts, res });
     log.debug("Registry initialization complete");

@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
 import { createEVMToken } from "./createEVMToken";
 import { createSolanaToken } from "./createSolanaToken";
 import { createSuiToken } from "./createSuiToken";
@@ -43,6 +44,8 @@ export const createToken = async (
     return;
   }
 
+  logger.debug(`Creating token ${symbol} from chain ${chainID}`);
+
   const { deployer, foreignCoins, tss } = contracts;
   const {
     systemContract,
@@ -78,12 +81,19 @@ export const createToken = async (
   let asset;
 
   if (isGasToken) {
-    (systemContract as any)
+    logger.debug(`Setting gas coin ZRC-20 ${symbol} for ${chainID}`);
+    const setGasCoinZRC20Tx = await (systemContract as any)
       .connect(fungibleModuleSigner)
       .setGasCoinZRC20(chainID, zrc20.target);
-    (systemContract as any)
+    await setGasCoinZRC20Tx.wait();
+
+    logger.debug(`Setting gas price for ${chainID}`);
+    const setGasPriceTx = await (systemContract as any)
       .connect(fungibleModuleSigner)
       .setGasPrice(chainID, 1);
+
+    await setGasPriceTx.wait();
+
     asset = "";
   } else {
     switch (chainID) {
@@ -170,12 +180,15 @@ export const createToken = async (
   const wzetaAmount = ethers.parseUnits("100", await (wzeta as any).decimals());
 
   // Execute transactions sequentially to avoid nonce conflicts
+
+  logger.debug(`Depositing ZRC-20 ${symbol} to deployer`);
   await (zrc20 as any).deposit(
     await deployer.getAddress(),
     ethers.parseEther("1000"),
     deployOpts
   );
 
+  logger.debug(`Transferring ZRC-20 ${symbol} to fungible module signer`);
   await (zrc20 as any)
     .connect(deployer)
     .transfer(
@@ -184,6 +197,7 @@ export const createToken = async (
       deployOpts
     );
 
+  logger.debug(`Depositing WZETA to deployer`);
   await (wzeta as any)
     .connect(deployer)
     .deposit({ value: ethers.parseEther("1000"), ...deployOpts });

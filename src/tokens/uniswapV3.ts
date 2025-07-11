@@ -88,28 +88,29 @@ export const uniswapV3AddLiquidity = async (
   uniswapV3Factory: any,
   uniswapV3PositionManager: any
 ) => {
-  Promise.all([
-    (zrc20 as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-    (wzeta as any)
-      .connect(deployer)
-      .approve(
-        uniswapV3PositionManager.getAddress(),
-        ethers.parseEther("1000"),
-        deployOpts
-      ),
-  ]);
+  logger.debug(
+    `Approving ZRC-20 ${zrc20.target} to Uniswap V3 position manager`
+  );
 
-  // Create and add liquidity to Uniswap V3
-  const [token0Address, token1Address] = await Promise.all([
-    zrc20.target,
-    wzeta.target,
-  ]);
+  await zrc20
+    .connect(deployer)
+    .approve(
+      await uniswapV3PositionManager.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+
+  logger.debug(`Approving WZETA to Uniswap V3 position manager`);
+  await wzeta
+    .connect(deployer)
+    .approve(
+      await uniswapV3PositionManager.getAddress(),
+      ethers.parseEther("1000"),
+      deployOpts
+    );
+
+  const token0Address = zrc20.target;
+  const token1Address = wzeta.target;
 
   const [token0, token1] =
     String(token0Address).toLowerCase() < String(token1Address).toLowerCase()
@@ -122,21 +123,16 @@ export const uniswapV3AddLiquidity = async (
       : [wzetaAmount, zrc20Amount];
 
   try {
+    logger.debug(`Creating Uniswap V3 pool`);
     const pool = await createUniswapV3Pool(uniswapV3Factory, token0, token1);
-    logger.debug(`Created Uniswap V3 pool: ${await pool.getAddress()}`, {
-      chain: NetworkID.ZetaChain,
-    });
+    logger.debug(`Created Uniswap V3 pool: ${await pool.getAddress()}`);
 
     // Wait for pool initialization
     await sleep(1000);
 
     logger.debug(
-      `Adding liquidity to V3 pool: amount0=${amount0.toString()}, amount1=${amount1.toString()}, recipient=${await deployer.getAddress()}, token0=${token0}, token1=${token1}`,
-      {
-        chain: NetworkID.ZetaChain,
-      }
+      `Adding liquidity to V3 pool: token0=${token0}, token1=${token1}`
     );
-
     const { tx, tokenId } = await addLiquidityV3(
       uniswapV3PositionManager,
       token0,
@@ -148,9 +144,7 @@ export const uniswapV3AddLiquidity = async (
     );
     const receipt = await tx.wait();
 
-    logger.debug(`Liquidity addition transaction: ${receipt.hash}`, {
-      chain: NetworkID.ZetaChain,
-    });
+    logger.debug(`Liquidity addition transaction: ${receipt.hash}`);
 
     // Wait for position to be minted
     await sleep(1000);
@@ -167,21 +161,13 @@ export const uniswapV3AddLiquidity = async (
     logger.debug(
       `Uniswap V3 Pool Liquidity Info: poolAddress=${await pool.getAddress()}, ${JSON.stringify(
         liquidityInfo
-      )}`,
-      {
-        chain: NetworkID.ZetaChain,
-      }
+      )}`
     );
   } catch (error: any) {
-    logger.error(`Error adding liquidity to Uniswap V3: ${error.message}`, {
-      chain: NetworkID.ZetaChain,
-    });
+    logger.error(`Error adding liquidity to Uniswap V3: ${error.message}`);
     if (error.message?.includes("LOK")) {
       logger.error(
-        "Pool initialization error - pool may already be initialized",
-        {
-          chain: NetworkID.ZetaChain,
-        }
+        "Pool initialization error - pool may already be initialized"
       );
     }
     throw error;
@@ -350,10 +336,7 @@ export const verifyV3Liquidity = async (
           tokensOwed1: position[11]?.toString(),
         },
         tokenId: tokenId.toString(),
-      })}`,
-      {
-        chain: NetworkID.ZetaChain,
-      }
+      })}`
     );
 
     if (!position || position.length < 12) {

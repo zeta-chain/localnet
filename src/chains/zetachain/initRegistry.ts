@@ -212,9 +212,7 @@ const registerChain = async ({
   )?.zrc20_contract_address;
 
   if (!gasZRC20) {
-    logger.error(`Gas ZRC20 not found for chain: ${chainName}`, {
-      chain: NetworkID.ZetaChain,
-    });
+    logger.error(`Gas ZRC20 not found for chain: ${chainName}`);
     return;
   }
 
