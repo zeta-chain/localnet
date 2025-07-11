@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
 import Gateway_IDL from "@zetachain/protocol-contracts-solana/dev/idl/gateway.json";
 import * as bip39 from "bip39";
@@ -152,7 +153,7 @@ export const solanaSetup = async ({
 
     const anchorProvider = new anchor.AnchorProvider(
       connection,
-      new anchor.Wallet(payer),
+      new AnchorWallet(payer),
       {}
     );
     anchor.setProvider(anchorProvider);

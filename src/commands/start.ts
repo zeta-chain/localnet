@@ -1,7 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
-import { ChildProcess, execSync } from "child_process";
-import { spawn } from "child_process";
+import { ChildProcess, execSync, spawn } from "child_process";
 import { Command, Option } from "commander";
 import Docker from "dockerode";
 import fs from "fs";
