@@ -68,7 +68,7 @@ export const solanaExecute = async ({
     const data = decodedAccountsAndData[1];
 
     const remainingAccounts: anchor.web3.AccountMeta[] = [];
-    for (let acc of accounts) {
+    for (const acc of accounts) {
       // this is encoded as { pubkey, isWritable }
       remainingAccounts.push({
         isSigner: false,

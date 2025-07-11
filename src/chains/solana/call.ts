@@ -33,7 +33,7 @@ export const solanaCall = async ({
     const abortAddress = hexlify(new Uint8Array(revertOptions[2]));
     const revertMessage = revertOptions[3];
     return await zetachainOnAbort({
-      abortAddress: abortAddress,
+      abortAddress,
       amount: 0,
       asset: ethers.ZeroAddress,
       chainID,
@@ -41,7 +41,7 @@ export const solanaCall = async ({
       gatewayZEVM: zetachainContracts.gatewayZEVM,
       outgoing: false,
       provider,
-      revertMessage: revertMessage,
+      revertMessage,
       sender,
     });
   }

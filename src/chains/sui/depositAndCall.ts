@@ -67,12 +67,12 @@ export const suiDepositAndCall = async ({
     if (revertAmount > 0) {
       await suiWithdraw({
         amount: revertAmount,
-        client: client,
-        gatewayObjectId: gatewayObjectId,
-        keypair: keypair,
+        client,
+        gatewayObjectId,
+        keypair,
         packageId,
         sender: event.sender,
-        withdrawCapObjectId: withdrawCapObjectId,
+        withdrawCapObjectId,
       });
     } else {
       logger.error(

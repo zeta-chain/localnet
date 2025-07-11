@@ -96,7 +96,7 @@ export const solanaSetup = async ({
   skip,
 }: any) => {
   const log = logger.child({ chain: NetworkID.Solana });
-  if (skip || !(await isSolanaAvailable())) {
+  if (skip || !isSolanaAvailable()) {
     return;
   }
   log.info(`Default mnemonic: ${MNEMONIC}`);
@@ -216,7 +216,7 @@ export const solanaSetup = async ({
   };
 };
 
-export const solanaMonitorTransactions = async ({
+export const solanaMonitorTransactions = ({
   deployer,
   foreignCoins,
   zetachainContracts,
@@ -271,10 +271,10 @@ export const solanaMonitorTransactions = async ({
                 programIdFromInstruction &&
                 programIdFromInstruction.equals(gatewayProgram.programId)
               ) {
-                let coder = new anchor.BorshInstructionCoder(
+                const coder = new anchor.BorshInstructionCoder(
                   Gateway_IDL as anchor.Idl
                 );
-                let decodedInstruction: any = coder.decode(
+                const decodedInstruction: any = coder.decode(
                   instruction.data,
                   "base58"
                 );

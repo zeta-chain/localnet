@@ -61,7 +61,7 @@ export const zetachainExecute = async ({
 
     // No asset calls don't support reverts, so aborting
     return await zetachainOnAbort({
-      abortAddress: abortAddress,
+      abortAddress,
       amount: 0,
       asset: ethers.ZeroAddress,
       chainID,
@@ -69,7 +69,7 @@ export const zetachainExecute = async ({
       gateway: zetachainContracts.gateway,
       outgoing: false,
       provider,
-      revertMessage: revertMessage,
+      revertMessage,
       sender,
     });
   }

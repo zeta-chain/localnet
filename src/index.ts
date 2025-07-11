@@ -42,7 +42,7 @@ export const initLocalnet = async ({
     const provider = new ethers.JsonRpcProvider(`http://127.0.0.1:${port}`);
     provider.pollingInterval = 100;
 
-    let deployer = new NonceManager(
+    const deployer = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
         `m/44'/60'/0'/0/0`
@@ -61,7 +61,7 @@ export const initLocalnet = async ({
 
     log.info(`Default wallet mnemonic: ${anvilTestMnemonic}`);
 
-    let tss = new NonceManager(
+    const tss = new NonceManager(
       HDNodeWallet.fromMnemonic(
         Mnemonic.fromPhrase(anvilTestMnemonic),
         `m/44'/60'/0'/0/1`
@@ -163,7 +163,7 @@ export const initLocalnet = async ({
             type: key,
           };
         }),
-      ...Object.entries(foreignCoins).map(([key, value]) => {
+      ...Object.values(foreignCoins).map((value) => {
         return {
           address: value.zrc20_contract_address,
           chain: "zetachain",
@@ -188,8 +188,8 @@ export const initLocalnet = async ({
           }
         })
         .filter(Boolean),
-      ...Object.entries(foreignCoins)
-        .map(([key, value]) => {
+      ...Object.values(foreignCoins)
+        .map((value) => {
           if (value.foreign_chain_id === NetworkID.Solana && value.asset) {
             return {
               address: value.asset,
@@ -206,7 +206,7 @@ export const initLocalnet = async ({
       },
       ...Object.entries(ethereumContracts)
         .filter(
-          ([key, value]) =>
+          ([_key, value]) =>
             typeof value !== "function" && value?.target !== undefined
         )
         .map(([key, value]: [string, any]) => {
@@ -218,7 +218,7 @@ export const initLocalnet = async ({
         }),
       ...Object.entries(bnbContracts)
         .filter(
-          ([key, value]) =>
+          ([_key, value]) =>
             typeof value !== "function" && value?.target !== undefined
         )
         .map(([key, value]: [string, any]) => {

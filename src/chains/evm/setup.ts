@@ -1,4 +1,3 @@
-import { ChainId } from "@uniswap/sdk-core";
 import * as Custody from "@zetachain/protocol-contracts/abi/ERC20Custody.sol/ERC20Custody.json";
 import * as ERC1967Proxy from "@zetachain/protocol-contracts/abi/ERC1967Proxy.sol/ERC1967Proxy.json";
 import * as GatewayEVM from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
@@ -11,9 +10,6 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
-import { evmCall } from "./call";
-import { evmDeposit } from "./deposit";
-import { evmDepositAndCall } from "./depositAndCall";
 
 const getZetaConnectorArtifacts = (isNative: boolean | string) => {
   return isNative
@@ -35,9 +31,6 @@ export const evmSetup = async ({
   tss,
   chainID,
   zetachainContracts,
-  exitOnError,
-  foreignCoins,
-  provider,
 }: any) => {
   const isNative = chainID === NetworkID.Ethereum;
   const proxyFactory = new ethers.ContractFactory(
