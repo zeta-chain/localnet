@@ -59,7 +59,7 @@ module.exports = {
     camelcase: "off",
     "func-style": ["off", "expression", { allowArrowFunctions: true }],
     "import/no-named-as-default": "off",
-    "no-constant-condition": "off",
+    "no-constant-condition": "error",
     "no-empty": "error",
     "no-prototype-builtins": "error",
     "no-unreachable": "error",
