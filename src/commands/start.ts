@@ -13,7 +13,7 @@ import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
-import { LOCALNET_DIR, NetworkID, REGISTRY_FILE } from "../constants";
+import { LOCALNET_DIR, REGISTRY_FILE } from "../constants";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
 import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";

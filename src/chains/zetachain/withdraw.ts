@@ -48,7 +48,7 @@ export const zetachainWithdraw = async ({
     return;
   }
 
-  let asset =
+  const asset =
     foreignCoins.find((coin: any) => coin.zrc20_contract_address === zrc20)
       ?.asset || (isZeta ? "ZETA" : null);
 
@@ -60,13 +60,13 @@ export const zetachainWithdraw = async ({
 
       return asset
         ? await solanaWithdrawSPL({
-            amount: amount,
+            amount,
             decimals: 9,
             mint: asset,
             recipient: receiverAddress,
           })
         : await solanaWithdraw({
-            amount: amount,
+            amount,
             recipient: receiverAddress,
           });
     }

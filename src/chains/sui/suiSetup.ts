@@ -49,7 +49,7 @@ export const suiSetup = async ({
   provider,
   skip,
 }: any) => {
-  if (skip || !(await isSuiAvailable())) {
+  if (skip || !isSuiAvailable()) {
     return;
   }
 
@@ -257,7 +257,7 @@ const waitForConfirmation = async (
 };
 
 // Helper to poll deposit events
-const pollEvents = async (context: any) => {
+const pollEvents = (context: any) => {
   let currentCursor: EventId | null | undefined = null;
   const POLLING_INTERVAL_MS = 3000;
   const DEPOSIT_EVENT = `${context.packageId}::gateway::DepositEvent`;

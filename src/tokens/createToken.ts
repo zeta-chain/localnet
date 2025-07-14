@@ -166,7 +166,7 @@ export const createToken = async (
   foreignCoins.push({
     asset,
     coin_type,
-    decimals: decimals,
+    decimals,
     foreign_chain_id: chainID,
     gas_limit: null,
     liquidity_cap: null,

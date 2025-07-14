@@ -1,4 +1,3 @@
-import * as ton from "@ton/ton";
 import Docker, { Container } from "dockerode";
 
 import { NetworkID } from "../../constants";
@@ -83,9 +82,11 @@ export async function waitForNodeWithRPC(
     attempt: number,
     isLastAttempt: boolean
   ) => {
-    !isLastAttempt
-      ? log.info(`Node is not ready. Attempt ${attempt + 1}/${retries}`, error)
-      : log.error("Node is not ready. Giving up.", error);
+    if (!isLastAttempt) {
+      log.info(`Node is not ready. Attempt ${attempt + 1}/${retries}`, error);
+    } else {
+      log.error("Node is not ready. Giving up.", error);
+    }
   };
 
   await utils.retry(healthCheck, retries, onHealthCheckFailure);

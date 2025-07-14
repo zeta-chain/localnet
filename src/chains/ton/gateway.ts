@@ -100,6 +100,7 @@ export async function observerInbounds(
   let { lt: oldLT, hash: oldHash } = await latestTx();
   log.info("Starting observer with tx", oldLT, oldHash);
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     let lt = "";
     let hash = "";
