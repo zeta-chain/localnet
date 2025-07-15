@@ -121,6 +121,22 @@ export const initRegistry = async ({
       }
     }
 
+    for (const zrc20 of foreignCoins) {
+      try {
+        logger.debug(`Registering ZRC20 token ${zrc20.symbol}`, {
+          chain: "localnet",
+        });
+        await registerZRC20Token({ coreRegistry, zrc20 });
+      } catch (err: any) {
+        logger.error(`Error registering ZRC20 token ${zrc20.symbol}: ${err}`, {
+          chain: NetworkID.ZetaChain,
+          error: err.message,
+          stack: err.stack,
+        });
+        throw err;
+      }
+    }
+
     // Mark registry initialization as complete
     setRegistryInitComplete(true);
     logger.debug("Registry initialization marked as complete", {
@@ -249,6 +265,34 @@ const registerContract = async ({
     chainId,
     contractType,
     addressBytes,
+    {
+      gasLimit: 1_000_000,
+    }
+  );
+
+  await tx.wait();
+};
+
+const registerZRC20Token = async ({
+  coreRegistry,
+  zrc20,
+}: {
+  coreRegistry: any;
+  zrc20: any;
+}) => {
+  const originChainId = zrc20.foreign_chain_id;
+  const originAddress = zrc20.asset || "";
+  const originAddressBytes = originAddress.startsWith("0x")
+    ? ethers.getBytes(originAddress)
+    : ethers.toUtf8Bytes(originAddress);
+
+  const tx = await coreRegistry.registerZRC20Token(
+    zrc20.zrc20_contract_address,
+    zrc20.symbol,
+    originChainId,
+    originAddressBytes,
+    zrc20.coin_type,
+    zrc20.decimals,
     {
       gasLimit: 1_000_000,
     }
