@@ -132,7 +132,7 @@ export const zetachainWithdrawAndCall = async ({
           if (coinType === 2n) {
             await evmCustodyWithdrawAndCall({
               args,
-              evmContracts,
+              contracts,
               foreignCoins,
               tss,
             });
