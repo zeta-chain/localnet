@@ -1,9 +1,6 @@
 import { retry } from "./retry";
 
-export async function getJSONWithRetry(
-  url: string,
-  retries: number = 3
-): Promise<any> {
+export async function getJSONWithRetry(url: string, retries = 3): Promise<any> {
   const request = async () => {
     return await getJSON(url);
   };
