@@ -22,6 +22,7 @@ import { deployOpts } from "../deployOpts";
 export const createEVMToken = async (
   deployer: any,
   custody: any,
+  gateway: any,
   symbol: any,
   tss: any
 ) => {
@@ -43,6 +44,14 @@ export const createEVMToken = async (
     .connect(deployer)
     .mint(
       custody.target,
+      ethers.parseUnits("1000000", erc20Decimals),
+      deployOpts
+    );
+
+  await (erc20 as any)
+    .connect(deployer)
+    .mint(
+      gateway.target,
       ethers.parseUnits("1000000", erc20Decimals),
       deployOpts
     );
