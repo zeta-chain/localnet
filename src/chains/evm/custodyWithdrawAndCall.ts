@@ -1,7 +1,8 @@
 import { ethers } from "ethers";
+
+import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { isRegistryInitComplete } from "../../types/registryState";
-import { NetworkID } from "../../constants";
 
 export const evmCustodyWithdrawAndCall = async ({
   contracts,

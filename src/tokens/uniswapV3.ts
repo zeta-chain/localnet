@@ -187,7 +187,7 @@ export const createUniswapV3Pool = async (
   uniswapV3FactoryInstance: any,
   token0: string,
   token1: string,
-  fee: number = 3000 // Default fee tier 0.3%
+  fee = 3000 // Default fee tier 0.3%
 ) => {
   await uniswapV3FactoryInstance.createPool(token0, token1, fee);
   const poolAddress = await uniswapV3FactoryInstance.getPool(
@@ -231,10 +231,10 @@ export const addLiquidityV3 = async (
   token1: string,
   amount0: bigint,
   amount1: bigint,
-  fee: number = 3000,
+  fee = 3000,
   recipient: string,
-  tickLower: number = -887220, // Example tick range for full range
-  tickUpper: number = 887220 // Example tick range for full range
+  tickLower = -887220, // Example tick range for full range
+  tickUpper = 887220 // Example tick range for full range
 ) => {
   const params = {
     amount0Desired: amount0,

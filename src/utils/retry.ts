@@ -2,7 +2,7 @@ import { sleep } from "./sleep";
 
 export async function retry<T>(
   fn: () => Promise<T>,
-  retries: number = 3,
+  retries = 3,
   onFailure?: (error: Error, attempt: number, isLastAttempt: boolean) => void
 ): Promise<T> {
   let lastError: Error | null = null;
