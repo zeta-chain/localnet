@@ -102,6 +102,7 @@ export const createToken = async (
         asset = await createEVMToken(
           deployer,
           contracts.ethereumContracts.custody,
+          contracts.ethereumContracts.gateway,
           symbol,
           tss
         );
@@ -111,6 +112,7 @@ export const createToken = async (
         asset = await createEVMToken(
           deployer,
           contracts.bnbContracts.custody,
+          contracts.bnbContracts.gateway,
           symbol,
           tss
         );
