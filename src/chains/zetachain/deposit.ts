@@ -22,7 +22,7 @@ export const zetachainDeposit = async ({
       (coin: any) =>
         ((coin.coin_type === "Gas" || coin.coin_type === "SUI") &&
           coin.foreign_chain_id === chainID) ||
-        (chainID === NetworkID.Sui && coin.symbol === "SUI")
+        (chainID === NetworkID.Sui && coin.symbol === "SUI.SUI")
     );
   } else {
     // For non-gas Sui tokens, match the full coin type path
