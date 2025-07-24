@@ -235,10 +235,10 @@ export const suiSetup = async ({
       client,
       gatewayObjectId,
       keypair,
+      messageContextObjectId,
       packageId,
       whitelistCapObjectId,
       withdrawCapObjectId,
-      messageContextObjectId,
     },
   };
 };
