@@ -87,6 +87,7 @@ export const zetachainWithdrawAndCall = async ({
       // sui
       case NetworkID.Sui: {
         await suiWithdrawAndCall({
+          sender,
           amount,
           message,
           targetModule: receiver,

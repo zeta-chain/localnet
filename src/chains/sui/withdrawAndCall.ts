@@ -5,6 +5,7 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 
 export const suiWithdrawAndCall = async ({
+  sender,
   amount,
   targetModule,
   message,
@@ -13,17 +14,20 @@ export const suiWithdrawAndCall = async ({
   packageId,
   gatewayObjectId,
   withdrawCapObjectId,
+  messageContextObjectId,
 }: any) => {
   try {
     const nonce = await fetchGatewayNonce(client, gatewayObjectId);
     const tx = new Transaction();
     const coinType =
       "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI";
+    const gatewayObject = tx.object(gatewayObjectId);
+    const messageContextObject = tx.object(messageContextObjectId);
 
     // withdraw the coins and get the coins ID
     const [coins, coinsBudget] = tx.moveCall({
       arguments: [
-        tx.object(gatewayObjectId),
+        gatewayObject,
         tx.pure.u64(amount),
         tx.pure.u64(nonce),
         tx.pure.u64(100000),
@@ -39,6 +43,17 @@ export const suiWithdrawAndCall = async ({
       tx.pure.address(keypair.getPublicKey().toSuiAddress())
     );
 
+    // set the authenticated call message context
+    tx.moveCall({
+      arguments: [
+        messageContextObject,
+        tx.pure.string(sender),
+        tx.pure.address(`${targetModule}`),
+      ],
+      target: `${packageId}::gateway::set_message_context`,
+      typeArguments: [],
+    });
+
     // prepare on call arguments
     const decodedMessage = AbiCoder.defaultAbiCoder().decode(
       ["tuple(string[] typeArguments, bytes32[] objects, bytes data)"],
@@ -53,6 +68,8 @@ export const suiWithdrawAndCall = async ({
 
     const onCallTypeArguments = [coinType, ...additionalTypeArguments];
     const onCallArguments = [
+      tx.object(gatewayObjectId),
+      tx.object(messageContextObjectId),
       coins,
       ...objects.map((obj: any) => tx.object(ethers.hexlify(obj))),
       tx.pure.vector("u8", ethers.getBytes(data)),
@@ -64,6 +81,14 @@ export const suiWithdrawAndCall = async ({
       target: `${targetModule}::connected::on_call`,
       typeArguments: onCallTypeArguments,
     });
+
+    // reset the message context
+    tx.moveCall({
+      arguments: [messageContextObject],
+      target: `${packageId}::gateway::reset_message_context`,
+      typeArguments: [],
+    });
+
     tx.setGasBudget(100000000);
 
     // send the transaction and wait for it

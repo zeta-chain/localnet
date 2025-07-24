@@ -183,10 +183,17 @@ export const suiSetup = async ({
       change.objectType.includes("gateway::WhitelistCap")
   );
 
+  const messageContextObject = publishResult.objectChanges?.find(
+    (change: any) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::MessageContext")
+  );
+
   const packageId = (publishedModule as any).packageId;
   const gatewayObjectId = (gatewayObject as any).objectId;
   const withdrawCapObjectId = (withdrawCapObject as any).objectId;
   const whitelistCapObjectId = (whitelistCapObject as any).objectId;
+  const messageContextObjectId = (messageContextObject as any).objectId;
 
   pollEvents({
     client,
@@ -231,6 +238,7 @@ export const suiSetup = async ({
       packageId,
       whitelistCapObjectId,
       withdrawCapObjectId,
+      messageContextObjectId,
     },
   };
 };
