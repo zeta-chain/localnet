@@ -22,8 +22,8 @@ export const initRegistry = async ({
       bnb: NetworkID.BNB,
       ethereum: NetworkID.Ethereum,
       solana: NetworkID.Solana,
-      zetachain: NetworkID.ZetaChain,
       sui: NetworkID.Sui,
+      zetachain: NetworkID.ZetaChain,
     };
 
     const {
@@ -365,8 +365,8 @@ export const registerGatewayContracts = async ({
       bnb: NetworkID.BNB,
       ethereum: NetworkID.Ethereum,
       solana: NetworkID.Solana,
-      zetachain: NetworkID.ZetaChain,
       sui: NetworkID.Sui,
+      zetachain: NetworkID.ZetaChain,
     };
 
     const { zetachainContracts } = contracts;
