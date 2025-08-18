@@ -22,6 +22,7 @@ export const initRegistry = async ({
       bnb: NetworkID.BNB,
       ethereum: NetworkID.Ethereum,
       solana: NetworkID.Solana,
+      sui: NetworkID.Sui,
       zetachain: NetworkID.ZetaChain,
     };
 
@@ -42,7 +43,6 @@ export const initRegistry = async ({
       (item: any) =>
         !item.type.includes("ZRC-20") &&
         !item.type.includes("SPL-20") &&
-        item.chain !== "sui" &&
         item.chain !== "ton" &&
         item.chain &&
         item.address &&
@@ -71,7 +71,7 @@ export const initRegistry = async ({
       if (chain === "zetachain") continue;
 
       // Skip non-EVM chains that don't have registry contracts
-      if (["sui", "ton"].includes(chain)) continue;
+      if (["ton"].includes(chain)) continue;
 
       try {
         logger.debug(`Registering ${chain} chain`, { chain: "localnet" });
@@ -365,6 +365,7 @@ export const registerGatewayContracts = async ({
       bnb: NetworkID.BNB,
       ethereum: NetworkID.Ethereum,
       solana: NetworkID.Solana,
+      sui: NetworkID.Sui,
       zetachain: NetworkID.ZetaChain,
     };
 
