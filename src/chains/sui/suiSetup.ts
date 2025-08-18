@@ -198,11 +198,11 @@ export const suiSetup = async ({
 
   // issue and add message context ID as gateway dynamic field
   const messageContextObjectId = await issueMessageContext({
+    adminCapObjectId,
     client,
+    gatewayObjectId,
     keypair,
     packageId,
-    gatewayObjectId,
-    adminCapObjectId,
   });
 
   pollEvents({
@@ -376,25 +376,22 @@ const ensureDirectoryExists = () => {
 };
 
 const issueMessageContext = async ({
+  adminCapObjectId,
   client,
+  gatewayObjectId,
   keypair,
   packageId,
-  gatewayObjectId,
-  adminCapObjectId,
 }: {
+  adminCapObjectId: string;
   client: SuiClient;
+  gatewayObjectId: string;
   keypair: Ed25519Keypair;
   packageId: string;
-  gatewayObjectId: string;
-  adminCapObjectId: string;
 }): Promise<string> => {
   const tx = new Transaction();
 
   tx.moveCall({
-    arguments: [
-      tx.object(gatewayObjectId),
-      tx.object(adminCapObjectId),
-    ],
+    arguments: [tx.object(gatewayObjectId), tx.object(adminCapObjectId)],
     target: `${packageId}::gateway::issue_message_context`,
   });
 
@@ -433,10 +430,14 @@ const issueMessageContext = async ({
     }
 
     const messageContextObjectId = (messageContextObject as any).objectId;
-    logger.info(`MessageContext ID: ${messageContextObjectId}`, { chain: NetworkID.Sui });
+    logger.info(`MessageContext ID: ${messageContextObjectId}`, {
+      chain: NetworkID.Sui,
+    });
     return messageContextObjectId;
   } catch (e) {
-    logger.error(`Failed to issue MessageContext: ${e}`, { chain: NetworkID.Sui });
+    logger.error(`Failed to issue MessageContext: ${e}`, {
+      chain: NetworkID.Sui,
+    });
     throw e;
   }
 };
