@@ -259,7 +259,6 @@ export const addLiquidityV3 = async (
     token1,
   };
 
-  // Provide manual gas to avoid estimateGas failures on anvil 1.3.x
   const tx = await nonfungiblePositionManager.mint(params, deployOpts);
   const receipt = await tx.wait();
 
