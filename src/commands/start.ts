@@ -176,7 +176,11 @@ const startLocalnet = async (options: {
 
   if (enabledChains.includes("solana") && isSolanaAvailable()) {
     log.info("Starting Solana...");
-    solanaTestValidator = spawn("solana-test-validator", ["--reset"], {});
+    solanaTestValidator = spawn(
+      "solana-test-validator",
+      ["--reset", "--ledger", path.join(LOCALNET_DIR, "test-ledger")],
+      {}
+    );
 
     if (solanaTestValidator.pid) {
       processes.push({
