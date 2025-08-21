@@ -2,6 +2,7 @@ import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
+import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
 import { setRegistryInitComplete } from "../../types/registryState";
 import { sleep } from "../../utils";
@@ -338,7 +339,8 @@ const approveAllZRC20GasTokens = async ({
     try {
       const approveTx = await gasZRC20Contract.approve(
         coreRegistry.target,
-        MAX_UINT256
+        MAX_UINT256,
+        deployOpts
       );
       await approveTx.wait();
     } catch (err: any) {

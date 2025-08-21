@@ -28,6 +28,15 @@ export const prepareUniswapV3 = async (deployer: Signer, wzeta: any) => {
   const uniswapV3FactoryInstance = await uniswapV3Factory.deploy(deployOpts);
   await uniswapV3FactoryInstance.waitForDeployment();
 
+  // Ensure common fee tiers are enabled explicitly
+  await (uniswapV3FactoryInstance as any).enableFeeAmount(500, 10, deployOpts);
+  await (uniswapV3FactoryInstance as any).enableFeeAmount(3000, 60, deployOpts);
+  await (uniswapV3FactoryInstance as any).enableFeeAmount(
+    10000,
+    200,
+    deployOpts
+  );
+
   const swapRouter = new ethers.ContractFactory(
     SwapRouter.abi,
     SwapRouter.bytecode,
@@ -189,7 +198,7 @@ export const createUniswapV3Pool = async (
   token1: string,
   fee = 3000 // Default fee tier 0.3%
 ) => {
-  await uniswapV3FactoryInstance.createPool(token0, token1, fee);
+  await uniswapV3FactoryInstance.createPool(token0, token1, fee, deployOpts);
   const poolAddress = await uniswapV3FactoryInstance.getPool(
     token0,
     token1,
@@ -204,7 +213,7 @@ export const createUniswapV3Pool = async (
   // Initialize the pool with a sqrt price of 1 (equal amounts of both tokens)
   // sqrtPriceX96 = sqrt(1) * 2^96
   const sqrtPriceX96 = ethers.toBigInt("79228162514264337593543950336");
-  await pool.initialize(sqrtPriceX96);
+  await pool.initialize(sqrtPriceX96, deployOpts);
 
   return pool;
 };
@@ -250,7 +259,7 @@ export const addLiquidityV3 = async (
     token1,
   };
 
-  const tx = await nonfungiblePositionManager.mint(params);
+  const tx = await nonfungiblePositionManager.mint(params, deployOpts);
   const receipt = await tx.wait();
 
   const iface = nonfungiblePositionManager.interface;
