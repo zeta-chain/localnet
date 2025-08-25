@@ -3,11 +3,12 @@ import ansis from "ansis";
 import { ChildProcess, execSync, spawn } from "child_process";
 import { Command, Option } from "commander";
 import Docker from "dockerode";
+import { ethers } from "ethers";
 import fs from "fs";
 import path from "path";
 import readline from "readline/promises";
+import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
-import { table, getBorderCharacters } from "table";
 
 import { initLocalnet } from "../";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
@@ -18,7 +19,6 @@ import { LOCALNET_DIR, NetworkID, REGISTRY_FILE } from "../constants";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
 import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
-import { ethers } from "ethers";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
