@@ -212,6 +212,15 @@ export const suiSetup = async ({
     }
   );
 
+  await zetachainContracts.coreRegistry.registerContract(
+    NetworkID.Sui,
+    "gateway",
+    ethers.hexlify(ethers.toUtf8Bytes(`${packageId},${gatewayObjectId}`)),
+    {
+      gasLimit: 1_000_000,
+    }
+  );
+
   return {
     addresses: [
       {

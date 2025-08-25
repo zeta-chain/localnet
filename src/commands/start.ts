@@ -54,7 +54,7 @@ const printRegistryTables = (registry: any, log: any) => {
       const chainTokens = (chainData.zrc20Tokens as any[]) || [];
 
       const chainName = CHAIN_ID_TO_NAME[String(chainId)] || "Unknown";
-      console.log(`\n${chainName} )`);
+      console.log(`\n${chainName} (${chainId})`);
 
       const rows: string[][] = [["Contract", "Address"]];
 
