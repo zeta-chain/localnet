@@ -1,5 +1,4 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
-import fs from "fs";
 
 import { evmCall } from "./chains/evm/call";
 import { evmDeposit } from "./chains/evm/deposit";
@@ -9,11 +8,10 @@ import { solanaSetup } from "./chains/solana/setup";
 import { suiSetup } from "./chains/sui/suiSetup";
 import * as ton from "./chains/ton";
 import { zetachainCall } from "./chains/zetachain/call";
-import { initRegistry } from "./chains/zetachain/initRegistry";
 import { zetachainSetup } from "./chains/zetachain/setup";
 import { zetachainWithdraw } from "./chains/zetachain/withdraw";
 import { zetachainWithdrawAndCall } from "./chains/zetachain/withdrawAndCall";
-import { anvilTestMnemonic, NetworkID, REGISTRY_FILE } from "./constants";
+import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";

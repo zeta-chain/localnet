@@ -4,6 +4,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { mnemonicToSeedSync } from "bip39";
 import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
+import { ethers } from "ethers";
 import * as fs from "fs";
 import os from "os";
 import path from "path";
@@ -16,7 +17,6 @@ import { sleep } from "../../utils";
 import { suiDeposit } from "./deposit";
 import { suiDepositAndCall } from "./depositAndCall";
 import { isSuiAvailable } from "./isSuiAvailable";
-import { ethers } from "ethers";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
