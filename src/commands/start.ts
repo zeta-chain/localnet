@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 import readline from "readline/promises";
 import waitOn from "wait-on";
-import { table } from "table";
+import { table, getBorderCharacters } from "table";
 
 import { initLocalnet } from "../";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
@@ -18,7 +18,7 @@ import { LOCALNET_DIR, NetworkID, REGISTRY_FILE } from "../constants";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
 import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
-import { initLocalnetAddressesSchema } from "../types/zodSchemas";
+import { ethers } from "ethers";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
@@ -36,6 +36,59 @@ interface ProcessInfo {
  * transaction monitors).
  */
 let readlineInterface: readline.Interface | undefined;
+
+const printRegistryTables = (registry: any, log: any) => {
+  try {
+    const chainIds = Object.keys(registry).sort();
+    const allTokens = chainIds.flatMap((id) => {
+      const chainData = (registry as any)[id] ?? {};
+      return (chainData.zrc20Tokens as any[]) || [];
+    });
+
+    for (const chainId of chainIds) {
+      const chainData = (registry as any)[chainId] ?? {};
+      const contracts = (chainData.contracts as any[]) || [];
+      const chainTokens = (chainData.zrc20Tokens as any[]) || [];
+
+      console.log(ansis.bold(`\nChain ${chainId}`));
+
+      const rows: string[][] = [["Contract Type", "Address"]];
+
+      for (const c of contracts) {
+        rows.push([String(c.contractType), String(c.address)]);
+      }
+
+      if (chainId === NetworkID.ZetaChain) {
+        for (const t of allTokens) {
+          const addr = String(t.address);
+          if (addr !== ethers.ZeroAddress) {
+            rows.push([`ZRC-20 ${String(t.symbol)}`, addr]);
+          }
+        }
+      } else {
+        for (const t of chainTokens) {
+          const addr = String(t.originAddress);
+          if (addr !== ethers.ZeroAddress) {
+            rows.push([`${String(t.symbol)}`, addr]);
+          }
+        }
+      }
+
+      if (rows.length === 1) {
+        console.log(ansis.yellow("No contracts or tokens found."));
+      } else {
+        console.log(
+          table(rows, {
+            border: getBorderCharacters("norc"),
+          })
+        );
+      }
+    }
+  } catch (printErr) {
+    log.error(`Error printing registry tables: ${printErr}`);
+    console.log("Registry", JSON.stringify(registry, null, 2));
+  }
+};
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -229,46 +282,7 @@ const startLocalnet = async (options: {
     log.debug("Registry written to file");
 
     // Pretty-print registry using tables
-    try {
-      const chainIds = Object.keys(registry).sort();
-      const allTokens = chainIds.flatMap((id) => {
-        const chainData = (registry as any)[id] ?? {};
-        return (chainData.zrc20Tokens as any[]) || [];
-      });
-
-      for (const chainId of chainIds) {
-        const chainData = (registry as any)[chainId] ?? {};
-        const contracts = (chainData.contracts as any[]) || [];
-        const chainTokens = (chainData.zrc20Tokens as any[]) || [];
-
-        console.log(ansis.bold(`\nChain ${chainId}`));
-
-        const rows: string[][] = [["Contract Type", "Address"]];
-
-        for (const c of contracts) {
-          rows.push([String(c.contractType), String(c.address)]);
-        }
-
-        if (chainId === NetworkID.ZetaChain) {
-          for (const t of allTokens) {
-            rows.push([`ZRC-20 ${String(t.symbol)}`, String(t.address)]);
-          }
-        } else {
-          for (const t of chainTokens) {
-            rows.push([`${String(t.symbol)}`, String(t.originAddress)]);
-          }
-        }
-
-        if (rows.length === 1) {
-          console.log(ansis.yellow("No contracts or tokens found."));
-        } else {
-          console.log(table(rows));
-        }
-      }
-    } catch (printErr) {
-      log.error(`Error printing registry tables: ${printErr}`);
-      console.log("Registry", JSON.stringify(registry, null, 2));
-    }
+    printRegistryTables(registry, log);
   } catch (error: unknown) {
     log.error(`Error initializing localnet: ${error}`);
     await gracefulShutdown();
