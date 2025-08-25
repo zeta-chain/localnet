@@ -13,6 +13,9 @@ export function isRegisteringGatewaysActive(): boolean {
 // Helper function to convert address bytes to appropriate format
 const convertAddressBytes = (addressBytes: Uint8Array): string => {
   try {
+    if (addressBytes.length === 0 || addressBytes.every((b) => b === 0)) {
+      return ethers.ZeroAddress;
+    }
     // Try to decode as UTF-8 string first
     const decodedString = ethers.toUtf8String(addressBytes);
     // Check if the decoded string looks like hex (starts with 0x and contains only hex chars)
@@ -79,7 +82,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
         address: String(token.address_),
         coinType: String(token.coinType),
         decimals: Number(token.decimals),
-        originAddress: ethers.hexlify(token.originAddress),
+        originAddress: convertAddressBytes(token.originAddress),
         originChainId: token.originChainId,
         symbol: String(token.symbol),
       });
