@@ -26,21 +26,6 @@ const convertAddressBytes = (addressBytes: ethers.BytesLike): string => {
     // Try to decode as UTF-8 for non-EVM formats (e.g., Sui type strings, Solana base58)
     const decoded = ethers.toUtf8String(bytes);
 
-    // Common Sui type format like 0x<hex>::module::Type
-    if (decoded.includes("::")) {
-      return decoded;
-    }
-
-    // Solana base58 addresses (approximate detection)
-    if (/^[1-9A-HJ-NP-Za-km-z]{32,}$/.test(decoded)) {
-      return decoded;
-    }
-
-    // Hex-looking ascii (keep as-is)
-    if (/^0x[0-9a-fA-F]+$/.test(decoded)) {
-      return decoded;
-    }
-
     return decoded;
   } catch {
     // Fallback to hex string; if valid EVM address, checksum it
