@@ -151,119 +151,7 @@ export const initLocalnet = async ({
 
     log.debug("Token creation complete");
 
-    let res = [
-      ...Object.entries(zetachainContracts)
-        .filter(([, value]) => value.target !== undefined)
-        .map(([key, value]) => {
-          return {
-            address: value.target,
-            chain: "zetachain",
-            type: key,
-          };
-        }),
-      ...Object.values(foreignCoins).map((value) => {
-        return {
-          address: value.zrc20_contract_address,
-          chain: "zetachain",
-          type: value.name,
-        };
-      }),
-      ...Object.entries(foreignCoins)
-        .map(([, value]) => {
-          if (
-            value.asset &&
-            (value.foreign_chain_id === NetworkID.Ethereum ||
-              value.foreign_chain_id === NetworkID.BNB)
-          ) {
-            return {
-              address: value.asset,
-              chain:
-                value.foreign_chain_id === NetworkID.Ethereum
-                  ? "ethereum"
-                  : "bnb",
-              type: `ERC-20 ${value.symbol}`,
-            };
-          }
-        })
-        .filter(Boolean),
-      ...Object.values(foreignCoins)
-        .map((value) => {
-          if (value.foreign_chain_id === NetworkID.Solana && value.asset) {
-            return {
-              address: value.asset,
-              chain: "solana",
-              type: `SPL-20 ${value.symbol}`,
-            };
-          }
-        })
-        .filter(Boolean),
-      {
-        address: await zetachainContracts.tss.getAddress(),
-        chain: "zetachain",
-        type: "tss",
-      },
-      ...Object.entries(ethereumContracts)
-        .filter(
-          ([_key, value]) =>
-            typeof value !== "function" && value?.target !== undefined
-        )
-        .map(([key, value]: [string, any]) => {
-          return {
-            address: value.target,
-            chain: "ethereum",
-            type: key,
-          };
-        }),
-      ...Object.entries(bnbContracts)
-        .filter(
-          ([_key, value]) =>
-            typeof value !== "function" && value?.target !== undefined
-        )
-        .map(([key, value]: [string, any]) => {
-          return {
-            address: value.target,
-            chain: "bnb",
-            type: key,
-          };
-        }),
-    ];
-
-    // Add non-EVM chain addresses before registry initialization
-    if (suiContracts) {
-      res = [...res, ...suiContracts.addresses];
-    }
-
-    if (tonContracts) {
-      res = [...res, ...tonContracts.addresses];
-    }
-
-    if (solanaContracts) {
-      res = [
-        ...res,
-        ...solanaContracts.addresses,
-        {
-          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-          chain: "solana",
-          type: "tokenProgram",
-        },
-      ];
-    }
-
-    // log.debug("Initializing registry");
-    // await initRegistry({ contracts, res });
-    // log.debug("Registry initialization complete");
-
-    // // Write registry to file
-    const registryJson = await getRegistryAsJson(
-      zetachainContracts.coreRegistry
-    );
-    console.log("Registry", JSON.stringify(registryJson, null, 2));
-    // await fs.promises.writeFile(
-    //   REGISTRY_FILE,
-    //   JSON.stringify(registryJson, null, 2),
-    //   "utf-8"
-    // );
-    // log.debug("Registry written to file");
+    const registry = await getRegistryAsJson(zetachainContracts.coreRegistry);
 
     log.debug("Setting up event handlers");
 
@@ -374,7 +262,7 @@ export const initLocalnet = async ({
 
     log.debug("Event handlers setup complete");
 
-    return res;
+    return registry;
   } catch (error) {
     logger.error("Error in initLocalnet", {
       error: error instanceof Error ? error.message : String(error),
