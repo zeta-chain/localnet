@@ -1,6 +1,7 @@
 import { EventId, SuiClient } from "@mysten/sui/client";
 import { requestSuiFromFaucetV0 } from "@mysten/sui/faucet";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { Transaction } from "@mysten/sui/transactions";
 import { mnemonicToSeedSync } from "bip39";
 import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
@@ -183,10 +184,26 @@ export const suiSetup = async ({
       change.objectType.includes("gateway::WhitelistCap")
   );
 
+  const adminCapObject = publishResult.objectChanges?.find(
+    (change: any) =>
+      change.type === "created" &&
+      change.objectType.includes("gateway::AdminCap")
+  );
+
   const packageId = (publishedModule as any).packageId;
   const gatewayObjectId = (gatewayObject as any).objectId;
   const withdrawCapObjectId = (withdrawCapObject as any).objectId;
   const whitelistCapObjectId = (whitelistCapObject as any).objectId;
+  const adminCapObjectId = (adminCapObject as any).objectId;
+
+  // issue and add message context ID as gateway dynamic field
+  const messageContextObjectId = await issueMessageContext({
+    adminCapObjectId,
+    client,
+    gatewayObjectId,
+    keypair,
+    packageId,
+  });
 
   pollEvents({
     client,
@@ -228,6 +245,7 @@ export const suiSetup = async ({
       client,
       gatewayObjectId,
       keypair,
+      messageContextObjectId,
       packageId,
       whitelistCapObjectId,
       withdrawCapObjectId,
@@ -354,5 +372,72 @@ const ensureDirectoryExists = () => {
     );
     runSudoCommand("chown", ["-R", os.userInfo().username, LOCALNET_DIR]);
     logger.info("Ownership updated.", { chain: NetworkID.Sui });
+  }
+};
+
+const issueMessageContext = async ({
+  adminCapObjectId,
+  client,
+  gatewayObjectId,
+  keypair,
+  packageId,
+}: {
+  adminCapObjectId: string;
+  client: SuiClient;
+  gatewayObjectId: string;
+  keypair: Ed25519Keypair;
+  packageId: string;
+}): Promise<string> => {
+  const tx = new Transaction();
+
+  tx.moveCall({
+    arguments: [tx.object(gatewayObjectId), tx.object(adminCapObjectId)],
+    target: `${packageId}::gateway::issue_message_context`,
+  });
+
+  try {
+    // send the transaction
+    const result = await client.signAndExecuteTransaction({
+      signer: keypair,
+      transaction: tx,
+    });
+    await client.waitForTransaction({ digest: result.digest });
+
+    // check if the tx has succeeded
+    const txDetails = await client.getTransactionBlock({
+      digest: result.digest,
+      options: {
+        showEffects: true,
+        showObjectChanges: true,
+      },
+    });
+    const status = txDetails.effects?.status?.status;
+    if (status !== "success") {
+      const errorMessage = txDetails.effects?.status?.error;
+      throw new Error(`
+        Transaction ${result.digest} failed: ${errorMessage}, status ${status}`);
+    }
+
+    // find the newly created MessageContext object
+    const messageContextObject = txDetails.objectChanges?.find(
+      (change: any) =>
+        change.type === "created" &&
+        change.objectType.includes("gateway::MessageContext")
+    );
+
+    if (!messageContextObject) {
+      throw new Error("Failed to find created MessageContext object");
+    }
+
+    const messageContextObjectId = (messageContextObject as any).objectId;
+    logger.info(`MessageContext ID: ${messageContextObjectId}`, {
+      chain: NetworkID.Sui,
+    });
+    return messageContextObjectId;
+  } catch (e) {
+    logger.error(`Failed to issue MessageContext: ${e}`, {
+      chain: NetworkID.Sui,
+    });
+    throw e;
   }
 };
