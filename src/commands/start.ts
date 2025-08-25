@@ -24,6 +24,9 @@ const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
 const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
+const CHAIN_ID_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(NetworkID).map(([name, id]) => [id, name])
+);
 
 interface ProcessInfo {
   command: string;
@@ -50,9 +53,10 @@ const printRegistryTables = (registry: any, log: any) => {
       const contracts = (chainData.contracts as any[]) || [];
       const chainTokens = (chainData.zrc20Tokens as any[]) || [];
 
-      console.log(ansis.bold(`\nChain ${chainId}`));
+      const chainName = CHAIN_ID_TO_NAME[String(chainId)] || "Unknown";
+      console.log(`\n${chainName} )`);
 
-      const rows: string[][] = [["Contract Type", "Address"]];
+      const rows: string[][] = [["Contract", "Address"]];
 
       for (const c of contracts) {
         rows.push([String(c.contractType), String(c.address)]);
