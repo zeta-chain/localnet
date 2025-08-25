@@ -170,7 +170,9 @@ export const createToken = async (
     zrc20.target,
     symbol,
     chainID,
-    isGasToken ? ethers.ZeroAddress : ethers.hexlify(ethers.toUtf8Bytes(asset as string)),
+    isGasToken
+      ? ethers.ZeroAddress
+      : ethers.hexlify(ethers.toUtf8Bytes(asset as string)),
     isGasToken ? "gas" : "erc20",
     decimals,
     deployOpts

@@ -16,6 +16,7 @@ import { sleep } from "../../utils";
 import { suiDeposit } from "./deposit";
 import { suiDepositAndCall } from "./depositAndCall";
 import { isSuiAvailable } from "./isSuiAvailable";
+import { ethers } from "ethers";
 
 const GAS_BUDGET = 5_000_000_000;
 const NODE_RPC = "http://127.0.0.1:9000";
@@ -200,6 +201,16 @@ export const suiSetup = async ({
     withdrawCapObjectId,
     zetachainContracts,
   });
+
+  await zetachainContracts.coreRegistry.changeChainStatus(
+    BigInt(NetworkID.Sui),
+    ethers.ZeroAddress,
+    "0x",
+    true,
+    {
+      gasLimit: 1_000_000,
+    }
+  );
 
   return {
     addresses: [

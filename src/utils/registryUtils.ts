@@ -10,28 +10,46 @@ export function isRegisteringGatewaysActive(): boolean {
   return isRegisteringGateways;
 }
 
-// Helper function to convert address bytes to appropriate format
-const convertAddressBytes = (addressBytes: Uint8Array): string => {
+// Helper function to convert raw bytes into the appropriate address/string format
+const convertAddressBytes = (addressBytes: ethers.BytesLike): string => {
   try {
-    if (addressBytes.length === 0 || addressBytes.every((b) => b === 0)) {
+    const bytes = ethers.getBytes(addressBytes);
+    if (bytes.length === 0 || bytes.every((b) => b === 0)) {
       return ethers.ZeroAddress;
     }
-    // Try to decode as UTF-8 string first
-    const decodedString = ethers.toUtf8String(addressBytes);
-    // Check if the decoded string looks like hex (starts with 0x and contains only hex chars)
-    if (
-      decodedString.startsWith("0x") &&
-      /^0x[0-9a-fA-F]+$/.test(decodedString)
-    ) {
-      // Keep as hex if it's a valid hex string
-      return decodedString;
-    } else {
-      // Use the decoded ASCII string
-      return decodedString;
+
+    // If it's a 20-byte value, treat as an EVM address and checksum it
+    if (bytes.length === 20) {
+      return ethers.getAddress(ethers.hexlify(bytes));
     }
+
+    // Try to decode as UTF-8 for non-EVM formats (e.g., Sui type strings, Solana base58)
+    const decoded = ethers.toUtf8String(bytes);
+
+    // Common Sui type format like 0x<hex>::module::Type
+    if (decoded.includes("::")) {
+      return decoded;
+    }
+
+    // Solana base58 addresses (approximate detection)
+    if (/^[1-9A-HJ-NP-Za-km-z]{32,}$/.test(decoded)) {
+      return decoded;
+    }
+
+    // Hex-looking ascii (keep as-is)
+    if (/^0x[0-9a-fA-F]+$/.test(decoded)) {
+      return decoded;
+    }
+
+    return decoded;
   } catch {
-    // If UTF-8 decoding fails, treat as hex bytes
-    return ethers.hexlify(addressBytes);
+    // Fallback to hex string; if valid EVM address, checksum it
+    const hex = ethers.hexlify(addressBytes);
+    try {
+      return ethers.getAddress(hex);
+    } catch {
+      return hex;
+    }
   }
 };
 
@@ -54,7 +72,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
           active: Boolean(chain.active),
           chainId: chain.chainId,
           gasZRC20: String(chain.gasZRC20),
-          registry: ethers.hexlify(chain.registry),
+          registry: convertAddressBytes(chain.registry),
         },
         contracts: [],
         zrc20Tokens: [],
