@@ -5,7 +5,7 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
+import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import { prepareUniswapV3 } from "../../tokens/uniswapV3";
@@ -118,6 +118,24 @@ export const zetachainSetup = async (
     proxyCoreRegistry.target,
     CoreRegistry.abi,
     deployer
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "gateway",
+    gatewayZEVM.target,
+    {
+      gasLimit: 1_000_000,
+    }
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "zetaToken",
+    wzeta.target,
+    {
+      gasLimit: 1_000_000,
+    }
   );
 
   // Execute transactions sequentially to avoid nonce conflicts
