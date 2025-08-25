@@ -200,6 +200,25 @@ export const solanaSetup = async ({
     throw error;
   }
 
+  await zetachainContracts.coreRegistry.changeChainStatus(
+    BigInt(NetworkID.Solana),
+    ethers.ZeroAddress,
+    "0x",
+    true,
+    {
+      gasLimit: 1_000_000,
+    }
+  );
+
+  await zetachainContracts.coreRegistry.registerContract(
+    NetworkID.Solana,
+    "gateway",
+    ethers.hexlify(ethers.toUtf8Bytes(gatewayProgram.programId.toBase58())),
+    {
+      gasLimit: 1_000_000,
+    }
+  );
+
   return {
     addresses: [
       {

@@ -5,10 +5,14 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS } from "../../constants";
+import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import { prepareUniswapV3 } from "../../tokens/uniswapV3";
+
+const options = {
+  gasLimit: 1_000_000,
+};
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -118,6 +122,48 @@ export const zetachainSetup = async (
     proxyCoreRegistry.target,
     CoreRegistry.abi,
     deployer
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "gateway",
+    gatewayZEVM.target,
+    options
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "zetaToken",
+    wzeta.target,
+    options
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "uniswapV2Factory",
+    v2Setup.uniswapFactoryInstance.target,
+    options
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "uniswapV2Router02",
+    v2Setup.uniswapRouterInstance.target,
+    options
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "uniswapV3Factory",
+    v3Setup.uniswapV3FactoryInstance.target,
+    options
+  );
+
+  await coreRegistry.registerContract(
+    NetworkID.ZetaChain,
+    "uniswapV3Router",
+    v3Setup.swapRouterInstance.target,
+    options
   );
 
   // Execute transactions sequentially to avoid nonce conflicts

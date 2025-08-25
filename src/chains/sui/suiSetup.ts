@@ -4,6 +4,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { mnemonicToSeedSync } from "bip39";
 import { execSync, spawnSync } from "child_process";
 import { HDKey } from "ethereum-cryptography/hdkey";
+import { ethers } from "ethers";
 import * as fs from "fs";
 import os from "os";
 import path from "path";
@@ -200,6 +201,25 @@ export const suiSetup = async ({
     withdrawCapObjectId,
     zetachainContracts,
   });
+
+  await zetachainContracts.coreRegistry.changeChainStatus(
+    BigInt(NetworkID.Sui),
+    ethers.ZeroAddress,
+    "0x",
+    true,
+    {
+      gasLimit: 1_000_000,
+    }
+  );
+
+  await zetachainContracts.coreRegistry.registerContract(
+    NetworkID.Sui,
+    "gateway",
+    ethers.hexlify(ethers.toUtf8Bytes(`${packageId},${gatewayObjectId}`)),
+    {
+      gasLimit: 1_000_000,
+    }
+  );
 
   return {
     addresses: [

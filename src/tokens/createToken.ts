@@ -166,6 +166,18 @@ export const createToken = async (
     }
   }
 
+  await contracts.zetachainContracts.coreRegistry.registerZRC20Token(
+    zrc20.target,
+    symbol,
+    chainID,
+    isGasToken
+      ? ethers.ZeroAddress
+      : ethers.hexlify(ethers.toUtf8Bytes(asset as string)),
+    isGasToken ? "gas" : "erc20",
+    decimals,
+    deployOpts
+  );
+
   foreignCoins.push({
     asset,
     coin_type,
