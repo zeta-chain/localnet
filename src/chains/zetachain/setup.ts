@@ -10,10 +10,6 @@ import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import { prepareUniswapV3 } from "../../tokens/uniswapV3";
 
-const options = {
-  gasLimit: 1_000_000,
-};
-
 export const zetachainSetup = async (
   deployer: Signer,
   tss: Signer,
@@ -128,42 +124,42 @@ export const zetachainSetup = async (
     NetworkID.ZetaChain,
     "gateway",
     gatewayZEVM.target,
-    options
+    deployOpts
   );
 
   await coreRegistry.registerContract(
     NetworkID.ZetaChain,
     "zetaToken",
     wzeta.target,
-    options
+    deployOpts
   );
 
   await coreRegistry.registerContract(
     NetworkID.ZetaChain,
     "uniswapV2Factory",
     v2Setup.uniswapFactoryInstance.target,
-    options
+    deployOpts
   );
 
   await coreRegistry.registerContract(
     NetworkID.ZetaChain,
     "uniswapV2Router02",
     v2Setup.uniswapRouterInstance.target,
-    options
+    deployOpts
   );
 
   await coreRegistry.registerContract(
     NetworkID.ZetaChain,
     "uniswapV3Factory",
     v3Setup.uniswapV3FactoryInstance.target,
-    options
+    deployOpts
   );
 
   await coreRegistry.registerContract(
     NetworkID.ZetaChain,
     "uniswapV3Router",
     v3Setup.swapRouterInstance.target,
-    options
+    deployOpts
   );
 
   // Execute transactions sequentially to avoid nonce conflicts

@@ -206,50 +206,41 @@ export const evmSetup = async ({
   await (gatewayEVM as any)
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
+
   await zetachainContracts.coreRegistry.changeChainStatus(
     BigInt(chainID),
     ethers.ZeroAddress,
     "0x",
     true,
-    {
-      gasLimit: 1_000_000,
-    }
+    deployOpts
   );
 
   await zetachainContracts.coreRegistry.registerContract(
     chainID,
     "gateway",
     gatewayEVM.target,
-    {
-      gasLimit: 1_000_000,
-    }
+    deployOpts
   );
 
   await zetachainContracts.coreRegistry.registerContract(
     chainID,
     "zetaToken",
     testEVMZeta.target,
-    {
-      gasLimit: 1_000_000,
-    }
+    deployOpts
   );
 
   await zetachainContracts.coreRegistry.registerContract(
     chainID,
     "zetaConnector",
     zetaConnector.target,
-    {
-      gasLimit: 1_000_000,
-    }
+    deployOpts
   );
 
   await zetachainContracts.coreRegistry.registerContract(
     chainID,
     "erc20Custody",
     custody.target,
-    {
-      gasLimit: 1_000_000,
-    }
+    deployOpts
   );
 
   return {
