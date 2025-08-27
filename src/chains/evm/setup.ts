@@ -217,10 +217,10 @@ export const evmSetup = async ({
   );
 
   await registerContracts(zetachainContracts.coreRegistry, chainID, {
-    gateway: gatewayEVM.target,
-    zetaToken: testEVMZeta.target,
-    zetaConnector: zetaConnector.target,
     erc20Custody: custody.target,
+    gateway: gatewayEVM.target,
+    zetaConnector: zetaConnector.target,
+    zetaToken: testEVMZeta.target,
   });
 
   return {

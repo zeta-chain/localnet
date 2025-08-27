@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
-import { logger } from "../logger";
 import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
 
 let isRegisteringGateways = false;
 
