@@ -15,7 +15,7 @@ import { anvilTestMnemonic, NetworkID } from "./constants";
 import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
-import { getRegistryAsJson } from "./utils/registryUtils";
+import { bootstrapEVMRegistries, getRegistryAsJson } from "./utils";
 
 const foreignCoins: any[] = [];
 
@@ -151,89 +151,13 @@ export const initLocalnet = async ({
 
     log.debug("Token creation complete");
 
-    // Bootstrap chains and contracts from CoreRegistry into EVM satellite registries before handlers
+    // Bootstrap chains and contracts from CoreRegistry into EVM registries
     try {
       log.debug("Bootstrapping chains and contracts to EVM registries");
-
-      const [allChainsRaw, allContractsRaw] = await Promise.all([
-        zetachainContracts.coreRegistry.getAllChains(),
-        zetachainContracts.coreRegistry.getAllContracts(),
+      await bootstrapEVMRegistries(zetachainContracts.coreRegistry, [
+        ethereumContracts.registry,
+        bnbContracts.registry,
       ]);
-
-      const dtoChains = allChainsRaw.map((ch: any) => ({
-        active: Boolean(ch.active),
-        chainId: BigInt(ch.chainId),
-        gasZRC20: String(ch.gasZRC20),
-        registry: ch.registry,
-      }));
-
-      const dtoContracts = allContractsRaw.map((c: any) => ({
-        active: Boolean(c.active),
-        addressBytes: c.addressBytes,
-        contractType: String(c.contractType),
-        chainId: BigInt(c.chainId),
-      }));
-
-      const configEntries: any[] = [];
-
-      // Ethereum registry: bootstrap chains first
-      try {
-        const tx = await ethereumContracts.registry.bootstrapChains(
-          dtoChains,
-          [],
-          { gasLimit: 2_000_000 }
-        );
-        await tx.wait();
-      } catch (err) {
-        log.error("Error bootstrapping chains to Ethereum registry", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        throw err;
-      }
-
-      // Ethereum registry: then bootstrap contracts
-      try {
-        const tx = await ethereumContracts.registry.bootstrapContracts(
-          dtoContracts,
-          configEntries,
-          { gasLimit: 2_000_000 }
-        );
-        await tx.wait();
-      } catch (err) {
-        log.error("Error bootstrapping contracts to Ethereum registry", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        throw err;
-      }
-
-      // BNB registry: bootstrap chains first
-      try {
-        const tx = await bnbContracts.registry.bootstrapChains(dtoChains, [], {
-          gasLimit: 2_000_000,
-        });
-        await tx.wait();
-      } catch (err) {
-        log.error("Error bootstrapping chains to BNB registry", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        throw err;
-      }
-
-      // BNB registry: then bootstrap contracts
-      try {
-        const tx = await bnbContracts.registry.bootstrapContracts(
-          dtoContracts,
-          configEntries,
-          { gasLimit: 2_000_000 }
-        );
-        await tx.wait();
-      } catch (err) {
-        log.error("Error bootstrapping contracts to BNB registry", {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        throw err;
-      }
-
       log.debug("Bootstrapping chains and contracts complete");
     } catch (err) {
       log.error("Fatal error during contracts bootstrapping", {

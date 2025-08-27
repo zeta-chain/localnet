@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { logger } from "../logger";
 
 let isRegisteringGateways = false;
 
@@ -95,5 +96,59 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
   } catch (error) {
     console.error("Error getting registry as JSON:", error);
     throw error;
+  }
+};
+
+export const bootstrapEVMRegistries = async (
+  coreRegistry: ethers.Contract,
+  evmRegistries: ethers.Contract[]
+): Promise<void> => {
+  const [allChainsRaw, allContractsRaw] = await Promise.all([
+    coreRegistry.getAllChains(),
+    coreRegistry.getAllContracts(),
+  ]);
+
+  const dtoChains = allChainsRaw.map((ch: any) => ({
+    active: Boolean(ch.active),
+    chainId: BigInt(ch.chainId),
+    gasZRC20: String(ch.gasZRC20),
+    registry: ch.registry,
+  }));
+
+  const dtoContracts = allContractsRaw.map((c: any) => ({
+    active: Boolean(c.active),
+    addressBytes: c.addressBytes,
+    contractType: String(c.contractType),
+    chainId: BigInt(c.chainId),
+  }));
+
+  const configEntries: any[] = [];
+
+  for (const registry of evmRegistries) {
+    try {
+      const tx = await registry.bootstrapChains(dtoChains, [], {
+        gasLimit: 2_000_000,
+      });
+      await tx.wait();
+    } catch (err: any) {
+      logger.error("Error bootstrapping chains on the registry", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+
+    try {
+      const tx = await registry.bootstrapContracts(
+        dtoContracts,
+        configEntries,
+        { gasLimit: 2_000_000 }
+      );
+      await tx.wait();
+    } catch (err: any) {
+      logger.error("Error bootstrapping contracts on the registry", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
   }
 };
