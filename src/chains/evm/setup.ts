@@ -208,13 +208,14 @@ export const evmSetup = async ({
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
 
-  await zetachainContracts.coreRegistry.changeChainStatus(
+  const statusTx = await zetachainContracts.coreRegistry.changeChainStatus(
     BigInt(chainID),
     ethers.ZeroAddress,
     "0x",
     true,
     deployOpts
   );
+  await statusTx.wait();
 
   await registerContracts(zetachainContracts.coreRegistry, chainID, {
     erc20Custody: custody.target,
