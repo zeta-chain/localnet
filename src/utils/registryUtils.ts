@@ -110,14 +110,14 @@ export const bootstrapEVMRegistries = async (
     coreRegistry.getAllContracts(),
   ]);
 
-  const dtoChains = allChainsRaw.map((ch: any) => ({
+  const chains = allChainsRaw.map((ch: any) => ({
     active: Boolean(ch.active),
     chainId: BigInt(ch.chainId),
     gasZRC20: String(ch.gasZRC20),
     registry: ch.registry,
   }));
 
-  const dtoContracts = allContractsRaw.map((c: any) => ({
+  const contracts = allContractsRaw.map((c: any) => ({
     active: Boolean(c.active),
     addressBytes: c.addressBytes,
     chainId: BigInt(c.chainId),
@@ -128,7 +128,7 @@ export const bootstrapEVMRegistries = async (
 
   for (const registry of evmRegistries) {
     try {
-      const tx = await registry.bootstrapChains(dtoChains, [], {
+      const tx = await registry.bootstrapChains(chains, [], {
         gasLimit: 2_000_000,
       });
       await tx.wait();
@@ -140,11 +140,9 @@ export const bootstrapEVMRegistries = async (
     }
 
     try {
-      const tx = await registry.bootstrapContracts(
-        dtoContracts,
-        configEntries,
-        { gasLimit: 2_000_000 }
-      );
+      const tx = await registry.bootstrapContracts(contracts, configEntries, {
+        gasLimit: 2_000_000,
+      });
       await tx.wait();
     } catch (err: any) {
       logger.error("Error bootstrapping contracts on the registry", {
