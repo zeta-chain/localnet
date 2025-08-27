@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 
 import { logger } from "../logger";
+import { deployOpts } from "../deployOpts";
 
 let isRegisteringGateways = false;
 
@@ -151,5 +152,21 @@ export const bootstrapEVMRegistries = async (
       });
       throw err;
     }
+  }
+};
+
+export const registerContracts = async (
+  registry: ethers.Contract,
+  chainId: string,
+  contractsByName: Record<string, ethers.AddressLike>
+) => {
+  for (const [contractType, address] of Object.entries(contractsByName)) {
+    const tx = await registry.registerContract(
+      BigInt(chainId),
+      String(contractType),
+      address,
+      deployOpts
+    );
+    await tx.wait();
   }
 };

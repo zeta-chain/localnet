@@ -9,6 +9,7 @@ import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import { prepareUniswapV3 } from "../../tokens/uniswapV3";
+import { registerContracts } from "../../utils";
 
 export const zetachainSetup = async (
   deployer: Signer,
@@ -120,47 +121,14 @@ export const zetachainSetup = async (
     deployer
   );
 
-  await coreRegistry.registerContract(
-    NetworkID.ZetaChain,
-    "gateway",
-    gatewayZEVM.target,
-    deployOpts
-  );
-
-  await coreRegistry.registerContract(
-    NetworkID.ZetaChain,
-    "zetaToken",
-    wzeta.target,
-    deployOpts
-  );
-
-  await coreRegistry.registerContract(
-    NetworkID.ZetaChain,
-    "uniswapV2Factory",
-    v2Setup.uniswapFactoryInstance.target,
-    deployOpts
-  );
-
-  await coreRegistry.registerContract(
-    NetworkID.ZetaChain,
-    "uniswapV2Router02",
-    v2Setup.uniswapRouterInstance.target,
-    deployOpts
-  );
-
-  await coreRegistry.registerContract(
-    NetworkID.ZetaChain,
-    "uniswapV3Factory",
-    v3Setup.uniswapV3FactoryInstance.target,
-    deployOpts
-  );
-
-  await coreRegistry.registerContract(
-    NetworkID.ZetaChain,
-    "uniswapV3Router",
-    v3Setup.swapRouterInstance.target,
-    deployOpts
-  );
+  await registerContracts(coreRegistry, NetworkID.ZetaChain, {
+    gateway: gatewayZEVM.target,
+    zetaToken: wzeta.target,
+    uniswapV2Factory: v2Setup.uniswapFactoryInstance.target,
+    uniswapV2Router02: v2Setup.uniswapRouterInstance.target,
+    uniswapV3Factory: v3Setup.uniswapV3FactoryInstance.target,
+    uniswapV3Router: v3Setup.swapRouterInstance.target,
+  });
 
   // Execute transactions sequentially to avoid nonce conflicts
   await (wzeta as any)

@@ -10,6 +10,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
+import { registerContracts } from "../../utils";
 
 const getZetaConnectorArtifacts = (isNative: boolean | string) => {
   return isNative
@@ -215,33 +216,12 @@ export const evmSetup = async ({
     deployOpts
   );
 
-  await zetachainContracts.coreRegistry.registerContract(
-    chainID,
-    "gateway",
-    gatewayEVM.target,
-    deployOpts
-  );
-
-  await zetachainContracts.coreRegistry.registerContract(
-    chainID,
-    "zetaToken",
-    testEVMZeta.target,
-    deployOpts
-  );
-
-  await zetachainContracts.coreRegistry.registerContract(
-    chainID,
-    "zetaConnector",
-    zetaConnector.target,
-    deployOpts
-  );
-
-  await zetachainContracts.coreRegistry.registerContract(
-    chainID,
-    "erc20Custody",
-    custody.target,
-    deployOpts
-  );
+  await registerContracts(zetachainContracts.coreRegistry, chainID, {
+    gateway: gatewayEVM.target,
+    zetaToken: testEVMZeta.target,
+    zetaConnector: zetaConnector.target,
+    erc20Custody: custody.target,
+  });
 
   return {
     custody,
