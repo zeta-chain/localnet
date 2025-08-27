@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+
 import { logger } from "../logger";
 
 let isRegisteringGateways = false;
@@ -118,8 +119,8 @@ export const bootstrapEVMRegistries = async (
   const dtoContracts = allContractsRaw.map((c: any) => ({
     active: Boolean(c.active),
     addressBytes: c.addressBytes,
-    contractType: String(c.contractType),
     chainId: BigInt(c.chainId),
+    contractType: String(c.contractType),
   }));
 
   const configEntries: any[] = [];
