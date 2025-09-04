@@ -3,9 +3,11 @@ import ansis from "ansis";
 import { ChildProcess, execSync, spawn } from "child_process";
 import { Command, Option } from "commander";
 import Docker from "dockerode";
+import { ethers } from "ethers";
 import fs from "fs";
 import path from "path";
 import readline from "readline/promises";
+import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../";
@@ -13,16 +15,18 @@ import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
-import { LOCALNET_DIR, REGISTRY_FILE } from "../constants";
+import { LOCALNET_DIR, NetworkID, REGISTRY_FILE } from "../constants";
 import { getSocketPath } from "../docker";
 import { isDockerAvailable } from "../isDockerAvailable";
 import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
-import { initLocalnetAddressesSchema } from "../types/zodSchemas";
 
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
 const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
+const CHAIN_ID_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(NetworkID).map(([name, id]) => [id, name])
+);
 
 interface ProcessInfo {
   command: string;
@@ -35,6 +39,60 @@ interface ProcessInfo {
  * transaction monitors).
  */
 let readlineInterface: readline.Interface | undefined;
+
+const printRegistryTables = (registry: any, log: any) => {
+  try {
+    const chainIds = Object.keys(registry).sort();
+    const allTokens = chainIds.flatMap((id) => {
+      const chainData = (registry as any)[id] ?? {};
+      return (chainData.zrc20Tokens as any[]) || [];
+    });
+
+    for (const chainId of chainIds) {
+      const chainData = (registry as any)[chainId] ?? {};
+      const contracts = (chainData.contracts as any[]) || [];
+      const chainTokens = (chainData.zrc20Tokens as any[]) || [];
+
+      const chainName = CHAIN_ID_TO_NAME[String(chainId)] || "Unknown";
+      console.log(`\n${chainName} (${chainId})`);
+
+      const rows: string[][] = [["Contract", "Address"]];
+
+      for (const c of contracts) {
+        rows.push([String(c.contractType), String(c.address)]);
+      }
+
+      if (chainId === NetworkID.ZetaChain) {
+        for (const t of allTokens) {
+          const addr = String(t.address);
+          if (addr !== ethers.ZeroAddress) {
+            rows.push([`ZRC-20 ${String(t.symbol)}`, addr]);
+          }
+        }
+      } else {
+        for (const t of chainTokens) {
+          const addr = String(t.originAddress);
+          if (addr !== ethers.ZeroAddress) {
+            rows.push([`${String(t.symbol)}`, addr]);
+          }
+        }
+      }
+
+      if (rows.length === 1) {
+        console.log(ansis.yellow("No contracts or tokens found."));
+      } else {
+        console.log(
+          table(rows, {
+            border: getBorderCharacters("norc"),
+          })
+        );
+      }
+    }
+  } catch (printErr) {
+    log.error(`Error printing registry tables: ${printErr}`);
+    console.log("Registry", JSON.stringify(registry, null, 2));
+  }
+};
 
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
@@ -218,35 +276,21 @@ const startLocalnet = async (options: {
   );
 
   try {
-    const rawInitialAddresses = await initLocalnet({
+    const registry = await initLocalnet({
       chains: options.chains,
       exitOnError: options.exitOnError,
       port: options.port,
     });
 
-    const addresses = initLocalnetAddressesSchema.parse(rawInitialAddresses);
-
-    // Get unique chains
-    const chains = [...new Set(addresses.map((item) => item.chain))];
-
-    // Create tables for each chain
-    chains.forEach((chain) => {
-      const chainContracts = addresses
-        .filter((contract) => contract.chain === chain)
-        .reduce((acc: Record<string, string>, { type, address }) => {
-          acc[type] = address;
-          return acc;
-        }, {} as Record<string, string>);
-
-      console.log(`\n${chain.toUpperCase()}`);
-      console.table(chainContracts);
-    });
-
-    fs.writeFileSync(
-      LOCALNET_JSON_FILE,
-      JSON.stringify({ addresses, pid: process.pid }, null, 2),
+    await fs.promises.writeFile(
+      REGISTRY_FILE,
+      JSON.stringify(registry, null, 2),
       "utf-8"
     );
+    log.debug("Registry written to file");
+
+    // Pretty-print registry using tables
+    printRegistryTables(registry, log);
   } catch (error: unknown) {
     log.error(`Error initializing localnet: ${error}`);
     await gracefulShutdown();

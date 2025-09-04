@@ -1,5 +1,8 @@
 import { ethers } from "ethers";
 
+import { deployOpts } from "../deployOpts";
+import { logger } from "../logger";
+
 let isRegisteringGateways = false;
 
 export function setRegisteringGateways(value: boolean) {
@@ -10,25 +13,31 @@ export function isRegisteringGatewaysActive(): boolean {
   return isRegisteringGateways;
 }
 
-// Helper function to convert address bytes to appropriate format
-const convertAddressBytes = (addressBytes: Uint8Array): string => {
+// Helper function to convert raw bytes into the appropriate address/string format
+const convertAddressBytes = (addressBytes: ethers.BytesLike): string => {
   try {
-    // Try to decode as UTF-8 string first
-    const decodedString = ethers.toUtf8String(addressBytes);
-    // Check if the decoded string looks like hex (starts with 0x and contains only hex chars)
-    if (
-      decodedString.startsWith("0x") &&
-      /^0x[0-9a-fA-F]+$/.test(decodedString)
-    ) {
-      // Keep as hex if it's a valid hex string
-      return decodedString;
-    } else {
-      // Use the decoded ASCII string
-      return decodedString;
+    const bytes = ethers.getBytes(addressBytes);
+    if (bytes.length === 0 || bytes.every((b) => b === 0)) {
+      return ethers.ZeroAddress;
     }
+
+    // If it's a 20-byte value, treat as an EVM address and checksum it
+    if (bytes.length === 20) {
+      return ethers.getAddress(ethers.hexlify(bytes));
+    }
+
+    // Try to decode as UTF-8 for non-EVM formats (e.g., Sui type strings, Solana base58)
+    const decoded = ethers.toUtf8String(bytes);
+
+    return decoded;
   } catch {
-    // If UTF-8 decoding fails, treat as hex bytes
-    return ethers.hexlify(addressBytes);
+    // Fallback to hex string; if valid EVM address, checksum it
+    const hex = ethers.hexlify(addressBytes);
+    try {
+      return ethers.getAddress(hex);
+    } catch {
+      return hex;
+    }
   }
 };
 
@@ -51,7 +60,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
           active: Boolean(chain.active),
           chainId: chain.chainId,
           gasZRC20: String(chain.gasZRC20),
-          registry: ethers.hexlify(chain.registry),
+          registry: convertAddressBytes(chain.registry),
         },
         contracts: [],
         zrc20Tokens: [],
@@ -79,7 +88,7 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
         address: String(token.address_),
         coinType: String(token.coinType),
         decimals: Number(token.decimals),
-        originAddress: ethers.hexlify(token.originAddress),
+        originAddress: convertAddressBytes(token.originAddress),
         originChainId: token.originChainId,
         symbol: String(token.symbol),
       });
@@ -89,5 +98,69 @@ export const getRegistryAsJson = async (registry: ethers.Contract) => {
   } catch (error) {
     console.error("Error getting registry as JSON:", error);
     throw error;
+  }
+};
+
+export const bootstrapEVMRegistries = async (
+  coreRegistry: ethers.Contract,
+  evmRegistries: ethers.Contract[]
+): Promise<void> => {
+  const [allChainsRaw, allContractsRaw] = await Promise.all([
+    coreRegistry.getAllChains(),
+    coreRegistry.getAllContracts(),
+  ]);
+
+  const chains = allChainsRaw.map((ch: any) => ({
+    active: Boolean(ch.active),
+    chainId: BigInt(ch.chainId),
+    gasZRC20: String(ch.gasZRC20),
+    registry: ch.registry,
+  }));
+
+  const contracts = allContractsRaw.map((c: any) => ({
+    active: Boolean(c.active),
+    addressBytes: c.addressBytes,
+    chainId: BigInt(c.chainId),
+    contractType: String(c.contractType),
+  }));
+
+  const configEntries: any[] = [];
+
+  for (const registry of evmRegistries) {
+    try {
+      const bootstrapChains = await registry.bootstrapChains(chains, [], {
+        gasLimit: 2_000_000,
+      });
+      await bootstrapChains.wait();
+      const bootstrapContracts = await registry.bootstrapContracts(
+        contracts,
+        configEntries,
+        {
+          gasLimit: 10_000_000,
+        }
+      );
+      await bootstrapContracts.wait();
+    } catch (err: any) {
+      logger.error("Error bootstrapping chains on the registry", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+  }
+};
+
+export const registerContracts = async (
+  registry: ethers.Contract,
+  chainId: string,
+  contractsByName: Record<string, ethers.AddressLike>
+) => {
+  for (const [contractType, address] of Object.entries(contractsByName)) {
+    const tx = await registry.registerContract(
+      BigInt(chainId),
+      String(contractType),
+      address,
+      deployOpts
+    );
+    await tx.wait();
   }
 };

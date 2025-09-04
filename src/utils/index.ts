@@ -1,3 +1,4 @@
+export * from "./registryUtils";
 export * from "./requests";
 export * from "./retry";
 export * from "./sleep";

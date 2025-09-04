@@ -10,6 +10,7 @@ import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
+import { registerContracts } from "../../utils";
 
 const getZetaConnectorArtifacts = (isNative: boolean | string) => {
   return isNative
@@ -207,7 +208,23 @@ export const evmSetup = async ({
     .connect(deployer)
     .setConnector(zetaConnector.target, deployOpts);
 
-  // Don't set up any event handlers here - they will be set up after ALL initialization
+  const changeChainStatus =
+    await zetachainContracts.coreRegistry.changeChainStatus(
+      BigInt(chainID),
+      ethers.ZeroAddress,
+      "0x",
+      true,
+      deployOpts
+    );
+
+  await changeChainStatus.wait();
+
+  await registerContracts(zetachainContracts.coreRegistry, chainID, {
+    erc20Custody: custody.target,
+    gateway: gatewayEVM.target,
+    zetaConnector: zetaConnector.target,
+    zetaToken: testEVMZeta.target,
+  });
 
   return {
     custody,

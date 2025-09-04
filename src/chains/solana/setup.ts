@@ -14,7 +14,7 @@ import * as util from "util";
 import { addBackgroundProcess } from "../../backgroundProcesses";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { sleep } from "../../utils";
+import { registerContracts, sleep } from "../../utils";
 import { solanaCall } from "./call";
 import { ed25519KeyPairTSS, payer, secp256k1KeyPairTSS } from "./constants";
 import { solanaDeposit } from "./deposit";
@@ -199,6 +199,25 @@ export const solanaSetup = async ({
     }
     throw error;
   }
+
+  const changeChainStatus =
+    await zetachainContracts.coreRegistry.changeChainStatus(
+      BigInt(NetworkID.Solana),
+      ethers.ZeroAddress,
+      "0x",
+      true,
+      {
+        gasLimit: 1_000_000,
+      }
+    );
+
+  await changeChainStatus.wait();
+
+  await registerContracts(zetachainContracts.coreRegistry, NetworkID.Solana, {
+    gateway: ethers.hexlify(
+      ethers.toUtf8Bytes(gatewayProgram.programId.toBase58())
+    ),
+  });
 
   return {
     addresses: [
