@@ -117,16 +117,12 @@ export const bootstrapEVMRegistries = async (
     registry: ch.registry,
   }));
 
-  console.log(chains);
-
   const contracts = allContractsRaw.map((c: any) => ({
     active: Boolean(c.active),
     addressBytes: c.addressBytes,
     chainId: BigInt(c.chainId),
     contractType: String(c.contractType),
   }));
-
-  console.log(contracts);
 
   const configEntries: any[] = [];
 

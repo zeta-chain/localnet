@@ -13,7 +13,7 @@ import { addBackgroundProcess } from "../../backgroundProcesses";
 import { cloneRepository } from "../../cloneRepository";
 import { MNEMONIC, NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { sleep } from "../../utils";
+import { registerContracts, sleep } from "../../utils";
 import { suiDeposit } from "./deposit";
 import { suiDepositAndCall } from "./depositAndCall";
 import { isSuiAvailable } from "./isSuiAvailable";
@@ -202,24 +202,24 @@ export const suiSetup = async ({
     zetachainContracts,
   });
 
-  await zetachainContracts.coreRegistry.changeChainStatus(
-    BigInt(NetworkID.Sui),
-    ethers.ZeroAddress,
-    "0x",
-    true,
-    {
-      gasLimit: 1_000_000,
-    }
-  );
+  const changeChainStatus =
+    await zetachainContracts.coreRegistry.changeChainStatus(
+      BigInt(NetworkID.Sui),
+      ethers.ZeroAddress,
+      "0x",
+      true,
+      {
+        gasLimit: 1_000_000,
+      }
+    );
 
-  await zetachainContracts.coreRegistry.registerContract(
-    NetworkID.Sui,
-    "gateway",
-    ethers.hexlify(ethers.toUtf8Bytes(`${packageId},${gatewayObjectId}`)),
-    {
-      gasLimit: 1_000_000,
-    }
-  );
+  await changeChainStatus.wait();
+
+  await registerContracts(zetachainContracts.coreRegistry, NetworkID.Sui, {
+    gateway: ethers.hexlify(
+      ethers.toUtf8Bytes(`${packageId},${gatewayObjectId}`)
+    ),
+  });
 
   return {
     addresses: [
