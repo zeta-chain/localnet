@@ -117,6 +117,8 @@ export const bootstrapEVMRegistries = async (
     registry: ch.registry,
   }));
 
+  console.log(chains);
+
   const contracts = allContractsRaw.map((c: any) => ({
     active: Boolean(c.active),
     addressBytes: c.addressBytes,
@@ -124,28 +126,26 @@ export const bootstrapEVMRegistries = async (
     contractType: String(c.contractType),
   }));
 
+  console.log(contracts);
+
   const configEntries: any[] = [];
 
   for (const registry of evmRegistries) {
     try {
-      const tx = await registry.bootstrapChains(chains, [], {
+      const bootstrapChains = await registry.bootstrapChains(chains, [], {
         gasLimit: 2_000_000,
       });
-      await tx.wait();
+      await bootstrapChains.wait();
+      const bootstrapContracts = await registry.bootstrapContracts(
+        contracts,
+        configEntries,
+        {
+          gasLimit: 10_000_000,
+        }
+      );
+      await bootstrapContracts.wait();
     } catch (err: any) {
       logger.error("Error bootstrapping chains on the registry", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      throw err;
-    }
-
-    try {
-      const tx = await registry.bootstrapContracts(contracts, configEntries, {
-        gasLimit: 2_000_000,
-      });
-      await tx.wait();
-    } catch (err: any) {
-      logger.error("Error bootstrapping contracts on the registry", {
         error: err instanceof Error ? err.message : String(err),
       });
       throw err;
