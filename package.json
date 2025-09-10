@@ -18,11 +18,6 @@
       "require": "./dist/commands/index.js",
       "types": "./dist/commands/index.d.ts"
     },
-    "./tasks": {
-      "import": "./dist/tasks/index.js",
-      "require": "./dist/tasks/index.js",
-      "types": "./dist/tasks/index.d.ts"
-    },
     "./localnet": {
       "import": "./dist/index.js",
       "require": "./dist/index.js",
