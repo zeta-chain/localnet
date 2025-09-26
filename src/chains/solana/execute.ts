@@ -54,26 +54,19 @@ export const solanaExecute = async ({
     // TODO: some of the fields like data and receiver are too much coupled with evm (hexlify receiver, abi.encode data etc)
     // probably as we introduce more chains its better to deliver raw strings to localnet and parse specific to chain here
 
-    // toolkit additionally is doing abi.encode on provided bytes, so first decode that and then decode accounts and data
-    const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
-    const decodedAccountsAndData = AbiCoder.defaultAbiCoder().decode(
-      [
-        "tuple(tuple(bytes32 publicKey, bool isWritable)[] accounts, bytes data)",
-      ],
-      decodedBytes[0]
-    )[0];
+    // try to decode as non-ALT message first, then ALT message
+    let altAccount: anchor.web3.AddressLookupTableAccount | null = null;
+    let remainingAccounts: anchor.web3.AccountMeta[] = [];
+    let data: Uint8Array;
 
-    const accounts = decodedAccountsAndData[0];
-    const data = decodedAccountsAndData[1];
-
-    const remainingAccounts: anchor.web3.AccountMeta[] = [];
-    for (const acc of accounts) {
-      // this is encoded as { pubkey, isWritable }
-      remainingAccounts.push({
-        isSigner: false,
-        isWritable: acc[1],
-        pubkey: new anchor.web3.PublicKey(ethers.getBytes(acc[0])),
-      });
+    try {
+      ({ remainingAccounts, data } = decodeMessage(message));
+    } catch (nonAltError) {
+      try {
+        ({ altAccount, remainingAccounts, data } = await decodeMessageALT(message, connection));
+      } catch (altError) {
+        throw new Error(`Failed to decode message as neither non-ALT nor ALT format`);
+      }
     }
 
     const isSpl = !!mint;
@@ -92,6 +85,7 @@ export const solanaExecute = async ({
         remainingAccounts,
         amount,
         recipient,
+        altAccount,
       });
     } else {
       await executeSplToken({
@@ -109,6 +103,7 @@ export const solanaExecute = async ({
         recipient,
         mint,
         decimals,
+        altAccount,
       });
     }
   } catch (err) {
@@ -116,6 +111,77 @@ export const solanaExecute = async ({
       chain: NetworkID.Solana,
     });
   }
+};
+
+const decodeMessage = (message: Buffer): { remainingAccounts: anchor.web3.AccountMeta[]; data: Uint8Array } => {
+  // decode the non-ALT message
+  const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
+  const decodedAccountsAndData = AbiCoder.defaultAbiCoder().decode(
+    [
+      "tuple(tuple(bytes32 publicKey, bool isWritable)[] accounts, bytes data)",
+    ],
+    decodedBytes[0]
+  )[0];
+
+  const accounts = decodedAccountsAndData[0];
+  const data = decodedAccountsAndData[1];
+
+  const remainingAccounts: anchor.web3.AccountMeta[] = [];
+  for (const acc of accounts) {
+    // this is encoded as { pubkey, isWritable }
+    remainingAccounts.push({
+      isSigner: false,
+      isWritable: acc[1],
+      pubkey: new anchor.web3.PublicKey(ethers.getBytes(acc[0])),
+    });
+  }
+
+  return { remainingAccounts, data };
+};
+
+const decodeMessageALT = async (
+  message: Buffer,
+  connection: anchor.web3.Connection
+): Promise<{ altAccount: anchor.web3.AddressLookupTableAccount; remainingAccounts: anchor.web3.AccountMeta[]; data: Uint8Array }> => {
+  // decode the ALT message
+  const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
+  const decodedALTData = AbiCoder.defaultAbiCoder().decode(
+    [
+      "tuple(bytes32 altAddress, uint8[] writeableIndexes, bytes data)",
+    ],
+    decodedBytes[0]
+  )[0];
+
+  const altAddress = decodedALTData[0];
+  const writeableIndexes = decodedALTData[1];
+  const data = decodedALTData[2];
+
+  // Get the Address Lookup Table
+  const altAccount = (await connection.getAddressLookupTable(new anchor.web3.PublicKey(ethers.getBytes(altAddress)))).value;
+  if (!altAccount) {
+    throw new Error(`ALT not found: ${altAddress}`);
+  }
+
+  // Validate that all writeable indexes are within the ALT's address range
+  const maxIndex = altAccount.state.addresses.length - 1;
+  for (const index of writeableIndexes) {
+    if (index > maxIndex) {
+      throw new Error(`Writeable index ${index} is out of range. ALT has ${altAccount.state.addresses.length} addresses`);
+    }
+  }
+
+  // construct remainingAccounts from ALT addresses
+  const remainingAccounts: anchor.web3.AccountMeta[] = [];
+  for (let i = 0; i < altAccount.state.addresses.length; i++) {
+    const isWritable = writeableIndexes.includes(i);
+    remainingAccounts.push({
+      isSigner: false,
+      isWritable,
+      pubkey: altAccount.state.addresses[i],
+    });
+  }
+
+  return { altAccount, remainingAccounts, data };
 };
 
 const execute = async ({
@@ -131,6 +197,7 @@ const execute = async ({
   remainingAccounts,
   amount,
   recipient,
+  altAccount,
 }: {
   gatewayProgram: anchor.Program;
   connectedProgramId: anchor.web3.PublicKey;
@@ -144,6 +211,7 @@ const execute = async ({
   remainingAccounts: anchor.web3.AccountMeta[];
   amount: bigint;
   recipient: string;
+  altAccount: anchor.web3.AddressLookupTableAccount | null;
 }) => {
   const val = new anchor.BN(amount.toString());
   const instructionId = 0x5;
@@ -165,7 +233,8 @@ const execute = async ({
     s.toArrayLike(Buffer, "be", 32),
   ]);
 
-  const signature = await gatewayProgram.methods
+  // create instruction
+  const executeIx = await gatewayProgram.methods
     .execute(
       val,
       Array.from(sender),
@@ -182,10 +251,12 @@ const execute = async ({
       signer: payer.publicKey,
     })
     .remainingAccounts(remainingAccounts)
-    .rpc();
+    .instruction();
+
+  // send and confirm transaction
+  const signature = await executeTransaction(connection, executeIx, altAccount);
 
   // get tx details to check if connected program is called
-  await sleep(2000);
   const transaction = await connection.getTransaction(signature, {
     commitment: "confirmed",
   });
@@ -219,6 +290,7 @@ const executeSplToken = async ({
   recipient,
   mint,
   decimals,
+  altAccount,
 }: {
   gatewayProgram: anchor.Program;
   connectedProgramId: anchor.web3.PublicKey;
@@ -234,6 +306,7 @@ const executeSplToken = async ({
   recipient: string;
   mint: string;
   decimals?: number;
+  altAccount: anchor.web3.AddressLookupTableAccount | null;
 }) => {
   const val = new anchor.BN(amount.toString());
   const mintPubkey = new anchor.web3.PublicKey(mint);
@@ -269,7 +342,8 @@ const executeSplToken = async ({
     s.toArrayLike(Buffer, "be", 32),
   ]);
 
-  const signature = await gatewayProgram.methods
+  // create instruction
+  const executeIx = await gatewayProgram.methods
     .executeSplToken(
       decimals,
       val,
@@ -293,10 +367,12 @@ const executeSplToken = async ({
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
     })
     .remainingAccounts(remainingAccounts)
-    .rpc();
+    .instruction();
+
+  // send and confirm transaction
+  const signature = await executeTransaction(connection, executeIx, altAccount);
 
   // get tx details to check if connected program is called
-  await sleep(2000);
   const transaction = await connection.getTransaction(signature, {
     commitment: "confirmed",
   });
@@ -313,4 +389,35 @@ const executeSplToken = async ({
   logger.info(`Transaction logs: ${JSON.stringify(logMessages)}`, {
     chain: NetworkID.Solana,
   });
+};
+
+const executeTransaction = async (
+  connection: anchor.web3.Connection,
+  executeIx: anchor.web3.TransactionInstruction,
+  altAccount: anchor.web3.AddressLookupTableAccount | null
+): Promise<string> => {
+  let signature: string;
+
+  if (altAccount) {
+    // build transaction with ALT
+    const latestBh = await connection.getLatestBlockhash();
+    const v0Message = new anchor.web3.TransactionMessage({
+      payerKey: payer.publicKey,
+      recentBlockhash: latestBh.blockhash,
+      instructions: [executeIx],
+    }).compileToV0Message([altAccount]);
+
+    const vtx = new anchor.web3.VersionedTransaction(v0Message);
+    vtx.sign([payer]);
+
+    signature = await connection.sendTransaction(vtx);
+    await connection.confirmTransaction({ signature, ...latestBh }, "confirmed");
+  } else {
+    // build transaction without ALT
+    const transaction = new anchor.web3.Transaction().add(executeIx);
+    signature = await connection.sendTransaction(transaction, [payer]);
+    await connection.confirmTransaction(signature, "confirmed");
+  }
+
+  return signature;
 };
