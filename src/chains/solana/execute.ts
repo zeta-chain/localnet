@@ -7,7 +7,6 @@ import { AbiCoder, ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
-import { sleep } from "../../utils";
 import { payer, secp256k1KeyPairTSS as tssKeyPair } from "./constants";
 
 export const solanaExecute = async ({
@@ -63,9 +62,14 @@ export const solanaExecute = async ({
       ({ remainingAccounts, data } = decodeMessage(message));
     } catch (nonAltError) {
       try {
-        ({ altAccount, remainingAccounts, data } = await decodeMessageALT(message, connection));
+        ({ altAccount, remainingAccounts, data } = await decodeMessageALT(
+          message,
+          connection
+        ));
       } catch (altError) {
-        throw new Error(`Failed to decode message as neither non-ALT nor ALT format`);
+        throw new Error(
+          `Failed to decode message as neither non-ALT nor ALT format`
+        );
       }
     }
 
@@ -73,37 +77,37 @@ export const solanaExecute = async ({
 
     if (!isSpl) {
       await execute({
-        gatewayProgram,
+        altAccount,
+        amount,
+        chainIdBn,
+        connectedPdaAccount,
         connectedProgramId,
         connection,
-        pdaAccount,
-        connectedPdaAccount,
-        chainIdBn,
-        nonce,
-        sender,
         data,
-        remainingAccounts,
-        amount,
+        gatewayProgram,
+        nonce,
+        pdaAccount,
         recipient,
-        altAccount,
+        remainingAccounts,
+        sender,
       });
     } else {
       await executeSplToken({
-        gatewayProgram,
+        altAccount,
+        amount,
+        chainIdBn,
+        connectedPdaAccount,
         connectedProgramId,
         connection,
-        pdaAccount,
-        connectedPdaAccount,
-        chainIdBn,
-        nonce,
-        sender,
         data,
-        remainingAccounts,
-        amount,
-        recipient,
-        mint,
         decimals,
-        altAccount,
+        gatewayProgram,
+        mint,
+        nonce,
+        pdaAccount,
+        recipient,
+        remainingAccounts,
+        sender,
       });
     }
   } catch (err) {
@@ -113,13 +117,13 @@ export const solanaExecute = async ({
   }
 };
 
-const decodeMessage = (message: Buffer): { remainingAccounts: anchor.web3.AccountMeta[]; data: Uint8Array } => {
+const decodeMessage = (
+  message: Buffer
+): { data: Uint8Array; remainingAccounts: anchor.web3.AccountMeta[] } => {
   // decode the non-ALT message
   const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
   const decodedAccountsAndData = AbiCoder.defaultAbiCoder().decode(
-    [
-      "tuple(tuple(bytes32 publicKey, bool isWritable)[] accounts, bytes data)",
-    ],
+    ["tuple(tuple(bytes32 publicKey, bool isWritable)[] accounts, bytes data)"],
     decodedBytes[0]
   )[0];
 
@@ -136,19 +140,21 @@ const decodeMessage = (message: Buffer): { remainingAccounts: anchor.web3.Accoun
     });
   }
 
-  return { remainingAccounts, data };
+  return { data, remainingAccounts };
 };
 
 const decodeMessageALT = async (
   message: Buffer,
   connection: anchor.web3.Connection
-): Promise<{ altAccount: anchor.web3.AddressLookupTableAccount; remainingAccounts: anchor.web3.AccountMeta[]; data: Uint8Array }> => {
+): Promise<{
+  altAccount: anchor.web3.AddressLookupTableAccount;
+  data: Uint8Array;
+  remainingAccounts: anchor.web3.AccountMeta[];
+}> => {
   // decode the ALT message
   const decodedBytes = AbiCoder.defaultAbiCoder().decode(["bytes"], message);
   const decodedALTData = AbiCoder.defaultAbiCoder().decode(
-    [
-      "tuple(bytes32 altAddress, uint8[] writeableIndexes, bytes data)",
-    ],
+    ["tuple(bytes32 altAddress, uint8[] writeableIndexes, bytes data)"],
     decodedBytes[0]
   )[0];
 
@@ -157,7 +163,11 @@ const decodeMessageALT = async (
   const data = decodedALTData[2];
 
   // Get the Address Lookup Table
-  const altAccount = (await connection.getAddressLookupTable(new anchor.web3.PublicKey(ethers.getBytes(altAddress)))).value;
+  const altAccount = (
+    await connection.getAddressLookupTable(
+      new anchor.web3.PublicKey(ethers.getBytes(altAddress))
+    )
+  ).value;
   if (!altAccount) {
     throw new Error(`ALT not found: ${altAddress}`);
   }
@@ -166,7 +176,9 @@ const decodeMessageALT = async (
   const maxIndex = altAccount.state.addresses.length - 1;
   for (const index of writeableIndexes) {
     if (index > maxIndex) {
-      throw new Error(`Writeable index ${index} is out of range. ALT has ${altAccount.state.addresses.length} addresses`);
+      throw new Error(
+        `Writeable index ${index} is out of range. ALT has ${altAccount.state.addresses.length} addresses`
+      );
     }
   }
 
@@ -181,7 +193,7 @@ const decodeMessageALT = async (
     });
   }
 
-  return { altAccount, remainingAccounts, data };
+  return { altAccount, data, remainingAccounts };
 };
 
 const execute = async ({
@@ -199,19 +211,19 @@ const execute = async ({
   recipient,
   altAccount,
 }: {
-  gatewayProgram: anchor.Program;
+  altAccount: anchor.web3.AddressLookupTableAccount | null;
+  amount: bigint;
+  chainIdBn: anchor.BN;
+  connectedPdaAccount: anchor.web3.PublicKey;
   connectedProgramId: anchor.web3.PublicKey;
   connection: anchor.web3.Connection;
-  pdaAccount: anchor.web3.PublicKey;
-  connectedPdaAccount: anchor.web3.PublicKey;
-  chainIdBn: anchor.BN;
-  nonce: anchor.BN;
-  sender: Buffer;
   data: Uint8Array;
-  remainingAccounts: anchor.web3.AccountMeta[];
-  amount: bigint;
+  gatewayProgram: anchor.Program;
+  nonce: anchor.BN;
+  pdaAccount: anchor.web3.PublicKey;
   recipient: string;
-  altAccount: anchor.web3.AddressLookupTableAccount | null;
+  remainingAccounts: anchor.web3.AccountMeta[];
+  sender: Buffer;
 }) => {
   const val = new anchor.BN(amount.toString());
   const instructionId = 0x5;
@@ -292,21 +304,21 @@ const executeSplToken = async ({
   decimals,
   altAccount,
 }: {
-  gatewayProgram: anchor.Program;
+  altAccount: anchor.web3.AddressLookupTableAccount | null;
+  amount: bigint;
+  chainIdBn: anchor.BN;
+  connectedPdaAccount: anchor.web3.PublicKey;
   connectedProgramId: anchor.web3.PublicKey;
   connection: anchor.web3.Connection;
-  pdaAccount: anchor.web3.PublicKey;
-  connectedPdaAccount: anchor.web3.PublicKey;
-  chainIdBn: anchor.BN;
-  nonce: anchor.BN;
-  sender: Buffer;
   data: Uint8Array;
-  remainingAccounts: anchor.web3.AccountMeta[];
-  amount: bigint;
-  recipient: string;
-  mint: string;
   decimals?: number;
-  altAccount: anchor.web3.AddressLookupTableAccount | null;
+  gatewayProgram: anchor.Program;
+  mint: string;
+  nonce: anchor.BN;
+  pdaAccount: anchor.web3.PublicKey;
+  recipient: string;
+  remainingAccounts: anchor.web3.AccountMeta[];
+  sender: Buffer;
 }) => {
   const val = new anchor.BN(amount.toString());
   const mintPubkey = new anchor.web3.PublicKey(mint);
@@ -316,11 +328,7 @@ const executeSplToken = async ({
     connectedPdaAccount,
     true
   );
-  const pdaATA = await getAssociatedTokenAddress(
-    mintPubkey,
-    pdaAccount,
-    true
-  );
+  const pdaATA = await getAssociatedTokenAddress(mintPubkey, pdaAccount, true);
 
   const instructionId = 0x6;
   const buffer = Buffer.concat([
@@ -402,16 +410,19 @@ const executeTransaction = async (
     // build transaction with ALT
     const latestBh = await connection.getLatestBlockhash();
     const v0Message = new anchor.web3.TransactionMessage({
+      instructions: [executeIx],
       payerKey: payer.publicKey,
       recentBlockhash: latestBh.blockhash,
-      instructions: [executeIx],
     }).compileToV0Message([altAccount]);
 
     const vtx = new anchor.web3.VersionedTransaction(v0Message);
     vtx.sign([payer]);
 
     signature = await connection.sendTransaction(vtx);
-    await connection.confirmTransaction({ signature, ...latestBh }, "confirmed");
+    await connection.confirmTransaction(
+      { signature, ...latestBh },
+      "confirmed"
+    );
   } else {
     // build transaction without ALT
     const transaction = new anchor.web3.Transaction().add(executeIx);
