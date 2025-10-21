@@ -5,7 +5,11 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "../../constants";
+import {
+  FUNGIBLE_MODULE_ADDRESS,
+  NetworkID,
+  REGISTRY_ADDRESS,
+} from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import { prepareUniswapV3 } from "../../tokens/uniswapV3";
@@ -109,14 +113,62 @@ export const zetachainSetup = async (
     [deployerAddress, deployerAddress, gatewayZEVM.target]
   );
 
-  const proxyCoreRegistry = (await proxyFactory.deploy(
-    coreRegistryImpl.target,
-    coreRegistryInitData,
-    deployOpts
-  )) as any;
+  let coreRegistryAddress: string;
+  if (REGISTRY_ADDRESS) {
+    const targetAddress = ethers.getAddress(REGISTRY_ADDRESS);
+
+    const runtimeBytecode =
+      (ERC1967Proxy as any).deployedBytecode?.object ??
+      (ERC1967Proxy as any).deployedBytecode ??
+      undefined;
+
+    if (!runtimeBytecode || runtimeBytecode === "0x") {
+      throw new Error(
+        "ERC1967Proxy deployedBytecode is not available; cannot use anvil_setCode"
+      );
+    }
+
+    // Write proxy runtime code to the desired address
+    await provider.send("anvil_setCode", [targetAddress, runtimeBytecode]);
+
+    // Point proxy to CoreRegistry implementation so calls delegate correctly
+    const IMPLEMENTATION_SLOT =
+      "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+    const implValue = ethers.zeroPadValue(
+      coreRegistryImpl.target as string,
+      32
+    );
+    await provider.send("anvil_setStorageAt", [
+      targetAddress,
+      IMPLEMENTATION_SLOT,
+      implValue,
+    ]);
+
+    // Initialize CoreRegistry state via proxy
+    const coreRegistryForInit = new ethers.Contract(
+      targetAddress,
+      CoreRegistry.abi,
+      deployer
+    );
+    await (coreRegistryForInit as any).initialize(
+      deployerAddress,
+      deployerAddress,
+      gatewayZEVM.target,
+      deployOpts
+    );
+
+    coreRegistryAddress = targetAddress;
+  } else {
+    const proxyCoreRegistry = (await proxyFactory.deploy(
+      coreRegistryImpl.target,
+      coreRegistryInitData,
+      deployOpts
+    )) as any;
+    coreRegistryAddress = proxyCoreRegistry.target as string;
+  }
 
   const coreRegistry = new ethers.Contract(
-    proxyCoreRegistry.target,
+    coreRegistryAddress,
     CoreRegistry.abi,
     deployer
   );

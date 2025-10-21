@@ -27,3 +27,4 @@ export const isEVMChain = function (networkId: string) {
 
 export const LOCALNET_DIR = path.join(os.homedir(), ".zetachain", "localnet");
 export const REGISTRY_FILE = path.join(LOCALNET_DIR, "registry.json");
+export const REGISTRY_ADDRESS = "0x7CCE3Eb018bf23e1FE2a32692f2C77592D110394";
