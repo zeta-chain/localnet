@@ -181,8 +181,12 @@ const startLocalnet = async (options: {
 
   const enabledChains = options.chains || [];
 
-  // Initialize the processes array
-  const processes: ProcessInfo[] = [];
+  const processes: ProcessInfo[] = [
+    {
+      command: "localnet",
+      pid: process.pid,
+    },
+  ];
 
   try {
     execSync("which anvil");
@@ -332,7 +336,7 @@ const waitForTonContainerToStop = async () => {
   }
 };
 
-const cleanup = async (options: { chains: string[] }) => {
+export const cleanup = async (options: { chains: string[] }) => {
   logger.info("Shutting down processes and cleaning up...");
 
   // Close readline interface if it exists
@@ -349,6 +353,9 @@ const cleanup = async (options: { chains: string[] }) => {
       const processData = JSON.parse(fs.readFileSync(PROCESS_FILE, "utf-8"));
       if (processData && processData.processes) {
         for (const proc of processData.processes) {
+          if (proc.command === "localnet") {
+            continue;
+          }
           try {
             process.kill(proc.pid, "SIGKILL");
             logger.info(
