@@ -39,12 +39,18 @@ const localnetCheck = async (options: { delay: number }) => {
   }
 
   const pid = processes.find((p) => p?.command === "anvil")?.pid;
-  if (!pid) {
-    console.log(ansis.red("Anvil process not found in process.json."));
+  if (typeof pid !== "number") {
+    console.log(
+      ansis.red("Anvil process not found or has invalid PID in process.json.")
+    );
     process.exit(1);
   }
 
   const pidNum = Number(pid);
+  if (!Number.isInteger(pidNum) || pidNum <= 0) {
+    console.log(ansis.red(`Invalid PID for Anvil process: ${pid}.`));
+    process.exit(1);
+  }
 
   try {
     process.kill(pidNum, 0);
