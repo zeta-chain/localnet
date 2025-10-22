@@ -6,6 +6,7 @@ import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
 import {
+  ERC1967_IMPLEMENTATION_SLOT,
   FUNGIBLE_MODULE_ADDRESS,
   NetworkID,
   REGISTRY_ADDRESS,
@@ -131,16 +132,13 @@ export const zetachainSetup = async (
     // Write proxy runtime code to the desired address
     await provider.send("anvil_setCode", [targetAddress, runtimeBytecode]);
 
-    // Point proxy to CoreRegistry implementation so calls delegate correctly
-    const IMPLEMENTATION_SLOT =
-      "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
     const implValue = ethers.zeroPadValue(
       coreRegistryImpl.target as string,
       32
     );
     await provider.send("anvil_setStorageAt", [
       targetAddress,
-      IMPLEMENTATION_SLOT,
+      ERC1967_IMPLEMENTATION_SLOT,
       implValue,
     ]);
 
