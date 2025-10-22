@@ -119,8 +119,8 @@ export const zetachainSetup = async (
     const targetAddress = ethers.getAddress(REGISTRY_ADDRESS);
 
     const runtimeBytecode =
-      (ERC1967Proxy as any).deployedBytecode?.object ??
-      (ERC1967Proxy as any).deployedBytecode ??
+      ERC1967Proxy.deployedBytecode?.object ??
+      ERC1967Proxy.deployedBytecode ??
       undefined;
 
     if (!runtimeBytecode || runtimeBytecode === "0x") {
@@ -132,10 +132,7 @@ export const zetachainSetup = async (
     // Write proxy runtime code to the desired address
     await provider.send("anvil_setCode", [targetAddress, runtimeBytecode]);
 
-    const implValue = ethers.zeroPadValue(
-      coreRegistryImpl.target as string,
-      32
-    );
+    const implValue = ethers.zeroPadValue(String(coreRegistryImpl.target), 32);
     await provider.send("anvil_setStorageAt", [
       targetAddress,
       ERC1967_IMPLEMENTATION_SLOT,
@@ -148,7 +145,7 @@ export const zetachainSetup = async (
       CoreRegistry.abi,
       deployer
     );
-    await (coreRegistryForInit as any).initialize(
+    await coreRegistryForInit.initialize(
       deployerAddress,
       deployerAddress,
       gatewayZEVM.target,
@@ -157,12 +154,12 @@ export const zetachainSetup = async (
 
     coreRegistryAddress = targetAddress;
   } else {
-    const proxyCoreRegistry = (await proxyFactory.deploy(
+    const proxyCoreRegistry = await proxyFactory.deploy(
       coreRegistryImpl.target,
       coreRegistryInitData,
       deployOpts
-    )) as any;
-    coreRegistryAddress = proxyCoreRegistry.target as string;
+    );
+    coreRegistryAddress = String(proxyCoreRegistry.target);
   }
 
   const coreRegistry = new ethers.Contract(
