@@ -5,7 +5,12 @@ import * as SystemContract from "@zetachain/protocol-contracts/abi/SystemContrac
 import * as WETH9 from "@zetachain/protocol-contracts/abi/WZETA.sol/WETH9.json";
 import { ethers, Signer } from "ethers";
 
-import { FUNGIBLE_MODULE_ADDRESS, NetworkID } from "../../constants";
+import {
+  ERC1967_IMPLEMENTATION_SLOT,
+  FUNGIBLE_MODULE_ADDRESS,
+  NetworkID,
+  REGISTRY_ADDRESS,
+} from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { prepareUniswapV2 } from "../../tokens/uniswapV2";
 import { prepareUniswapV3 } from "../../tokens/uniswapV3";
@@ -109,14 +114,56 @@ export const zetachainSetup = async (
     [deployerAddress, deployerAddress, gatewayZEVM.target]
   );
 
-  const proxyCoreRegistry = (await proxyFactory.deploy(
-    coreRegistryImpl.target,
-    coreRegistryInitData,
-    deployOpts
-  )) as any;
+  let coreRegistryAddress: string;
+  if (REGISTRY_ADDRESS) {
+    const targetAddress = ethers.getAddress(REGISTRY_ADDRESS);
+
+    const runtimeBytecode =
+      ERC1967Proxy.deployedBytecode?.object ??
+      ERC1967Proxy.deployedBytecode ??
+      undefined;
+
+    if (!runtimeBytecode || runtimeBytecode === "0x") {
+      throw new Error(
+        "ERC1967Proxy deployedBytecode is not available; cannot use anvil_setCode"
+      );
+    }
+
+    // Write proxy runtime code to the desired address
+    await provider.send("anvil_setCode", [targetAddress, runtimeBytecode]);
+
+    const implValue = ethers.zeroPadValue(String(coreRegistryImpl.target), 32);
+    await provider.send("anvil_setStorageAt", [
+      targetAddress,
+      ERC1967_IMPLEMENTATION_SLOT,
+      implValue,
+    ]);
+
+    // Initialize CoreRegistry state via proxy
+    const coreRegistryForInit = new ethers.Contract(
+      targetAddress,
+      CoreRegistry.abi,
+      deployer
+    );
+    await coreRegistryForInit.initialize(
+      deployerAddress,
+      deployerAddress,
+      gatewayZEVM.target,
+      deployOpts
+    );
+
+    coreRegistryAddress = targetAddress;
+  } else {
+    const proxyCoreRegistry = await proxyFactory.deploy(
+      coreRegistryImpl.target,
+      coreRegistryInitData,
+      deployOpts
+    );
+    coreRegistryAddress = String(proxyCoreRegistry.target);
+  }
 
   const coreRegistry = new ethers.Contract(
-    proxyCoreRegistry.target,
+    coreRegistryAddress,
     CoreRegistry.abi,
     deployer
   );
