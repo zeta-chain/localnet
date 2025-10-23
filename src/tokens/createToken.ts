@@ -1,7 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
-import { NetworkID, isEVMChain } from "../constants";
+import { isEVMChain, NetworkID } from "../constants";
 import { deployOpts } from "../deployOpts";
 import { logger } from "../logger";
 import { createEVMToken } from "./createEVMToken";
