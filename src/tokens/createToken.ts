@@ -1,7 +1,7 @@
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers } from "ethers";
 
-import { NetworkID } from "../constants";
+import { NetworkID, isEVMChain } from "../constants";
 import { deployOpts } from "../deployOpts";
 import { logger } from "../logger";
 import { createEVMToken } from "./createEVMToken";
@@ -172,6 +172,8 @@ export const createToken = async (
     chainID,
     isGasToken
       ? ethers.ZeroAddress
+      : isEVMChain(chainID)
+      ? ethers.getAddress(asset as string)
       : ethers.hexlify(ethers.toUtf8Bytes(asset as string)),
     isGasToken ? "gas" : "erc20",
     decimals,
