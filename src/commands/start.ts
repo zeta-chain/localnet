@@ -12,6 +12,7 @@ import waitOn from "wait-on";
 
 import { initLocalnet } from "../";
 import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
+import { startBitcoinObserver } from "../chains/bitcoin/observer";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
@@ -282,8 +283,8 @@ const startLocalnet = async (options: {
       }
     } catch {}
 
-    // Start new bitcoind in regtest daemon mode
-    const btcArgs = ["-regtest", "-daemon"];
+    // Start new bitcoind in regtest daemon mode (enable fallback fee for dev)
+    const btcArgs = ["-regtest", "-daemon", "-fallbackfee=0.0002"];
     const btcProc = spawn("bitcoind", btcArgs, {
       stdio: "ignore",
       detached: true,
@@ -313,6 +314,16 @@ const startLocalnet = async (options: {
         }
       }
     } catch {}
+
+    // Ensure RPC is ready before starting observer
+    try {
+      execSync("bitcoin-cli -regtest -rpcwait getblockchaininfo", {
+        stdio: "ignore",
+      });
+    } catch {}
+
+    // Start simple dev observer for transactions to TSS address
+    startBitcoinObserver({});
   } else {
     log.info("Skipping Bitcoin...");
   }
