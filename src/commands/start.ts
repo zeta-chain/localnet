@@ -11,6 +11,7 @@ import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../";
+import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
@@ -23,7 +24,7 @@ import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
-const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
+const AVAILABLE_CHAINS = ["ton", "solana", "sui", "bitcoin"] as const;
 const CHAIN_ID_TO_NAME: Record<string, string> = Object.fromEntries(
   Object.entries(NetworkID).map(([name, id]) => [id, name])
 );
@@ -253,6 +254,67 @@ const startLocalnet = async (options: {
     await waitOn({ resources: [`tcp:127.0.0.1:8899`], timeout: 30_000 });
   } else {
     log.info("Skipping Solana...");
+  }
+
+  // Bitcoin
+  if (enabledChains.includes("bitcoin") && isBitcoinAvailable()) {
+    log.info("Starting Bitcoin...");
+    // Kill any running bitcoind processes
+    try {
+      const pidsOutput = execSync("pgrep -x bitcoind").toString().trim();
+      if (pidsOutput) {
+        const existingPids = pidsOutput.split("\n").filter(Boolean);
+        log.info(
+          ansis.yellow(
+            `Found running bitcoind process(es): ${existingPids.join(
+              ", "
+            )}. Stopping...`
+          )
+        );
+        try {
+          execSync("bitcoin-cli -regtest stop", { stdio: "ignore" });
+        } catch {}
+        for (const pid of existingPids) {
+          try {
+            execSync(`kill -9 ${pid}`);
+          } catch {}
+        }
+      }
+    } catch {}
+
+    // Start new bitcoind in regtest daemon mode
+    const btcArgs = ["-regtest", "-daemon"];
+    const btcProc = spawn("bitcoind", btcArgs, {
+      stdio: "ignore",
+      detached: true,
+    });
+    try {
+      btcProc.unref();
+    } catch {}
+
+    // Optional: wait for regtest P2P port
+    try {
+      await waitOn({ resources: ["tcp:127.0.0.1:18444"], timeout: 30_000 });
+    } catch (e) {
+      log.info(
+        ansis.yellow("Bitcoin regtest port did not open in time; continuing")
+      );
+    }
+
+    // Track bitcoind PIDs
+    try {
+      const newPidsOutput = execSync("pgrep -x bitcoind").toString().trim();
+      if (newPidsOutput) {
+        for (const pidStr of newPidsOutput.split("\n").filter(Boolean)) {
+          const pidNum = parseInt(pidStr, 10);
+          if (Number.isFinite(pidNum)) {
+            processes.push({ command: "bitcoind", pid: pidNum });
+          }
+        }
+      }
+    } catch {}
+  } else {
+    log.info("Skipping Bitcoin...");
   }
 
   let suiProcess: ChildProcess;
