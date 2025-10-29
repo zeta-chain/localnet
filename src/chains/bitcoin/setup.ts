@@ -44,7 +44,7 @@ export const startBitcoinNode = async ({
 
   // Start new bitcoind in regtest daemon mode
   const args = ["-regtest", "-daemon"];
-  const child = spawn("bitcoind", args, { stdio: "ignore", detached: true });
+  const child = spawn("bitcoind", args, { detached: true, stdio: "ignore" });
   // Detach to allow daemon to outlive spawn wrapper
   try {
     child.unref();

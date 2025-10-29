@@ -11,9 +11,9 @@ import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
 
 import { initLocalnet } from "../";
+import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
 import { startBitcoinObserver } from "../chains/bitcoin/observer";
-import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
@@ -286,8 +286,8 @@ const startLocalnet = async (options: {
     // Start new bitcoind in regtest daemon mode (enable fallback fee for dev)
     const btcArgs = ["-regtest", "-daemon", "-fallbackfee=0.0002"];
     const btcProc = spawn("bitcoind", btcArgs, {
-      stdio: "ignore",
       detached: true,
+      stdio: "ignore",
     });
     try {
       btcProc.unref();

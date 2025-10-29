@@ -5,8 +5,8 @@ import { addBackgroundProcess } from "../../backgroundProcesses";
 import { logger } from "../../logger";
 
 type StartObserverOptions = {
-  tssAddress?: string;
   pollIntervalMs?: number;
+  tssAddress?: string;
 };
 
 const getConfiguredTssAddress = (): string | undefined => {
