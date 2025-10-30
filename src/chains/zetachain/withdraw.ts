@@ -1,5 +1,3 @@
-import { execFileSync } from "child_process";
-
 import * as tonTypes from "@ton/ton";
 import * as ZRC20 from "@zetachain/protocol-contracts/abi/ZRC20.sol/ZRC20.json";
 import { ethers, NonceManager } from "ethers";
@@ -15,6 +13,7 @@ import { solanaWithdraw } from "../solana/withdraw";
 import { solanaWithdrawSPL } from "../solana/withdrawSPL";
 import { suiWithdraw } from "../sui/withdraw";
 import * as ton from "../ton";
+import { bitcoinWithdraw } from "../bitcoin/withdraw";
 import { zetachainOnRevert } from "./onRevert";
 
 export const zetachainWithdraw = async ({
@@ -105,77 +104,11 @@ export const zetachainWithdraw = async ({
     // if the token is gas token
     if (coinType === 1n) {
       if (chainID === NetworkID.Bitcoin) {
-        const receiverBytes = ethers.getBytes(receiver);
-        const receiverAddress = Buffer.from(receiverBytes)
-          .toString("utf8")
-          .replace(/\0+$/g, "")
-          .trim();
-
-        if (!receiverAddress) {
-          throw new Error("Invalid Bitcoin receiver address");
-        }
-
-        const decimals = foreignCoin?.decimals ?? 8;
-        const btcAmount = ethers.formatUnits(amount, decimals);
-
-        const runBitcoinCli = (cliArgs: string[]) =>
-          execFileSync("bitcoin-cli", cliArgs, {
-            stdio: ["ignore", "pipe", "pipe"],
-          })
-            .toString()
-            .trim();
-
-        try {
-          runBitcoinCli(["-regtest", "-rpcwallet=tss", "settxfee", "0.00001"]);
-        } catch (feeErr: any) {
-          const stderr = feeErr?.stderr?.toString?.() ?? "";
-          // Ignore errors about fee already set or wallet missing the method
-          if (stderr && !stderr.includes("settxfee")) {
-            logger.debug(`settxfee failed: ${stderr}`, {
-              chain: NetworkID.Bitcoin,
-            });
-          }
-        }
-
-        let txid: string;
-        try {
-          txid = runBitcoinCli([
-            "-regtest",
-            "-rpcwallet=tss",
-            "sendtoaddress",
-            receiverAddress,
-            btcAmount,
-          ]);
-        } catch (sendErr: any) {
-          const stderr =
-            sendErr?.stderr?.toString?.() ?? sendErr?.message ?? "";
-          if (stderr.includes("Fallbackfee is disabled")) {
-            runBitcoinCli([
-              "-regtest",
-              "-rpcwallet=tss",
-              "settxfee",
-              "0.00001",
-            ]);
-            txid = runBitcoinCli([
-              "-regtest",
-              "-rpcwallet=tss",
-              "sendtoaddress",
-              receiverAddress,
-              btcAmount,
-            ]);
-          } else {
-            throw sendErr;
-          }
-        }
-
-        logger.info(
-          `Transferred ${btcAmount} BTC from TSS to ${receiverAddress} (txid: ${txid})`,
-          {
-            chain: NetworkID.Bitcoin,
-          }
-        );
-
-        return txid;
+        return await bitcoinWithdraw({
+          receiver,
+          amount,
+          foreignCoin,
+        });
       }
 
       return await evmTSSTransfer({ args, foreignCoins, tss });
