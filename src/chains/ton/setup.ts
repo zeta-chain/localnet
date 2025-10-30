@@ -4,7 +4,9 @@ import { GatewayOp } from "@zetachain/protocol-contracts-ton/dist/types";
 import { Gateway } from "@zetachain/protocol-contracts-ton/dist/wrappers/Gateway";
 import { ethers, NonceManager } from "ethers";
 
+import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
+import { registerContracts } from "../../utils";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 import { zetachainExecute } from "../zetachain/execute";
@@ -125,6 +127,25 @@ async function setupThrowable(opts: SetupOptions) {
     ],
     env,
   };
+
+  const changeChainStatus =
+    await opts.zetachainContracts.coreRegistry.changeChainStatus(
+      BigInt(NetworkID.TON),
+      ethers.ZeroAddress,
+      "0x",
+      true,
+      {
+        gasLimit: 1_000_000,
+      }
+    );
+
+  await changeChainStatus.wait();
+
+  await registerContracts(opts.zetachainContracts.coreRegistry, NetworkID.TON, {
+    gateway: ethers.hexlify(
+      ethers.toUtf8Bytes(`${gateway.address.toRawString()}`)
+    ),
+  });
 
   log.info("TON setup complete");
   return result;

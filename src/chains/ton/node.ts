@@ -42,7 +42,10 @@ async function startContainer(dockerImage: string): Promise<Container> {
     },
     HostConfig: {
       AutoRemove: true,
-      NetworkMode: "host",
+      PortBindings: {
+        [`${cfg.PORT_SIDECAR}/tcp`]: [{ HostPort: `${cfg.PORT_SIDECAR}` }],
+        [`${cfg.PORT_RPC}/tcp`]: [{ HostPort: `${cfg.PORT_RPC}` }],
+      },
     },
     Image: dockerImage,
     name: cfg.CONTAINER_NAME,
