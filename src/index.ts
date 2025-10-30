@@ -79,38 +79,39 @@ export const initLocalnet = async ({
 
     // Run non-EVM chains in parallel (they don't share wallets)
     log.debug("Setting up non-EVM chains");
-    const [solanaContracts, suiContracts, tonContracts] = await Promise.all([
-      solanaSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("solana"),
-        zetachainContracts,
-      }),
-      suiSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("sui"),
-        zetachainContracts,
-      }),
-      ton.setup({
-        chainID: NetworkID.TON,
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("ton"),
-        tss,
-        zetachainContracts,
-      }),
-      bitcoinSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("bitcoin"),
-        zetachainContracts,
-      }),
-    ]);
+    const [solanaContracts, suiContracts, tonContracts, bitcoinContracts] =
+      await Promise.all([
+        solanaSetup({
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("solana"),
+          zetachainContracts,
+        }),
+        suiSetup({
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("sui"),
+          zetachainContracts,
+        }),
+        ton.setup({
+          chainID: NetworkID.TON,
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("ton"),
+          tss,
+          zetachainContracts,
+        }),
+        bitcoinSetup({
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("bitcoin"),
+          zetachainContracts,
+        }),
+      ]);
     log.debug("Non-EVM chains setup complete");
 
     // Run EVM chains sequentially to avoid nonce conflicts
@@ -147,6 +148,7 @@ export const initLocalnet = async ({
       solanaContracts,
       suiContracts,
       tonContracts,
+      bitcoinContracts,
       tss,
       zetachainContracts,
     };
