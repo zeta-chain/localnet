@@ -96,6 +96,32 @@ const printRegistryTables = (registry: any, log: any) => {
   }
 };
 
+const getGatewayAddressForChain = (
+  registry: any,
+  chainId: string
+): string | undefined => {
+  try {
+    const chainData = registry?.[chainId];
+    if (!chainData) return undefined;
+
+    const contracts: any[] = Array.isArray(chainData.contracts)
+      ? chainData.contracts
+      : [];
+
+    const gateway = contracts.find((contract) => {
+      const type = String(contract?.contractType ?? "").toLowerCase();
+      return type === "gateway";
+    });
+
+    const address = gateway?.address;
+    if (!address) return undefined;
+
+    return String(address).trim() || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const killProcessOnPort = async (port: number, forceKill: boolean) => {
   try {
     const output = execSync(`lsof -ti tcp:${port}`).toString().trim();
@@ -371,8 +397,13 @@ const startLocalnet = async (options: {
     // Start Bitcoin observer now that Zeta context is initialized
     if (options.chains.includes("bitcoin") && isBitcoinAvailable()) {
       const ctx = getZetaRuntimeContext();
+      const bitcoinTssAddress = getGatewayAddressForChain(
+        registry,
+        NetworkID.Bitcoin
+      );
       if (ctx) {
         startBitcoinObserver({
+          tssAddress: bitcoinTssAddress,
           provider: ctx.provider,
           zetachainContracts: ctx.zetachainContracts,
           foreignCoins: ctx.foreignCoins,
