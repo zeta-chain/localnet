@@ -1,12 +1,20 @@
 import ansis from "ansis";
 import { execSync } from "child_process";
+import { ethers } from "ethers";
 
 import { addBackgroundProcess } from "../../backgroundProcesses";
 import { logger } from "../../logger";
+import { NetworkID } from "../../constants";
+import { zetachainDeposit } from "../zetachain/deposit";
+import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 
 type StartObserverOptions = {
   pollIntervalMs?: number;
   tssAddress?: string;
+  provider?: any;
+  zetachainContracts?: any;
+  foreignCoins?: any[];
+  chainID?: string;
 };
 
 const getConfiguredTssAddress = (): string | undefined => {
@@ -52,6 +60,28 @@ const extractMemoFromTransaction = (tx: any): string | undefined => {
   return undefined;
 };
 
+// Return the first hex push from OP_RETURN as a hex string (no utf-8 decoding)
+const extractMemoHexFromTransaction = (tx: any): string | undefined => {
+  try {
+    const vouts: any[] = Array.isArray(tx?.vout) ? tx.vout : [];
+    for (const vout of vouts) {
+      const spk = vout?.scriptPubKey || {};
+      if (spk?.type === "nulldata" && typeof spk?.asm === "string") {
+        const parts = spk.asm.split(/\s+/).filter(Boolean);
+        for (let i = 1; i < parts.length; i++) {
+          const maybeHex = parts[i];
+          if (/^[0-9a-fA-F]+$/.test(maybeHex) && maybeHex.length % 2 === 0) {
+            return maybeHex.toLowerCase();
+          }
+        }
+      }
+    }
+  } catch {}
+  return undefined;
+};
+
+// Zeta context must be passed in by the caller; this observer does not initialize it.
+
 const createNewTssAddress = (): string | undefined => {
   try {
     // Create a label 'tss' and get a new address (address type can be bech32/legacy depending on node settings)
@@ -83,6 +113,10 @@ const createNewTssAddress = (): string | undefined => {
 export const startBitcoinObserver = ({
   tssAddress,
   pollIntervalMs = 1000,
+  provider,
+  zetachainContracts,
+  foreignCoins,
+  chainID,
 }: StartObserverOptions = {}) => {
   const log = logger.child({ chain: "bitcoin" });
 
@@ -90,7 +124,7 @@ export const startBitcoinObserver = ({
 
   const seenTxIds = new Set<string>();
 
-  const intervalId = setInterval(() => {
+  const intervalId = setInterval(async () => {
     try {
       // If address is not yet known, try to obtain/create it with RPC wait
       if (!watchAddress) {
@@ -189,6 +223,7 @@ export const startBitcoinObserver = ({
             .trim();
           const tx = JSON.parse(txRaw);
           const memo = extractMemoFromTransaction(tx);
+          const memoHex = extractMemoHexFromTransaction(tx);
           const vouts: any[] = Array.isArray(tx?.vout) ? tx.vout : [];
           for (const vout of vouts) {
             const spk = vout?.scriptPubKey || {};
@@ -204,6 +239,70 @@ export const startBitcoinObserver = ({
                 const memoMsg = `Memo: ${memo}`;
                 console.log(memoMsg);
                 log.info(memoMsg);
+              }
+
+              // If memo hex is present, interpret first 20 bytes as receiver on ZetaChain
+              if (
+                memoHex &&
+                /^[0-9a-fA-F]+$/.test(memoHex) &&
+                memoHex.length % 2 === 0
+              ) {
+                const bytesLen = memoHex.length / 2;
+                if (bytesLen >= 20) {
+                  try {
+                    const recvHex = `0x${memoHex.slice(0, 40)}`;
+                    const receiver = ethers.getAddress(recvHex);
+                    const payloadHex = memoHex.slice(40);
+                    const payload =
+                      payloadHex.length > 0 ? `0x${payloadHex}` : "0x";
+                    if (!provider || !zetachainContracts || !foreignCoins) {
+                      log.info(
+                        "Zeta context not ready (provider/contracts/foreignCoins missing); skipping",
+                        { chain: "bitcoin" }
+                      );
+                      break;
+                    }
+
+                    const sender = ethers.ZeroAddress;
+                    // Convert BTC value (in whole BTC) to 18 decimals for dev testing
+                    const amountWei = ethers.parseUnits(
+                      String(amount ?? 0),
+                      18
+                    );
+                    const asset = ethers.ZeroAddress; // treat as gas token on source chain
+
+                    if (bytesLen === 20) {
+                      log.info(
+                        `Triggering ZetaChain deposit to ${receiver} (no payload)`,
+                        { chain: "bitcoin" }
+                      );
+                      await zetachainDeposit({
+                        args: [sender, receiver, amountWei, asset],
+                        chainID: chainID || NetworkID.Ethereum,
+                        foreignCoins,
+                        zetachainContracts,
+                      });
+                    } else {
+                      log.info(
+                        `Triggering ZetaChain depositAndCall to ${receiver} with payload length ${
+                          payloadHex.length / 2
+                        } bytes`,
+                        { chain: "bitcoin" }
+                      );
+                      await zetachainDepositAndCall({
+                        args: [sender, receiver, amountWei, asset, payload],
+                        chainID: chainID || NetworkID.Ethereum,
+                        foreignCoins,
+                        provider,
+                        zetachainContracts,
+                      });
+                    }
+                  } catch (btcMemoErr) {
+                    log.error(
+                      `Failed to process memo for tx ${txid}: ${btcMemoErr}`
+                    );
+                  }
+                }
               }
               break; // one match is enough
             }

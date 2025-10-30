@@ -24,6 +24,12 @@ const foreignCoins: any[] = [];
   return this.toString();
 };
 
+let zetaRuntimeContext:
+  | { provider: any; zetachainContracts: any; foreignCoins: any[] }
+  | undefined;
+
+export const getZetaRuntimeContext = () => zetaRuntimeContext;
+
 export const initLocalnet = async ({
   port,
   exitOnError,
@@ -276,6 +282,13 @@ export const initLocalnet = async ({
     });
 
     log.debug("Event handlers setup complete");
+
+    // Expose context for external observers (e.g., Bitcoin)
+    zetaRuntimeContext = {
+      provider,
+      zetachainContracts,
+      foreignCoins,
+    };
 
     return registry;
   } catch (error) {

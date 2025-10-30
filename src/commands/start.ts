@@ -10,7 +10,7 @@ import readline from "readline/promises";
 import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
 
-import { initLocalnet } from "../";
+import { initLocalnet, getZetaRuntimeContext } from "../";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
 import { startBitcoinObserver } from "../chains/bitcoin/observer";
@@ -322,8 +322,7 @@ const startLocalnet = async (options: {
       });
     } catch {}
 
-    // Start simple dev observer for transactions to TSS address
-    startBitcoinObserver({});
+    // Defer starting the Bitcoin observer until Zeta context is ready later
   } else {
     log.info("Skipping Bitcoin...");
   }
@@ -368,6 +367,25 @@ const startLocalnet = async (options: {
 
     // Pretty-print registry using tables
     printRegistryTables(registry, log);
+
+    // Start Bitcoin observer now that Zeta context is initialized
+    if (options.chains.includes("bitcoin") && isBitcoinAvailable()) {
+      const ctx = getZetaRuntimeContext();
+      if (ctx) {
+        startBitcoinObserver({
+          provider: ctx.provider,
+          zetachainContracts: ctx.zetachainContracts,
+          foreignCoins: ctx.foreignCoins,
+          chainID: NetworkID.Ethereum, // TODO: use Bitcoin when available
+        });
+      } else {
+        log.info(
+          ansis.yellow(
+            "Zeta context unavailable; skipping Bitcoin observer start"
+          )
+        );
+      }
+    }
   } catch (error: unknown) {
     log.error(`Error initializing localnet: ${error}`);
     await gracefulShutdown();
