@@ -17,6 +17,7 @@ export const NetworkID = {
   Sui: "104",
   TON: "2015142",
   ZetaChain: "31337",
+  Bitcoin: "18332",
 };
 
 const evmChains = [NetworkID.Ethereum, NetworkID.BNB, NetworkID.ZetaChain];

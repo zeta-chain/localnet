@@ -16,6 +16,7 @@ import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 import { bootstrapEVMRegistries, getRegistryAsJson } from "./utils";
+import { bitcoinSetup } from "./chains/bitcoin/setup";
 
 const foreignCoins: any[] = [];
 
@@ -102,6 +103,13 @@ export const initLocalnet = async ({
         tss,
         zetachainContracts,
       }),
+      bitcoinSetup({
+        deployer,
+        foreignCoins,
+        provider,
+        skip: !chains.includes("bitcoin"),
+        zetachainContracts,
+      }),
     ]);
     log.debug("Non-EVM chains setup complete");
 
@@ -154,6 +162,7 @@ export const initLocalnet = async ({
     await createToken(contracts, "SUI.SUI", true, NetworkID.Sui, 9);
     await createToken(contracts, "USDC.SUI", false, NetworkID.Sui, 9);
     await createToken(contracts, "TON.TON", true, NetworkID.TON, 9);
+    await createToken(contracts, "BTC.BTC", true, NetworkID.Bitcoin, 8);
 
     log.debug("Token creation complete");
 

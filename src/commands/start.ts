@@ -376,7 +376,6 @@ const startLocalnet = async (options: {
           provider: ctx.provider,
           zetachainContracts: ctx.zetachainContracts,
           foreignCoins: ctx.foreignCoins,
-          chainID: NetworkID.Ethereum, // TODO: use Bitcoin when available
         });
       } else {
         log.info(

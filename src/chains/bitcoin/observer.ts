@@ -17,12 +17,6 @@ type StartObserverOptions = {
   chainID?: string;
 };
 
-const getConfiguredTssAddress = (): string | undefined => {
-  return (
-    process.env.BITCOIN_TSS_ADDRESS || process.env.LOCALNET_BITCOIN_TSS_ADDRESS
-  );
-};
-
 const tryDecodeMemoHex = (hex: string): string | undefined => {
   try {
     if (!hex || typeof hex !== "string") return undefined;
@@ -80,47 +74,16 @@ const extractMemoHexFromTransaction = (tx: any): string | undefined => {
   return undefined;
 };
 
-// Zeta context must be passed in by the caller; this observer does not initialize it.
-
-const createNewTssAddress = (): string | undefined => {
-  try {
-    // Create a label 'tss' and get a new address (address type can be bech32/legacy depending on node settings)
-    const out = execSync("bitcoin-cli -regtest getnewaddress tss", {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
-    return out || undefined;
-  } catch (err) {
-    // Try creating and using a named wallet if default wallet is not available
-    try {
-      execSync("bitcoin-cli -regtest createwallet tss", {
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      const out = execSync(
-        "bitcoin-cli -regtest -rpcwallet=tss getnewaddress tss",
-        { stdio: ["ignore", "pipe", "ignore"] }
-      )
-        .toString()
-        .trim();
-      return out || undefined;
-    } catch {
-      return undefined;
-    }
-  }
-};
-
 export const startBitcoinObserver = ({
   tssAddress,
   pollIntervalMs = 1000,
   provider,
   zetachainContracts,
   foreignCoins,
-  chainID,
 }: StartObserverOptions = {}) => {
   const log = logger.child({ chain: "bitcoin" });
 
-  let watchAddress = tssAddress || getConfiguredTssAddress() || undefined;
+  let watchAddress = tssAddress;
 
   const seenTxIds = new Set<string>();
 
@@ -278,7 +241,7 @@ export const startBitcoinObserver = ({
                       );
                       await zetachainDeposit({
                         args: [sender, receiver, amountWei, asset],
-                        chainID: chainID || NetworkID.Ethereum,
+                        chainID: NetworkID.Bitcoin,
                         foreignCoins,
                         zetachainContracts,
                       });
@@ -291,7 +254,7 @@ export const startBitcoinObserver = ({
                       );
                       await zetachainDepositAndCall({
                         args: [sender, receiver, amountWei, asset, payload],
-                        chainID: chainID || NetworkID.Ethereum,
+                        chainID: NetworkID.Bitcoin,
                         foreignCoins,
                         provider,
                         zetachainContracts,
