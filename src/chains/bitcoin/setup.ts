@@ -150,6 +150,50 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
       tssAddress = "tss"; // minimal placeholder string
     }
 
+    const readTssBalance = () => {
+      try {
+        const raw = execSync(
+          "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getbalance",
+          {
+            stdio: ["ignore", "pipe", "ignore"],
+          }
+        )
+          .toString()
+          .trim();
+        const parsed = Number.parseFloat(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+      } catch {
+        return 0;
+      }
+    };
+
+    const MIN_TSS_BALANCE = 1;
+    let tssBalance = readTssBalance();
+
+    if (!Number.isFinite(tssBalance) || tssBalance < MIN_TSS_BALANCE) {
+      log.info(
+        `Funding Bitcoin TSS wallet ${tssAddress} with regtest block rewards`
+      );
+      try {
+        execSync(
+          `bitcoin-cli -regtest -rpcwait generatetoaddress 101 ${tssAddress}`,
+          {
+            stdio: ["ignore", "pipe", "pipe"],
+          }
+        );
+      } catch (fundErr: any) {
+        log.error(
+          `Failed to mine blocks for Bitcoin TSS wallet: ${
+            fundErr?.message || String(fundErr)
+          }`
+        );
+        throw fundErr;
+      }
+
+      tssBalance = readTssBalance();
+      log.info(`Bitcoin TSS wallet balance is now ${tssBalance} BTC`);
+    }
+
     // Activate Bitcoin chain in CoreRegistry
     const changeChainStatus =
       await zetachainContracts.coreRegistry.changeChainStatus(
