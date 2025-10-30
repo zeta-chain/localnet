@@ -19,12 +19,11 @@ export const startBitcoinNode = async (): Promise<number[]> => {
       .trim();
     if (pidsOutput) {
       const existingPids = pidsOutput.split("\n").filter(Boolean);
-      log.info(
-        ansis.yellow(
-          `Found running bitcoind process(es): ${existingPids.join(
-            ", "
-          )}. Stopping...`
-        )
+      logger.info(
+        `Found running bitcoind process(es): ${existingPids.join(
+          ", "
+        )}. Stopping...`,
+        { chain: NetworkID.Bitcoin }
       );
       // Try graceful stop first
       try {

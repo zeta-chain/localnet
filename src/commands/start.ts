@@ -291,12 +291,11 @@ const startLocalnet = async (options: {
       const pidsOutput = execSync("pgrep -x bitcoind").toString().trim();
       if (pidsOutput) {
         const existingPids = pidsOutput.split("\n").filter(Boolean);
-        log.info(
-          ansis.yellow(
-            `Found running bitcoind process(es): ${existingPids.join(
-              ", "
-            )}. Stopping...`
-          )
+        logger.info(
+          `Found running bitcoind process(es): ${existingPids.join(
+            ", "
+          )}. Stopping...`,
+          { chain: NetworkID.Bitcoin }
         );
         try {
           execSync("bitcoin-cli -regtest stop", { stdio: "ignore" });
