@@ -14,6 +14,7 @@ import { initLocalnet, getZetaRuntimeContext } from "../";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
 import { startBitcoinObserver } from "../chains/bitcoin/observer";
+import { startBitcoinNode } from "../chains/bitcoin/setup";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
@@ -286,61 +287,23 @@ const startLocalnet = async (options: {
   // Bitcoin
   if (enabledChains.includes("bitcoin") && isBitcoinAvailable()) {
     log.info("Starting Bitcoin...");
-    // Kill any running bitcoind processes
+
     try {
-      const pidsOutput = execSync("pgrep -x bitcoind").toString().trim();
-      if (pidsOutput) {
-        const existingPids = pidsOutput.split("\n").filter(Boolean);
-        logger.info(
-          `Found running bitcoind process(es): ${existingPids.join(
-            ", "
-          )}. Stopping...`,
-          { chain: NetworkID.Bitcoin }
-        );
-        try {
-          execSync("bitcoin-cli -regtest stop", { stdio: "ignore" });
-        } catch {}
-        for (const pid of existingPids) {
-          try {
-            execSync(`kill -9 ${pid}`);
-          } catch {}
-        }
+      const bitcoinPids = await startBitcoinNode();
+      for (const pid of bitcoinPids) {
+        processes.push({ command: "bitcoind", pid });
       }
-    } catch {}
-
-    // Start new bitcoind in regtest daemon mode (enable fallback fee for dev)
-    const btcArgs = ["-regtest", "-daemon", "-fallbackfee=0.0002"];
-    const btcProc = spawn("bitcoind", btcArgs, {
-      detached: true,
-      stdio: "ignore",
-    });
-    try {
-      btcProc.unref();
-    } catch {}
-
-    // Optional: wait for regtest P2P port
-    try {
-      await waitOn({ resources: ["tcp:127.0.0.1:18444"], timeout: 30_000 });
-    } catch (e) {
-      log.info(
-        ansis.yellow("Bitcoin regtest port did not open in time; continuing")
+    } catch (error) {
+      log.error(
+        `Failed to start Bitcoin node: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
+      if (options.exitOnError) {
+        throw error;
+      }
     }
 
-    // Track bitcoind PIDs
-    try {
-      const newPidsOutput = execSync("pgrep -x bitcoind").toString().trim();
-      if (newPidsOutput) {
-        for (const pidStr of newPidsOutput.split("\n").filter(Boolean)) {
-          const pidNum = parseInt(pidStr, 10);
-          if (Number.isFinite(pidNum)) {
-            processes.push({ command: "bitcoind", pid: pidNum });
-          }
-        }
-      }
-    } catch {}
-
-    // Ensure RPC is ready before starting observer
     try {
       execSync("bitcoin-cli -regtest -rpcwait getblockchaininfo", {
         stdio: "ignore",

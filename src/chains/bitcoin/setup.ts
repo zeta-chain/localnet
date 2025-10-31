@@ -7,48 +7,47 @@ import { registerContracts } from "../../utils";
 import { isBitcoinAvailable } from "./isBitcoinAvailable";
 import waitOn from "wait-on";
 
-export const startBitcoinNode = async (): Promise<number[]> => {
-  const log = logger.child({ chain: "bitcoin" });
-
-  // Kill existing bitcoind processes if any
+const getRunningBitcoinPidStrings = (): string[] => {
   try {
     const pidsOutput = execSync("pgrep -x bitcoind", {
       stdio: ["ignore", "pipe", "ignore"],
     })
       .toString()
       .trim();
-    if (pidsOutput) {
-      const existingPids = pidsOutput.split("\n").filter(Boolean);
-      logger.info(
-        `Found running bitcoind process(es): ${existingPids.join(
-          ", "
-        )}. Stopping...`,
-        { chain: NetworkID.Bitcoin }
-      );
-      // Try graceful stop first
-      try {
-        execSync("bitcoin-cli -regtest stop", { stdio: "ignore" });
-      } catch {}
-      // Ensure processes are gone
-      for (const pid of existingPids) {
-        try {
-          execSync(`kill -9 ${pid}`);
-        } catch {}
-      }
-    }
-  } catch {
-    // No running bitcoind found; continue
-  }
 
-  // Start new bitcoind in regtest daemon mode
-  const args = ["-regtest", "-daemon"];
-  const child = spawn("bitcoind", args, { detached: true, stdio: "ignore" });
-  // Detach to allow daemon to outlive spawn wrapper
+    if (!pidsOutput) {
+      return [];
+    }
+
+    return pidsOutput.split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+const stopBitcoinProcesses = (pidStrings: string[]) => {
+  if (pidStrings.length === 0) return;
+
+  logger.info(
+    `Found running bitcoind process(es): ${pidStrings.join(", ")}. Stopping...`,
+    { chain: NetworkID.Bitcoin }
+  );
+
   try {
-    child.unref();
+    execSync("bitcoin-cli -regtest stop", { stdio: "ignore" });
   } catch {}
 
-  // Wait for regtest P2P port to be available (best-effort)
+  for (const pid of pidStrings) {
+    try {
+      execSync(`kill -9 ${pid}`);
+    } catch {}
+  }
+};
+
+const toNumericPids = (pidStrings: string[]): number[] =>
+  pidStrings.map((s) => parseInt(s, 10)).filter((n) => Number.isFinite(n));
+
+const waitForBitcoinPort = async (log: ReturnType<typeof logger.child>) => {
   try {
     await waitOn({ resources: ["tcp:127.0.0.1:18444"], timeout: 30_000 });
   } catch {
@@ -56,24 +55,28 @@ export const startBitcoinNode = async (): Promise<number[]> => {
       ansis.yellow("Bitcoin regtest port not confirmed; proceeding anyway")
     );
   }
+};
 
-  // Return current bitcoind PIDs for tracking
+export const startBitcoinNode = async (): Promise<number[]> => {
+  const log = logger.child({ chain: "bitcoin" });
+
+  const existingPidStrings = getRunningBitcoinPidStrings();
+
+  if (existingPidStrings.length > 0) {
+    stopBitcoinProcesses(existingPidStrings);
+  }
+
+  const args = ["-regtest", "-daemon", "-fallbackfee=0.0002"];
+  const child = spawn("bitcoind", args, { detached: true, stdio: "ignore" });
+
   try {
-    const pidsOutput = execSync("pgrep -x bitcoind", {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
-    if (pidsOutput) {
-      return pidsOutput
-        .split("\n")
-        .filter(Boolean)
-        .map((s) => parseInt(s, 10))
-        .filter((n) => Number.isFinite(n));
-    }
+    child.unref();
   } catch {}
 
-  return [];
+  await waitForBitcoinPort(log);
+
+  const runningPidStrings = getRunningBitcoinPidStrings();
+  return toNumericPids(runningPidStrings);
 };
 
 export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
@@ -85,9 +88,6 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
   log.info("Setting up Bitcoin...");
 
   try {
-    // Ensure local regtest node is running
-    await startBitcoinNode();
-
     // Resolve or create a TSS receive address on regtest
     let tssAddress: string | undefined;
     try {
