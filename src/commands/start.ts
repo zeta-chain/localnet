@@ -316,6 +316,10 @@ const startLocalnet = async (options: {
     }
 
     // Defer starting the Bitcoin observer until Zeta context is ready later
+  } else if (enabledChains.includes("bitcoin") && !isBitcoinAvailable()) {
+    throw new Error(
+      "bitcoind and bitcoin-cli are not available. Please, install them and try again: https://bitcoin.org/en/full-node"
+    );
   } else {
     log.info("Skipping Bitcoin...");
   }
