@@ -29,7 +29,7 @@ const tryDecodeMemoHex = (hex: string): string | undefined => {
     const replacementCount = (text.match(/\uFFFD/g) || []).length;
     if (replacementCount > 0) return hex;
     return text;
-  } catch {
+  } catch (_error) {
     return undefined;
   }
 };
@@ -50,7 +50,9 @@ const extractMemoFromTransaction = (tx: any): string | undefined => {
         }
       }
     }
-  } catch {}
+  } catch (_error) {
+    return undefined;
+  }
   return undefined;
 };
 
@@ -70,7 +72,9 @@ const extractMemoHexFromTransaction = (tx: any): string | undefined => {
         }
       }
     }
-  } catch {}
+  } catch (_error) {
+    return undefined;
+  }
   return undefined;
 };
 
@@ -100,7 +104,9 @@ export const startBitcoinObserver = ({
             })
               .toString()
               .trim();
-          } catch {}
+          } catch (_error) {
+            // ignore: wallet might not be available yet
+          }
           // Try named wallet directly
           if (!addr) {
             try {
@@ -110,7 +116,9 @@ export const startBitcoinObserver = ({
               )
                 .toString()
                 .trim();
-            } catch {}
+            } catch (_error) {
+              // ignore: wallet might not be available yet
+            }
           }
           // Try loading wallet then request address
           if (!addr) {
@@ -118,7 +126,9 @@ export const startBitcoinObserver = ({
               execSync("bitcoin-cli -regtest -rpcwait loadwallet tss", {
                 stdio: ["ignore", "pipe", "ignore"],
               });
-            } catch {}
+            } catch (_error) {
+              // ignore: wallet load may fail if it already exists
+            }
             try {
               addr = execSync(
                 "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
@@ -126,7 +136,9 @@ export const startBitcoinObserver = ({
               )
                 .toString()
                 .trim();
-            } catch {}
+            } catch (_error) {
+              // ignore: wallet might not be available yet
+            }
           }
           // Try creating wallet then request address
           if (!addr) {
@@ -134,7 +146,9 @@ export const startBitcoinObserver = ({
               execSync("bitcoin-cli -regtest -rpcwait createwallet tss", {
                 stdio: ["ignore", "pipe", "ignore"],
               });
-            } catch {}
+            } catch (_error) {
+              // ignore: wallet may already exist
+            }
             try {
               addr = execSync(
                 "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
@@ -142,7 +156,9 @@ export const startBitcoinObserver = ({
               )
                 .toString()
                 .trim();
-            } catch {}
+            } catch (_error) {
+              // ignore: wallet might not be available yet
+            }
           }
           if (addr) {
             watchAddress = addr;
@@ -156,7 +172,7 @@ export const startBitcoinObserver = ({
             );
             return; // try again on next tick
           }
-        } catch {
+        } catch (_error) {
           return; // try again on next tick
         }
       }
@@ -272,10 +288,23 @@ export const startBitcoinObserver = ({
           }
         } catch (innerErr) {
           // Ignore individual tx parsing errors
+          if (typeof log.debug === "function") {
+            log.debug("Failed to process bitcoin tx", {
+              chain: "bitcoin",
+              error:
+                innerErr instanceof Error ? innerErr.message : String(innerErr),
+            });
+          }
         }
       }
     } catch (err) {
       // Swallow polling errors to keep observer running in dev
+      if (typeof log.debug === "function") {
+        log.debug("Bitcoin observer polling error", {
+          chain: "bitcoin",
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
   }, pollIntervalMs);
 

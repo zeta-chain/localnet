@@ -308,7 +308,12 @@ const startLocalnet = async (options: {
       execSync("bitcoin-cli -regtest -rpcwait getblockchaininfo", {
         stdio: "ignore",
       });
-    } catch {}
+    } catch (error) {
+      log.debug("Failed to query bitcoin blockchain info", {
+        chain: "bitcoin",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     // Defer starting the Bitcoin observer until Zeta context is ready later
   } else {

@@ -104,7 +104,7 @@ export const zetachainWithdraw = async ({
     // if the token is gas token
     if (coinType === 1n) {
       if (chainID === NetworkID.Bitcoin) {
-        return await bitcoinWithdraw({
+        return bitcoinWithdraw({
           amount,
           foreignCoin,
           receiver,

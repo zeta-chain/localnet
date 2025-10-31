@@ -19,11 +19,11 @@ const runBitcoinCli = (args: string[]) =>
     .toString()
     .trim();
 
-export const bitcoinWithdraw = async ({
+export const bitcoinWithdraw = ({
   receiver,
   amount,
   foreignCoin,
-}: BitcoinWithdrawArgs): Promise<string> => {
+}: BitcoinWithdrawArgs): string => {
   const receiverBytes = ethers.getBytes(receiver);
   const receiverAddress = Buffer.from(receiverBytes)
     .toString("utf8")

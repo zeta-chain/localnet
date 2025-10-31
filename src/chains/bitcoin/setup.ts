@@ -8,6 +8,18 @@ import { logger } from "../../logger";
 import { registerContracts } from "../../utils";
 import { isBitcoinAvailable } from "./isBitcoinAvailable";
 
+const logDebugError = (
+  log: ReturnType<typeof logger.child>,
+  message: string,
+  error: unknown
+) => {
+  if (typeof log.debug === "function") {
+    log.debug(message, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
 const getRunningBitcoinPidStrings = (): string[] => {
   try {
     const pidsOutput = execSync("pgrep -x bitcoind", {
@@ -29,19 +41,24 @@ const getRunningBitcoinPidStrings = (): string[] => {
 const stopBitcoinProcesses = (pidStrings: string[]) => {
   if (pidStrings.length === 0) return;
 
-  logger.info(
-    `Found running bitcoind process(es): ${pidStrings.join(", ")}. Stopping...`,
-    { chain: NetworkID.Bitcoin }
+  const log = logger.child({ chain: NetworkID.Bitcoin });
+
+  log.info(
+    `Found running bitcoind process(es): ${pidStrings.join(", ")}. Stopping...`
   );
 
   try {
     execSync("bitcoin-cli -regtest stop", { stdio: "ignore" });
-  } catch {}
+  } catch (error) {
+    logDebugError(log, "Failed to stop bitcoin via RPC", error);
+  }
 
   for (const pid of pidStrings) {
     try {
       execSync(`kill -9 ${pid}`);
-    } catch {}
+    } catch (error) {
+      logDebugError(log, `Failed to kill bitcoin process ${pid}`, error);
+    }
   }
 };
 
@@ -72,7 +89,9 @@ export const startBitcoinNode = async (): Promise<number[]> => {
 
   try {
     child.unref();
-  } catch {}
+  } catch (error) {
+    logDebugError(log, "Failed to unref bitcoind child process", error);
+  }
 
   await waitForBitcoinPort(log);
 
@@ -99,7 +118,13 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
         )
           .toString()
           .trim();
-      } catch {}
+      } catch (error) {
+        logDebugError(
+          log,
+          "Failed to fetch TSS address from default Bitcoin wallet",
+          error
+        );
+      }
       if (!tssAddress) {
         try {
           tssAddress = execSync(
@@ -108,14 +133,22 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
           )
             .toString()
             .trim();
-        } catch {}
+        } catch (error) {
+          logDebugError(
+            log,
+            "Failed to fetch TSS address from named Bitcoin wallet",
+            error
+          );
+        }
       }
       if (!tssAddress) {
         try {
           execSync("bitcoin-cli -regtest -rpcwait loadwallet tss", {
             stdio: ["ignore", "pipe", "ignore"],
           });
-        } catch {}
+        } catch (error) {
+          logDebugError(log, "Failed to load Bitcoin TSS wallet", error);
+        }
         try {
           tssAddress = execSync(
             "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
@@ -123,14 +156,22 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
           )
             .toString()
             .trim();
-        } catch {}
+        } catch (error) {
+          logDebugError(
+            log,
+            "Failed to fetch TSS address after loading wallet",
+            error
+          );
+        }
       }
       if (!tssAddress) {
         try {
           execSync("bitcoin-cli -regtest -rpcwait createwallet tss", {
             stdio: ["ignore", "pipe", "ignore"],
           });
-        } catch {}
+        } catch (error) {
+          logDebugError(log, "Failed to create Bitcoin TSS wallet", error);
+        }
         try {
           tssAddress = execSync(
             "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
@@ -138,9 +179,21 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
           )
             .toString()
             .trim();
-        } catch {}
+        } catch (error) {
+          logDebugError(
+            log,
+            "Failed to fetch TSS address after creating wallet",
+            error
+          );
+        }
       }
-    } catch {}
+    } catch (error) {
+      logDebugError(
+        log,
+        "Unexpected error while resolving Bitcoin TSS address",
+        error
+      );
+    }
 
     if (!tssAddress) {
       log.info(
