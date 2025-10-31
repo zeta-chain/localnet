@@ -75,6 +75,80 @@ const waitForBitcoinPort = async (log: ReturnType<typeof logger.child>) => {
   }
 };
 
+const runBitcoinCliCommand = (
+  log: ReturnType<typeof logger.child>,
+  command: string,
+  description: string,
+  { expectOutput = false }: { expectOutput?: boolean } = {}
+): string | undefined => {
+  try {
+    const result = execSync(command, {
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+
+    if (expectOutput) {
+      return result ? result : undefined;
+    }
+
+    return undefined;
+  } catch (error) {
+    logDebugError(log, description, error);
+    return undefined;
+  }
+};
+
+const resolveBitcoinTssAddress = (
+  log: ReturnType<typeof logger.child>
+): string | undefined => {
+  const getFromDefaultWallet = () =>
+    runBitcoinCliCommand(
+      log,
+      "bitcoin-cli -regtest -rpcwait getnewaddress tss",
+      "Failed to fetch TSS address from default Bitcoin wallet",
+      { expectOutput: true }
+    );
+
+  const getFromTssWallet = (failureMessage: string) =>
+    runBitcoinCliCommand(
+      log,
+      "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
+      failureMessage,
+      { expectOutput: true }
+    );
+
+  let address =
+    getFromDefaultWallet() ??
+    getFromTssWallet("Failed to fetch TSS address from named Bitcoin wallet");
+
+  if (address) {
+    return address;
+  }
+
+  runBitcoinCliCommand(
+    log,
+    "bitcoin-cli -regtest -rpcwait loadwallet tss",
+    "Failed to load Bitcoin TSS wallet"
+  );
+
+  address = getFromTssWallet(
+    "Failed to fetch TSS address after loading wallet"
+  );
+
+  if (address) {
+    return address;
+  }
+
+  runBitcoinCliCommand(
+    log,
+    "bitcoin-cli -regtest -rpcwait createwallet tss",
+    "Failed to create Bitcoin TSS wallet"
+  );
+
+  return getFromTssWallet("Failed to fetch TSS address after creating wallet");
+};
+
 export const startBitcoinNode = async (): Promise<number[]> => {
   const log = logger.child({ chain: "bitcoin" });
 
@@ -110,83 +184,9 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
   try {
     // Resolve or create a TSS receive address on regtest
     let tssAddress: string | undefined;
+
     try {
-      try {
-        tssAddress = execSync(
-          "bitcoin-cli -regtest -rpcwait getnewaddress tss",
-          { stdio: ["ignore", "pipe", "ignore"] }
-        )
-          .toString()
-          .trim();
-      } catch (error) {
-        logDebugError(
-          log,
-          "Failed to fetch TSS address from default Bitcoin wallet",
-          error
-        );
-      }
-      if (!tssAddress) {
-        try {
-          tssAddress = execSync(
-            "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
-            { stdio: ["ignore", "pipe", "ignore"] }
-          )
-            .toString()
-            .trim();
-        } catch (error) {
-          logDebugError(
-            log,
-            "Failed to fetch TSS address from named Bitcoin wallet",
-            error
-          );
-        }
-      }
-      if (!tssAddress) {
-        try {
-          execSync("bitcoin-cli -regtest -rpcwait loadwallet tss", {
-            stdio: ["ignore", "pipe", "ignore"],
-          });
-        } catch (error) {
-          logDebugError(log, "Failed to load Bitcoin TSS wallet", error);
-        }
-        try {
-          tssAddress = execSync(
-            "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
-            { stdio: ["ignore", "pipe", "ignore"] }
-          )
-            .toString()
-            .trim();
-        } catch (error) {
-          logDebugError(
-            log,
-            "Failed to fetch TSS address after loading wallet",
-            error
-          );
-        }
-      }
-      if (!tssAddress) {
-        try {
-          execSync("bitcoin-cli -regtest -rpcwait createwallet tss", {
-            stdio: ["ignore", "pipe", "ignore"],
-          });
-        } catch (error) {
-          logDebugError(log, "Failed to create Bitcoin TSS wallet", error);
-        }
-        try {
-          tssAddress = execSync(
-            "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
-            { stdio: ["ignore", "pipe", "ignore"] }
-          )
-            .toString()
-            .trim();
-        } catch (error) {
-          logDebugError(
-            log,
-            "Failed to fetch TSS address after creating wallet",
-            error
-          );
-        }
-      }
+      tssAddress = resolveBitcoinTssAddress(log);
     } catch (error) {
       logDebugError(
         log,
