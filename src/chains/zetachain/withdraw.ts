@@ -6,6 +6,7 @@ import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
+import { bitcoinWithdraw } from "../bitcoin/withdraw";
 import { connectorWithdraw } from "../evm/connectorWithdraw";
 import { evmCustodyWithdraw } from "../evm/custodyWithdraw";
 import { evmTSSTransfer } from "../evm/tssTransfer";
@@ -13,7 +14,6 @@ import { solanaWithdraw } from "../solana/withdraw";
 import { solanaWithdrawSPL } from "../solana/withdrawSPL";
 import { suiWithdraw } from "../sui/withdraw";
 import * as ton from "../ton";
-import { bitcoinWithdraw } from "../bitcoin/withdraw";
 import { zetachainOnRevert } from "./onRevert";
 
 export const zetachainWithdraw = async ({
@@ -105,9 +105,9 @@ export const zetachainWithdraw = async ({
     if (coinType === 1n) {
       if (chainID === NetworkID.Bitcoin) {
         return await bitcoinWithdraw({
-          receiver,
           amount,
           foreignCoin,
+          receiver,
         });
       }
 

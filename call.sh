@@ -3,7 +3,7 @@ set -euo pipefail
 
 PRIVATE_KEY=$(jq -r '.private_keys[0]' ~/.zetachain/localnet/anvil.json)
 
-RECEIVER=0xF32D39ff9f6Aa7a7A64d7a4F00a54826Ef791a55
+RECEIVER=0x40918Ba7f132E0aCba2CE4de4c4baF9BD2D7D849
 PAYLOAD_STR=alice
 
 RECEIVER_HEX=$(echo "$RECEIVER" | sed 's/^0x//' | tr '[:upper:]' '[:lower:]')

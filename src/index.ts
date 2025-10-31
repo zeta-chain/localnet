@@ -1,5 +1,6 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
+import { bitcoinSetup } from "./chains/bitcoin/setup";
 import { evmCall } from "./chains/evm/call";
 import { evmDeposit } from "./chains/evm/deposit";
 import { evmDepositAndCall } from "./chains/evm/depositAndCall";
@@ -16,7 +17,6 @@ import { logger } from "./logger";
 import { createToken } from "./tokens/createToken";
 import { InitLocalnetAddress } from "./types/zodSchemas";
 import { bootstrapEVMRegistries, getRegistryAsJson } from "./utils";
-import { bitcoinSetup } from "./chains/bitcoin/setup";
 
 const foreignCoins: any[] = [];
 
@@ -26,7 +26,7 @@ const foreignCoins: any[] = [];
 };
 
 let zetaRuntimeContext:
-  | { provider: any; zetachainContracts: any; foreignCoins: any[] }
+  | { foreignCoins: any[]; provider: any; zetachainContracts: any }
   | undefined;
 
 export const getZetaRuntimeContext = () => zetaRuntimeContext;
@@ -140,6 +140,7 @@ export const initLocalnet = async ({
     log.debug("BNB contracts setup complete");
 
     const contracts = {
+      bitcoinContracts,
       bnbContracts,
       deployer,
       ethereumContracts,
@@ -148,7 +149,6 @@ export const initLocalnet = async ({
       solanaContracts,
       suiContracts,
       tonContracts,
-      bitcoinContracts,
       tss,
       zetachainContracts,
     };
@@ -296,9 +296,9 @@ export const initLocalnet = async ({
 
     // Expose context for external observers (e.g., Bitcoin)
     zetaRuntimeContext = {
+      foreignCoins,
       provider,
       zetachainContracts,
-      foreignCoins,
     };
 
     return registry;

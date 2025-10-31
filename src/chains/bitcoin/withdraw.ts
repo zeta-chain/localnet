@@ -1,14 +1,13 @@
 import { execFileSync } from "child_process";
-
 import { ethers } from "ethers";
 
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 
 type BitcoinWithdrawArgs = {
-  receiver: string;
   amount: bigint;
   foreignCoin?: { decimals?: number };
+  receiver: string;
 };
 
 const DEFAULT_FEE_RATE = "0.00001";

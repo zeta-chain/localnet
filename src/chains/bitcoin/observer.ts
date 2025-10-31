@@ -3,18 +3,18 @@ import { execSync } from "child_process";
 import { ethers } from "ethers";
 
 import { addBackgroundProcess } from "../../backgroundProcesses";
-import { logger } from "../../logger";
 import { NetworkID } from "../../constants";
+import { logger } from "../../logger";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
 
 type StartObserverOptions = {
-  pollIntervalMs?: number;
-  tssAddress?: string;
-  provider?: any;
-  zetachainContracts?: any;
-  foreignCoins?: any[];
   chainID?: string;
+  foreignCoins?: any[];
+  pollIntervalMs?: number;
+  provider?: any;
+  tssAddress?: string;
+  zetachainContracts?: any;
 };
 
 const tryDecodeMemoHex = (hex: string): string | undefined => {

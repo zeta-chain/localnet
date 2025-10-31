@@ -1,11 +1,12 @@
 import ansis from "ansis";
 import { execSync, spawn } from "child_process";
 import { ethers } from "ethers";
+import waitOn from "wait-on";
+
 import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { registerContracts } from "../../utils";
 import { isBitcoinAvailable } from "./isBitcoinAvailable";
-import waitOn from "wait-on";
 
 const getRunningBitcoinPidStrings = (): string[] => {
   try {

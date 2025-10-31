@@ -10,7 +10,7 @@ import readline from "readline/promises";
 import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
 
-import { initLocalnet, getZetaRuntimeContext } from "../";
+import { getZetaRuntimeContext, initLocalnet } from "../";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
 import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
 import { startBitcoinObserver } from "../chains/bitcoin/observer";
@@ -365,10 +365,10 @@ const startLocalnet = async (options: {
       );
       if (ctx) {
         startBitcoinObserver({
-          tssAddress: bitcoinTssAddress,
-          provider: ctx.provider,
-          zetachainContracts: ctx.zetachainContracts,
           foreignCoins: ctx.foreignCoins,
+          provider: ctx.provider,
+          tssAddress: bitcoinTssAddress,
+          zetachainContracts: ctx.zetachainContracts,
         });
       } else {
         log.info(
