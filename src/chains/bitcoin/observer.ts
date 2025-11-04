@@ -37,6 +37,10 @@ const tryDecodeMemoHex = (hex: string): string | undefined => {
 
 const extractMemoFromTransaction = (tx: any): string | undefined => {
   try {
+    // NOTE: Unlike the zetaclient implementation, we intentionally skip the extra
+    // unwrap of "outer" outputs. Localnet transactions already surface the OP_RETURN
+    // memo in the top-level vouts and we ignore the additional wrapping anyway, so
+    // walking the raw vout array keeps the local flow simple and still correct.
     const vouts: any[] = Array.isArray(tx?.vout) ? tx.vout : [];
     for (const vout of vouts) {
       const spk = vout?.scriptPubKey || {};
