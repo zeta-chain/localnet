@@ -76,11 +76,12 @@ const waitForBitcoinPort = async (log: ReturnType<typeof logger.child>) => {
 };
 
 const runBitcoinCliCommand = (
-  log: ReturnType<typeof logger.child>,
   command: string,
   description: string,
   { expectOutput = false }: { expectOutput?: boolean } = {}
 ): string | undefined => {
+  const log = logger.child({ chain: "bitcoin" });
+
   try {
     const result = execSync(command, {
       stdio: ["ignore", "pipe", "ignore"],
@@ -99,12 +100,9 @@ const runBitcoinCliCommand = (
   }
 };
 
-const resolveBitcoinTssAddress = (
-  log: ReturnType<typeof logger.child>
-): string | undefined => {
+const resolveBitcoinTssAddress = (): string | undefined => {
   const getFromDefaultWallet = () =>
     runBitcoinCliCommand(
-      log,
       "bitcoin-cli -regtest -rpcwait getnewaddress tss",
       "Failed to fetch TSS address from default Bitcoin wallet",
       { expectOutput: true }
@@ -112,7 +110,6 @@ const resolveBitcoinTssAddress = (
 
   const getFromTssWallet = (failureMessage: string) =>
     runBitcoinCliCommand(
-      log,
       "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
       failureMessage,
       { expectOutput: true }
@@ -124,7 +121,6 @@ const resolveBitcoinTssAddress = (
       getFromTssWallet("Failed to fetch TSS address from named Bitcoin wallet"),
     () => {
       runBitcoinCliCommand(
-        log,
         "bitcoin-cli -regtest -rpcwait loadwallet tss",
         "Failed to load Bitcoin TSS wallet"
       );
@@ -135,7 +131,6 @@ const resolveBitcoinTssAddress = (
     },
     () => {
       runBitcoinCliCommand(
-        log,
         "bitcoin-cli -regtest -rpcwait createwallet tss",
         "Failed to create Bitcoin TSS wallet"
       );
@@ -193,7 +188,7 @@ export const bitcoinSetup = async ({ zetachainContracts, skip }: any) => {
     let tssAddress: string | undefined;
 
     try {
-      tssAddress = resolveBitcoinTssAddress(log);
+      tssAddress = resolveBitcoinTssAddress();
     } catch (error) {
       logDebugError(
         log,
