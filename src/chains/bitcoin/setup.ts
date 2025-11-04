@@ -83,8 +83,8 @@ const runBitcoinCliCommand = (
   const log = logger.child({ chain: "bitcoin" });
 
   const result = spawnSync("bitcoin-cli", args, {
-    stdio: ["ignore", "pipe", "pipe"],
     encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
   });
 
   if (result.error) {
