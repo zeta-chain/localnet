@@ -1,5 +1,5 @@
 import ansis from "ansis";
-import { execSync, spawn } from "child_process";
+import { execSync, spawn, spawnSync } from "child_process";
 import { ethers } from "ethers";
 import waitOn from "wait-on";
 
@@ -76,41 +76,51 @@ const waitForBitcoinPort = async (log: ReturnType<typeof logger.child>) => {
 };
 
 const runBitcoinCliCommand = (
-  command: string,
+  args: string[],
   description: string,
   { expectOutput = false }: { expectOutput?: boolean } = {}
 ): string | undefined => {
   const log = logger.child({ chain: "bitcoin" });
 
-  try {
-    const result = execSync(command, {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
+  const result = spawnSync("bitcoin-cli", args, {
+    stdio: ["ignore", "pipe", "pipe"],
+    encoding: "utf8",
+  });
 
-    if (expectOutput) {
-      return result ? result : undefined;
-    }
-
+  if (result.error) {
+    logDebugError(log, description, result.error);
     return undefined;
-  } catch (error) {
+  }
+
+  if (result.status !== 0) {
+    const stderr = result.stderr?.trim();
+    const error = new Error(
+      stderr || `bitcoin-cli exited with status ${result.status}`
+    );
     logDebugError(log, description, error);
     return undefined;
   }
+
+  const output = result.stdout?.trim() || "";
+
+  if (expectOutput) {
+    return output ? output : undefined;
+  }
+
+  return undefined;
 };
 
 const resolveBitcoinTssAddress = (): string | undefined => {
   const getFromDefaultWallet = () =>
     runBitcoinCliCommand(
-      "bitcoin-cli -regtest -rpcwait getnewaddress tss",
+      ["-regtest", "-rpcwait", "getnewaddress", "tss"],
       "Failed to fetch TSS address from default Bitcoin wallet",
       { expectOutput: true }
     );
 
   const getFromTssWallet = (failureMessage: string) =>
     runBitcoinCliCommand(
-      "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
+      ["-regtest", "-rpcwait", "-rpcwallet=tss", "getnewaddress", "tss"],
       failureMessage,
       { expectOutput: true }
     );
@@ -121,7 +131,7 @@ const resolveBitcoinTssAddress = (): string | undefined => {
       getFromTssWallet("Failed to fetch TSS address from named Bitcoin wallet"),
     () => {
       runBitcoinCliCommand(
-        "bitcoin-cli -regtest -rpcwait loadwallet tss",
+        ["-regtest", "-rpcwait", "loadwallet", "tss"],
         "Failed to load Bitcoin TSS wallet"
       );
 
@@ -131,7 +141,7 @@ const resolveBitcoinTssAddress = (): string | undefined => {
     },
     () => {
       runBitcoinCliCommand(
-        "bitcoin-cli -regtest -rpcwait createwallet tss",
+        ["-regtest", "-rpcwait", "createwallet", "tss"],
         "Failed to create Bitcoin TSS wallet"
       );
 
