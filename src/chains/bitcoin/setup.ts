@@ -118,35 +118,42 @@ const resolveBitcoinTssAddress = (
       { expectOutput: true }
     );
 
-  let address =
-    getFromDefaultWallet() ??
-    getFromTssWallet("Failed to fetch TSS address from named Bitcoin wallet");
+  const strategies: (() => string | undefined)[] = [
+    getFromDefaultWallet,
+    () =>
+      getFromTssWallet("Failed to fetch TSS address from named Bitcoin wallet"),
+    () => {
+      runBitcoinCliCommand(
+        log,
+        "bitcoin-cli -regtest -rpcwait loadwallet tss",
+        "Failed to load Bitcoin TSS wallet"
+      );
 
-  if (address) {
-    return address;
+      return getFromTssWallet(
+        "Failed to fetch TSS address after loading wallet"
+      );
+    },
+    () => {
+      runBitcoinCliCommand(
+        log,
+        "bitcoin-cli -regtest -rpcwait createwallet tss",
+        "Failed to create Bitcoin TSS wallet"
+      );
+
+      return getFromTssWallet(
+        "Failed to fetch TSS address after creating wallet"
+      );
+    },
+  ];
+
+  for (const strategy of strategies) {
+    const address = strategy();
+    if (address) {
+      return address;
+    }
   }
 
-  runBitcoinCliCommand(
-    log,
-    "bitcoin-cli -regtest -rpcwait loadwallet tss",
-    "Failed to load Bitcoin TSS wallet"
-  );
-
-  address = getFromTssWallet(
-    "Failed to fetch TSS address after loading wallet"
-  );
-
-  if (address) {
-    return address;
-  }
-
-  runBitcoinCliCommand(
-    log,
-    "bitcoin-cli -regtest -rpcwait createwallet tss",
-    "Failed to create Bitcoin TSS wallet"
-  );
-
-  return getFromTssWallet("Failed to fetch TSS address after creating wallet");
+  return undefined;
 };
 
 export const startBitcoinNode = async (): Promise<number[]> => {
