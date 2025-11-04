@@ -35,50 +35,43 @@ const tryDecodeMemoHex = (hex: string): string | undefined => {
   }
 };
 
-const extractMemoFromTransaction = (tx: any): string | undefined => {
+const getOpReturnPushes = (tx: any): string[] => {
   try {
     // NOTE: Unlike the zetaclient implementation, we intentionally skip the extra
     // unwrap of "outer" outputs. Localnet transactions already surface the OP_RETURN
     // memo in the top-level vouts and we ignore the additional wrapping anyway, so
     // walking the raw vout array keeps the local flow simple and still correct.
     const vouts: any[] = Array.isArray(tx?.vout) ? tx.vout : [];
+    const pushes: string[] = [];
     for (const vout of vouts) {
       const spk = vout?.scriptPubKey || {};
       if (spk?.type === "nulldata" && typeof spk?.asm === "string") {
-        // Expected format: "OP_RETURN <hex>" (possibly multiple pushes)
         const parts = spk.asm.split(/\s+/).filter(Boolean);
-        // Find the first hex-looking push after OP_RETURN
         for (let i = 1; i < parts.length; i++) {
-          const maybeHex = parts[i];
-          const decoded = tryDecodeMemoHex(maybeHex);
-          if (decoded) return decoded;
+          pushes.push(parts[i]);
         }
       }
     }
+    return pushes;
   } catch (_error) {
-    return undefined;
+    return [];
+  }
+};
+
+const extractMemoFromTransaction = (tx: any): string | undefined => {
+  for (const maybeHex of getOpReturnPushes(tx)) {
+    const decoded = tryDecodeMemoHex(maybeHex);
+    if (decoded) return decoded;
   }
   return undefined;
 };
 
 // Return the first hex push from OP_RETURN as a hex string (no utf-8 decoding)
 const extractMemoHexFromTransaction = (tx: any): string | undefined => {
-  try {
-    const vouts: any[] = Array.isArray(tx?.vout) ? tx.vout : [];
-    for (const vout of vouts) {
-      const spk = vout?.scriptPubKey || {};
-      if (spk?.type === "nulldata" && typeof spk?.asm === "string") {
-        const parts = spk.asm.split(/\s+/).filter(Boolean);
-        for (let i = 1; i < parts.length; i++) {
-          const maybeHex = parts[i];
-          if (/^[0-9a-fA-F]+$/.test(maybeHex) && maybeHex.length % 2 === 0) {
-            return maybeHex.toLowerCase();
-          }
-        }
-      }
+  for (const maybeHex of getOpReturnPushes(tx)) {
+    if (/^[0-9a-fA-F]+$/.test(maybeHex) && maybeHex.length % 2 === 0) {
+      return maybeHex.toLowerCase();
     }
-  } catch (_error) {
-    return undefined;
   }
   return undefined;
 };
