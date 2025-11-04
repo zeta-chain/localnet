@@ -7,6 +7,7 @@ import { NetworkID } from "../../constants";
 import { logger } from "../../logger";
 import { zetachainDeposit } from "../zetachain/deposit";
 import { zetachainDepositAndCall } from "../zetachain/depositAndCall";
+import { resolveBitcoinTssAddress } from "./setup";
 
 type StartObserverOptions = {
   chainID?: string;
@@ -96,70 +97,7 @@ export const startBitcoinObserver = ({
       // If address is not yet known, try to obtain/create it with RPC wait
       if (!watchAddress) {
         try {
-          let addr: string | undefined;
-          // Try default wallet (if any)
-          try {
-            addr = execSync("bitcoin-cli -regtest -rpcwait getnewaddress tss", {
-              stdio: ["ignore", "pipe", "ignore"],
-            })
-              .toString()
-              .trim();
-          } catch (_error) {
-            // ignore: wallet might not be available yet
-          }
-          // Try named wallet directly
-          if (!addr) {
-            try {
-              addr = execSync(
-                "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
-                { stdio: ["ignore", "pipe", "ignore"] }
-              )
-                .toString()
-                .trim();
-            } catch (_error) {
-              // ignore: wallet might not be available yet
-            }
-          }
-          // Try loading wallet then request address
-          if (!addr) {
-            try {
-              execSync("bitcoin-cli -regtest -rpcwait loadwallet tss", {
-                stdio: ["ignore", "pipe", "ignore"],
-              });
-            } catch (_error) {
-              // ignore: wallet load may fail if it already exists
-            }
-            try {
-              addr = execSync(
-                "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
-                { stdio: ["ignore", "pipe", "ignore"] }
-              )
-                .toString()
-                .trim();
-            } catch (_error) {
-              // ignore: wallet might not be available yet
-            }
-          }
-          // Try creating wallet then request address
-          if (!addr) {
-            try {
-              execSync("bitcoin-cli -regtest -rpcwait createwallet tss", {
-                stdio: ["ignore", "pipe", "ignore"],
-              });
-            } catch (_error) {
-              // ignore: wallet may already exist
-            }
-            try {
-              addr = execSync(
-                "bitcoin-cli -regtest -rpcwait -rpcwallet=tss getnewaddress tss",
-                { stdio: ["ignore", "pipe", "ignore"] }
-              )
-                .toString()
-                .trim();
-            } catch (_error) {
-              // ignore: wallet might not be available yet
-            }
-          }
+          const addr = resolveBitcoinTssAddress();
           if (addr) {
             watchAddress = addr;
             log.info(`Bitcoin TSS address: ${watchAddress}`);

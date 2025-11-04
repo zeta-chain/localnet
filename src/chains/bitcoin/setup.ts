@@ -110,7 +110,7 @@ const runBitcoinCliCommand = (
   return undefined;
 };
 
-const resolveBitcoinTssAddress = (): string | undefined => {
+export const resolveBitcoinTssAddress = (): string | undefined => {
   const getFromDefaultWallet = () =>
     runBitcoinCliCommand(
       ["-regtest", "-rpcwait", "getnewaddress", "tss"],
