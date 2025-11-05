@@ -1,5 +1,6 @@
 import { ethers, HDNodeWallet, Mnemonic, NonceManager } from "ethers";
 
+import { bitcoinSetup } from "./chains/bitcoin/setup";
 import { evmCall } from "./chains/evm/call";
 import { evmDeposit } from "./chains/evm/deposit";
 import { evmDepositAndCall } from "./chains/evm/depositAndCall";
@@ -23,6 +24,12 @@ const foreignCoins: any[] = [];
 (BigInt as any).prototype["toJSON"] = function () {
   return this.toString();
 };
+
+let zetaRuntimeContext:
+  | { foreignCoins: any[]; provider: any; zetachainContracts: any }
+  | undefined;
+
+export const getZetaRuntimeContext = () => zetaRuntimeContext;
 
 export const initLocalnet = async ({
   port,
@@ -72,31 +79,39 @@ export const initLocalnet = async ({
 
     // Run non-EVM chains in parallel (they don't share wallets)
     log.debug("Setting up non-EVM chains");
-    const [solanaContracts, suiContracts, tonContracts] = await Promise.all([
-      solanaSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("solana"),
-        zetachainContracts,
-      }),
-      suiSetup({
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("sui"),
-        zetachainContracts,
-      }),
-      ton.setup({
-        chainID: NetworkID.TON,
-        deployer,
-        foreignCoins,
-        provider,
-        skip: !chains.includes("ton"),
-        tss,
-        zetachainContracts,
-      }),
-    ]);
+    const [solanaContracts, suiContracts, tonContracts, bitcoinContracts] =
+      await Promise.all([
+        solanaSetup({
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("solana"),
+          zetachainContracts,
+        }),
+        suiSetup({
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("sui"),
+          zetachainContracts,
+        }),
+        ton.setup({
+          chainID: NetworkID.TON,
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("ton"),
+          tss,
+          zetachainContracts,
+        }),
+        bitcoinSetup({
+          deployer,
+          foreignCoins,
+          provider,
+          skip: !chains.includes("bitcoin"),
+          zetachainContracts,
+        }),
+      ]);
     log.debug("Non-EVM chains setup complete");
 
     // Run EVM chains sequentially to avoid nonce conflicts
@@ -125,6 +140,7 @@ export const initLocalnet = async ({
     log.debug("BNB contracts setup complete");
 
     const contracts = {
+      bitcoinContracts,
       bnbContracts,
       deployer,
       ethereumContracts,
@@ -148,6 +164,7 @@ export const initLocalnet = async ({
     await createToken(contracts, "SUI.SUI", true, NetworkID.Sui, 9);
     await createToken(contracts, "USDC.SUI", false, NetworkID.Sui, 9);
     await createToken(contracts, "TON.TON", true, NetworkID.TON, 9);
+    await createToken(contracts, "BTC.BTC", true, NetworkID.Bitcoin, 8);
 
     log.debug("Token creation complete");
 
@@ -276,6 +293,13 @@ export const initLocalnet = async ({
     });
 
     log.debug("Event handlers setup complete");
+
+    // Expose context for external observers (e.g., Bitcoin)
+    zetaRuntimeContext = {
+      foreignCoins,
+      provider,
+      zetachainContracts,
+    };
 
     return registry;
   } catch (error) {

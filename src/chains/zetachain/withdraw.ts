@@ -6,6 +6,7 @@ import { NetworkID } from "../../constants";
 import { deployOpts } from "../../deployOpts";
 import { logger } from "../../logger";
 import { isRegisteringGatewaysActive } from "../../utils/registryUtils";
+import { bitcoinWithdraw } from "../bitcoin/withdraw";
 import { connectorWithdraw } from "../evm/connectorWithdraw";
 import { evmCustodyWithdraw } from "../evm/custodyWithdraw";
 import { evmTSSTransfer } from "../evm/tssTransfer";
@@ -47,10 +48,11 @@ export const zetachainWithdraw = async ({
     });
     return;
   }
+  const foreignCoin = foreignCoins.find(
+    (coin: any) => coin.zrc20_contract_address === zrc20
+  );
 
-  const asset =
-    foreignCoins.find((coin: any) => coin.zrc20_contract_address === zrc20)
-      ?.asset || (isZeta ? "ZETA" : null);
+  const asset = foreignCoin?.asset || (isZeta ? "ZETA" : null);
 
   try {
     (tss as NonceManager).reset();
@@ -101,6 +103,14 @@ export const zetachainWithdraw = async ({
 
     // if the token is gas token
     if (coinType === 1n) {
+      if (chainID === NetworkID.Bitcoin) {
+        return bitcoinWithdraw({
+          amount,
+          foreignCoin,
+          receiver,
+        });
+      }
+
       return await evmTSSTransfer({ args, foreignCoins, tss });
     }
 

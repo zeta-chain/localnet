@@ -23,6 +23,7 @@ export const chains: Record<string, { color: any; name: string }> = {
   [NetworkID.ZetaChain]: { color: ansis.green, name: "ZetaChain" },
   [NetworkID.Solana]: { color: ansis.magenta, name: "Solana" },
   [NetworkID.BNB]: { color: ansis.yellow, name: "BNB" },
+  [NetworkID.Bitcoin]: { color: ansis.yellowBright, name: "Bitcoin" },
 };
 
 // Create a custom format for chain-based logging

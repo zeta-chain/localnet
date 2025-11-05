@@ -10,8 +10,11 @@ import readline from "readline/promises";
 import { getBorderCharacters, table } from "table";
 import waitOn from "wait-on";
 
-import { initLocalnet } from "../";
+import { getZetaRuntimeContext, initLocalnet } from "../";
 import { clearBackgroundProcesses } from "../backgroundProcesses";
+import { isBitcoinAvailable } from "../chains/bitcoin/isBitcoinAvailable";
+import { startBitcoinObserver } from "../chains/bitcoin/observer";
+import { startBitcoinNode } from "../chains/bitcoin/setup";
 import { isSolanaAvailable } from "../chains/solana/isSolanaAvailable";
 import { isSuiAvailable } from "../chains/sui/isSuiAvailable";
 import * as ton from "../chains/ton";
@@ -23,7 +26,7 @@ import { initLogger, logger, LoggerLevel, loggerLevels } from "../logger";
 const LOCALNET_JSON_FILE = "./localnet.json";
 const PROCESS_FILE = path.join(LOCALNET_DIR, "process.json");
 const ANVIL_CONFIG = path.join(LOCALNET_DIR, "anvil.json");
-const AVAILABLE_CHAINS = ["ton", "solana", "sui"] as const;
+const AVAILABLE_CHAINS = ["ton", "solana", "sui", "bitcoin"] as const;
 const CHAIN_ID_TO_NAME: Record<string, string> = Object.fromEntries(
   Object.entries(NetworkID).map(([name, id]) => [id, name])
 );
@@ -91,6 +94,32 @@ const printRegistryTables = (registry: any, log: any) => {
   } catch (printErr) {
     log.error(`Error printing registry tables: ${printErr}`);
     console.log("Registry", JSON.stringify(registry, null, 2));
+  }
+};
+
+const getGatewayAddressForChain = (
+  registry: any,
+  chainId: string
+): string | undefined => {
+  try {
+    const chainData = registry?.[chainId];
+    if (!chainData) return undefined;
+
+    const contracts: any[] = Array.isArray(chainData.contracts)
+      ? chainData.contracts
+      : [];
+
+    const gateway = contracts.find((contract) => {
+      const type = String(contract?.contractType ?? "").toLowerCase();
+      return type === "gateway";
+    });
+
+    const address = gateway?.address;
+    if (!address) return undefined;
+
+    return String(address).trim() || undefined;
+  } catch {
+    return undefined;
   }
 };
 
@@ -255,6 +284,46 @@ const startLocalnet = async (options: {
     log.info("Skipping Solana...");
   }
 
+  // Bitcoin
+  if (enabledChains.includes("bitcoin") && isBitcoinAvailable()) {
+    log.info("Starting Bitcoin...");
+
+    try {
+      const bitcoinPids = await startBitcoinNode();
+      for (const pid of bitcoinPids) {
+        processes.push({ command: "bitcoind", pid });
+      }
+    } catch (error) {
+      log.error(
+        `Failed to start Bitcoin node: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      if (options.exitOnError) {
+        throw error;
+      }
+    }
+
+    try {
+      execSync("bitcoin-cli -regtest -rpcwait getblockchaininfo", {
+        stdio: "ignore",
+      });
+    } catch (error) {
+      log.debug("Failed to query bitcoin blockchain info", {
+        chain: "bitcoin",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    // Defer starting the Bitcoin observer until Zeta context is ready later
+  } else if (enabledChains.includes("bitcoin") && !isBitcoinAvailable()) {
+    throw new Error(
+      "bitcoind and bitcoin-cli are not available. Please, install them and try again: https://bitcoin.org/en/full-node"
+    );
+  } else {
+    log.info("Skipping Bitcoin...");
+  }
+
   let suiProcess: ChildProcess;
   if (enabledChains.includes("sui") && isSuiAvailable()) {
     log.info("Starting Sui...");
@@ -295,6 +364,29 @@ const startLocalnet = async (options: {
 
     // Pretty-print registry using tables
     printRegistryTables(registry, log);
+
+    // Start Bitcoin observer now that Zeta context is initialized
+    if (options.chains.includes("bitcoin") && isBitcoinAvailable()) {
+      const ctx = getZetaRuntimeContext();
+      const bitcoinTssAddress = getGatewayAddressForChain(
+        registry,
+        NetworkID.Bitcoin
+      );
+      if (ctx) {
+        startBitcoinObserver({
+          foreignCoins: ctx.foreignCoins,
+          provider: ctx.provider,
+          tssAddress: bitcoinTssAddress,
+          zetachainContracts: ctx.zetachainContracts,
+        });
+      } else {
+        log.info(
+          ansis.yellow(
+            "Zeta context unavailable; skipping Bitcoin observer start"
+          )
+        );
+      }
+    }
   } catch (error: unknown) {
     log.error(`Error initializing localnet: ${error}`);
     await gracefulShutdown();

@@ -40,8 +40,15 @@ export const createToken = async (
     chainID === NetworkID.Solana && !contracts.solanaContracts;
   const suiNotSupported = chainID === NetworkID.Sui && !contracts.suiContracts;
   const tonNotSupported = chainID === NetworkID.TON && !contracts.tonContracts;
+  const bitcoinNotSupported =
+    chainID === NetworkID.Bitcoin && !contracts.bitcoinContracts;
 
-  if (solanaNotSupported || suiNotSupported || tonNotSupported) {
+  if (
+    solanaNotSupported ||
+    suiNotSupported ||
+    tonNotSupported ||
+    bitcoinNotSupported
+  ) {
     return;
   }
 

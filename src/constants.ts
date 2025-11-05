@@ -12,6 +12,7 @@ export const anvilTestMnemonic =
 
 export const NetworkID = {
   BNB: "98",
+  Bitcoin: "18332",
   Ethereum: "11155112",
   Solana: "902",
   Sui: "104",
